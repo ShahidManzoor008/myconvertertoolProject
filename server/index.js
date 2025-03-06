@@ -1,7 +1,7 @@
 // ============================
 // 📂 Server: index.js
 // ============================
-process.env.LIBREOFFICE_PATH = "\"C:\\Program Files\\LibreOffice\\program\\soffice.exe\"";
+//process.env.LIBREOFFICE_PATH = "\"C:\\Program Files\\LibreOffice\\program\\soffice.exe\"";
 
 const express = require("express");
 require("dotenv").config({ path: "./.env" });

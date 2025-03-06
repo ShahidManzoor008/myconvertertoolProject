@@ -40,7 +40,7 @@ const Layout = ({ children }) => {
           to="/"
           className="text-2xl font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition duration-300"
         >
-          SMS Coding Online 🚀
+          My Converter Tools 🚀
         </Link>
 
         {/* Desktop Menu */}
@@ -93,7 +93,7 @@ const Layout = ({ children }) => {
       {/* ✅ Footer */}
       <footer className="w-full bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-300 p-6 text-center mt-10">
         <p>
-          © 2025 SMS Coding Online |{" "}
+          © 2025 My Converter Tools |{" "}
           <Link to="/about" className="underline hover:text-gray-400">
             About
           </Link>
