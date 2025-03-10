@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 import Sidebar from "./Sidebar";
 import {
   HomeIcon,
@@ -33,6 +34,15 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition duration-300">
+       <Helmet>
+        <title>My Converter Tool - Free Online Tools for Developers & Creators</title>
+        <meta name="description" content="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!" />
+        <meta name="keywords" content="free online tools, developer tools, JSON Formatter, PDF Converter, QR Code Generator, Base64 Encoder" />
+        <meta property="og:title" content="My Converter Tool - Free Online Tools for Developers & Creators" />
+        <meta property="og:description" content="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!" />
+        <meta property="og:image" content="https://myconvertertool.com/assets/og-image.jpg" />
+        <meta property="og:url" content="https://myconvertertool.com/" />
+      </Helmet>
       {/* ✅ Properly Sticky Navbar */}
       <nav className="fixed top-0 left-0 w-full bg-white dark:bg-gray-800 shadow-md px-6 py-4 flex justify-between items-center z-50">
         {/* Logo */}

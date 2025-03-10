@@ -38,7 +38,7 @@ const Home = () => {
       <Helmet>
         {/* ✅ Title & Description */}
         <title>
-          Free Online Developer & Productivity Tools - SMS Coding Online
+          Free Online Developer & Productivity Tools - My Converter Tools
         </title>
         <meta
           name="description"
@@ -54,7 +54,7 @@ const Home = () => {
         {/* ✅ Open Graph (Social Media) */}
         <meta
           property="og:title"
-          content="Free Online Developer & Productivity Tools - SMS Coding Online"
+          content="Free Online Developer & Productivity Tools - My Converter Tools"
         />
         <meta
           property="og:description"
@@ -75,7 +75,7 @@ const Home = () => {
         />
         <meta
           name="twitter:description"
-          content="Use free online tools like JSON Formatter, PDF Converter, AI Generators, SEO Tools & more at SMS Coding Online!"
+          content="Use free online tools like JSON Formatter, PDF Converter, AI Generators, SEO Tools & more at My Converter Tools!"
         />
         <meta
           name="twitter:image"
