@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
 import Popup from "../../components/Popup";
-import { Helmet } from "react-helmet-async";
+import SEO from '../../utils/SEO';
 import { 
   Download, 
   Link, 
@@ -39,7 +39,6 @@ const QrCodeTool = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [isValid, setIsValid] = useState(false);
   const [tabHistory, setTabHistory] = useState([]);
   
   // Refs
@@ -60,11 +59,12 @@ const QrCodeTool = () => {
   });
 
   // Validate content when it changes
+  // Validate content when it changes
   useEffect(() => {
     if (content) {
-      setIsValid(true);
+      // setIsValid(true);
     } else {
-      setIsValid(false);
+      // setIsValid(false);
     }
   }, [content]);
 
@@ -156,14 +156,7 @@ const QrCodeTool = () => {
     setContentType(type);
   };
 
-  // Go back to previous content type
-  const handleGoBack = () => {
-    if (tabHistory.length > 0) {
-      const prevType = tabHistory[tabHistory.length - 1];
-      setContentType(prevType);
-      setTabHistory(tabHistory.slice(0, -1));
-    }
-  };
+  
 
   const handleFormChange = (type, field, value) => {
     setFormFields(prev => {
@@ -260,15 +253,39 @@ const QrCodeTool = () => {
       transition={{ duration: 0.5 }}
       className="p-6 max-w-5xl mx-auto"
     >
-      <Helmet>
-        <title>Free QR Code Generator - Create Custom QR Codes Online</title>
-        <meta name="description" content="Generate custom QR codes for free with our online QR Code Generator. Supports text, URLs, contact info, Wi-Fi credentials, and more!" />
-        <meta name="keywords" content="free QR code generator, online QR code maker, create QR code, QR code for URLs, custom QR codes, no signup, WiFi QR code, vCard QR code, free productivity tools" />
-        <meta property="og:title" content="Free QR Code Generator - Create Custom QR Codes Online" />
-        <meta property="og:description" content="Generate custom QR codes for free with our online QR Code Generator. Perfect for URLs, text, and business promotions!" />
-        <meta property="og:url" content="https://myconvertertool.com/tools/qr-code-generator" />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <SEO 
+        seoData={{
+          title: 'Free QR Code Generator - Create Custom QR Codes Online - MyConverterTool',
+          description: 'Generate custom QR codes for free with our online QR Code Generator. Supports text, URLs, contact info, Wi-Fi credentials, and more!',
+          keywords: 'free QR code generator, online QR code maker, create QR code, QR code for URLs, custom QR codes, no signup, WiFi QR code, vCard QR code, free productivity tools',
+          canonicalUrl: '/tools/qr-code-generator',
+          ogType: 'website',
+          ogTitle: 'Free QR Code Generator - Create Custom QR Codes Online',
+          ogDescription: 'Generate custom QR codes for free with our online QR Code Generator. Perfect for URLs, text, and business promotions!',
+          ogImage: '/assets/MyConverterTool.png',
+          structuredData: {
+            '@type': 'WebApplication',
+            name: 'QR Code Generator',
+            description: 'Generate custom QR codes for free with our online QR Code Generator. Supports text, URLs, contact info, Wi-Fi credentials, and more!',
+            applicationCategory: 'UtilityApplication',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD'
+            },
+            featureList: [
+              'Text to QR Code',
+              'URL to QR Code',
+              'vCard QR Code',
+              'WiFi QR Code',
+              'Email QR Code',
+              'SMS QR Code',
+              'Custom QR Code Colors',
+              'Logo Integration'
+            ]
+          }
+        }}
+      />
 
       <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400 text-center">
         QR Code Generator

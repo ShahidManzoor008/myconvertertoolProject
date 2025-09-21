@@ -1,24 +1,24 @@
 // ============================
 // 📂 Server: index.js
 // ============================
-//process.env.LIBREOFFICE_PATH = "\"C:\\Program Files\\LibreOffice\\program\\soffice.exe\"";
 
-const express = require("express");
-require("dotenv").config({ path: "./.env" });
-const cors = require("cors");
-const { validateFileUpload } = require("./middleware/validate");
-const helmet = require("helmet");
-const multer = require("multer");
-const fs = require("fs");
-const sizeOf = require("image-size").imageSize;
-const path = require("path");
-const { exec } = require("child_process");
-const archiver = require("archiver");
-const XLSX = require("exceljs");
-const { PDFDocument, rgb } = require("pdf-lib");
-const rateLimit = require("express-rate-limit");
-const markdownit = require("markdown-it");
-const {
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import archiver from 'archiver';
+import { PDFDocument, rgb } from 'pdf-lib';
+import markdownit from 'markdown-it';
+import sanitizeHtml from 'sanitize-html';
+import {
   Document,
   Packer,
   Paragraph,
@@ -28,47 +28,69 @@ const {
   TableRow,
   WidthType,
   HeadingLevel,
-} = require("docx");
+} from 'docx';
+import * as fileType from 'file-type';
+import { imageSize } from 'image-size';
+import connectDB from './config/db.js';
+import pdfOperationsRouter from './routes/pdfOperations.js';
+import authRouter from './routes/auth.js'; // Import authRouter
+import { auth } from './middleware/auth.js'; // Keep auth middleware import
+import blogRouter from './routes/blog.js';
+import batchDownloadRouter from './routes/batchDownload.js';
+import morgan from 'morgan';
+import multer from 'multer';
+
+dotenv.config({ path: './.env' });
 
 const app = express();
 const port = process.env.PORT || 5000;
 // const allowedOrigins =["http://localhost:3000"];
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000"];
 // ============================
-// 🛡️ Enable CORS and Security Middleware
+// �️ Connect to MongoDB
+// ============================
+connectDB();
+
+// ============================
+// �🛡️ Enable CORS and Security Middleware
 // ============================
 app.use(
   cors({
     origin: allowedOrigins,
     methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 app.use(helmet());
+app.use(cookieParser());
+app.use(express.json());
+app.use(morgan('dev'));
 app.set("trust proxy", 1);
+
 // ============================
-// 🛡️ Rate Limiting: 10 requests per minute per IP
+// 🛡️ Rate Limiting
 // ============================
-const limiter = rateLimit({
+const globalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // Limit each IP to 10 requests per window
+  max: 30, // Global limit
   message: { error: "Too many requests, please try again later." },
 });
-// const limiter = rateLimit({
-//   windowMs: 1 * 60 * 1000, // 1 minute
-//   max: 10, // Limit each IP to 10 requests per minute
-//   message: { error: "Too many requests, please try again later." },
-// });
-app.use("/api/", limiter);
+const authLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5, // Stricter limit for auth endpoints
+  message: { error: "Too many auth requests, please try again later." },
+});
+app.use(globalLimiter);
+app.use("/api/auth", authLimiter);
 
 // ============================
 // 🗂️ Configure Multer for File Uploads
 // ============================
 // Allowed MIME types
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    "application/pdf",  // ✅ Allow PDF
+const fileFilter = async (req, file, cb) => {
+  const allowedMimeTypes = [
+    "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -77,16 +99,21 @@ const fileFilter = (req, file, cb) => {
     "application/vnd.oasis.opendocument.presentation",
     "application/vnd.oasis.opendocument.spreadsheet",
     "application/vnd.oasis.opendocument.text",
-    "application/vnd.ms-excel", 
+    "application/vnd.ms-excel",
     "image/jpeg",
     "image/png",
-    "image/jpg",   // ✅ Allow PNG
-    "text/markdown",  // ✅ Allow Markdown (.md)
-    "text/plain"  ,     // ✅ Some browsers use "text/plain" for .md files
-    "application/octet-stream",
+    "image/jpg",
+    "text/markdown",
+    "text/plain",
+    "application/octet-stream", // Generic binary data, might need further inspection
   ];
 
-  if (!allowedTypes.includes(file.mimetype)) {
+  const allowedExtensions = [
+    "pdf", "docx", "pptx", "xlsx", "doc", "ppt", "odp", "ods", "odt", "xls",
+    "jpeg", "png", "jpg", "md", "txt"
+  ];
+
+  if (!allowedMimeTypes.includes(file.mimetype)) {
     console.error(`❌ Rejected file type: ${file.mimetype}`);
     return cb(new Error("Invalid file type"), false);
   }
@@ -114,13 +141,27 @@ app.post("/api/test-upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded!" });
   }
-  res.json({ message: "File uploaded successfully!", file: req.file });
+  (async () => {
+    const ok = await validateUploadedFile(req.file.path, req.file.originalname);
+    if (!ok) {
+      cleanupFiles(req.file);
+      return res.status(400).json({ error: 'Invalid or unsupported file type' });
+    }
+    return res.json({ message: "File uploaded successfully!", file: req.file });
+  })();
 });
 // ============================
 // 🛡️ Health Check Endpoint
 // ============================
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
+// ============================
+// Routes
+// ============================
+app.use('/api/pdf', auth, pdfOperationsRouter);
+app.use('/api/blog', blogRouter);
+app.use('/api', batchDownloadRouter);
+app.use('/api/auth', authRouter);
 // ============================
 // 🛡️ JSON Parsing Middleware (AFTER File Upload Routes)
 // ============================
@@ -137,20 +178,61 @@ app.use(express.json());
 // 🧹 Helper Function: Cleanup Uploaded Files
 // ============================
 const cleanupFiles = (files) => {
-  if (Array.isArray(files)) {
-    files.forEach((file) => fs.unlinkSync(file.path));
-  } else {
-    fs.unlinkSync(files.path);
+  const filesToClean = Array.isArray(files) ? files : [files];
+  filesToClean.forEach((file) => {
+    const filePath = typeof file === 'string' ? file : file.path;
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`🗑️ Deleted temp file: ${filePath}`);
+    }
+  });
+};
+
+// ============================
+// �️ Helper: Validate uploaded file by inspecting magic numbers
+// ============================
+const validateUploadedFile = async (filePath, originalName) => {
+  try {
+    // Read a reasonable chunk from the file (first 4KB) for detection
+    const fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(4100);
+    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    fs.closeSync(fd);
+
+    const slice = buffer.slice(0, bytesRead);
+    const type = await fileType.fromBuffer(slice);
+
+    if (!type) {
+      console.warn(`⚠️ Could not determine file type for ${originalName}`);
+      return false;
+    }
+
+    const allowed = new Set([
+      'pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'odp', 'ods', 'odt', 'xls',
+      'jpeg', 'png', 'jpg', 'md', 'txt'
+    ]);
+
+    // fileType.ext gives the detected extension (without dot)
+    if (!allowed.has(type.ext)) {
+      console.error(`❌ Uploaded file ${originalName} has disallowed signature: ${type.ext}`);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error validating uploaded file:', err);
+    return false;
   }
 };
 
 // ============================
-// 🖼️ Helper Function: Convert Image (PNG/JPG) to PDF
+// �🖼️ Helper Function: Convert Image(s) to PDF
 // ============================
-const combineImagesToPDF = async (imagePaths) => {
+const convertImagesToPDF = async (imagePaths) => {
   const pdfDoc = await PDFDocument.create();
+  const imagePathsArray = Array.isArray(imagePaths) ? imagePaths : [imagePaths];
 
-  for (const imagePath of imagePaths) {
+  for (const imagePath of imagePathsArray) {
     const imageBytes = fs.readFileSync(imagePath);
     const extension = path.extname(imagePath).toLowerCase();
 
@@ -169,38 +251,24 @@ const combineImagesToPDF = async (imagePaths) => {
 
   return Buffer.from(await pdfDoc.save());
 };
-// ============================
-// 🖼️ Helper Function: Convert Image (PNG/JPG) to PDF
-// ============================
-const convertImageToPDF = async (filePath) => {
-  const imageBytes = fs.readFileSync(filePath);
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([600, 800]);
-
-  const extension = path.extname(filePath).toLowerCase();
-  const image =
-    extension === ".png"
-      ? await pdfDoc.embedPng(imageBytes)
-      : await pdfDoc.embedJpg(imageBytes);
-
-  page.drawImage(image, {
-    x: 0,
-    y: 0,
-    width: image.width,
-    height: image.height,
-  });
-
-  return Buffer.from(await pdfDoc.save());
-};
 
 // ============================
 // 🧩 Helper Function: Convert Files to PDF for Batch Mode
 // ============================
 const convertFileToPDF = async (filePath, fileType) => {
-  if (["png", "jpg", "jpeg",].includes(fileType))
+  const supportedImageTypes = ["png", "jpg", "jpeg"];
+  const supportedLibreOfficeTypes = ["md", "docx", "pptx", "xlsx", "odt", "ods", "odp", "txt"];
+
+  if (supportedImageTypes.includes(fileType)) {
     return await convertImageToPDF(filePath);
-  if (fileType === "md") return await convertToPDF(filePath);
-  throw new Error(`Unsupported file type: ${fileType}`);
+  } else if (supportedLibreOfficeTypes.includes(fileType)) {
+    const pdfPath = await convertToPDF(filePath);
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    cleanupFiles(pdfPath); // Clean up the temporary PDF generated by LibreOffice
+    return pdfBuffer;
+  } else {
+    throw new Error(`Unsupported file type for batch conversion: ${fileType}`);
+  }
 };
 // ============================
 // 📝 Helper Function: Convert Markdown to DOCX 
@@ -302,16 +370,33 @@ const convertMarkdownToDocx = async (filePath) => {
 // ============================
 // Helper: Strip HTML Tags
 // ============================
-const stripHtml = (str) => str.replace(/<\/?[^>]+(>|$)/g, '');
+const stripHtml = (str) => {
+  if (!str) return '';
+  // Remove any tags and attributes; keep plain text only
+  try {
+    const clean = sanitizeHtml(str, { allowedTags: [], allowedAttributes: {} });
+    return clean;
+  } catch (err) {
+    console.error('Error sanitizing HTML:', err);
+    return String(str).replace(/<\/?[^>]+(>|$)/g, '');
+  }
+};
 
 // ============================
 // 📂 API: Convert Markdown to DOCX
 // ============================
 app.post('/api/convert-md-to-docx', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No Markdown file uploaded." });
+  }
   try {
+    const ok = await validateUploadedFile(req.file.path, req.file.originalname);
+    if (!ok) {
+      cleanupFiles(req.file);
+      return res.status(400).json({ error: 'Invalid or unsupported Markdown file.' });
+    }
     console.log('📝 Received Markdown file:', req.file.originalname);
     const docxBuffer = await convertMarkdownToDocx(req.file.path);
-    cleanupFiles(req.file);
     console.log('✅ Markdown converted to DOCX successfully');
 
     res.setHeader('Content-Disposition', 'attachment; filename="converted-markdown.docx"');
@@ -320,15 +405,29 @@ app.post('/api/convert-md-to-docx', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('❌ Markdown to DOCX Error:', error.stack);
     res.status(500).json({ error: `Failed to convert Markdown to DOCX: ${error.message}` });
+  } finally {
+    cleanupFiles(req.file);
   }
 });
 
 // ============================
 // 🧩 API: Batch Conversion for Multiple Files
 // ============================
-app.post("/api/batch-convert", upload.array("files", 5), validateFileUpload, async (req, res) => {
+app.post("/api/batch-convert", upload.array("files", 5), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: "No files uploaded for batch conversion." });
+  }
   try {
     const files = req.files;
+
+    // Validate signatures for all uploaded files
+    for (const f of files) {
+      const ok = await validateUploadedFile(f.path, f.originalname);
+      if (!ok) {
+        cleanupFiles(req.files);
+        return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });
+      }
+    }
 
     // Check if all files are images
     const areAllImages = files.every((file) => {
@@ -338,9 +437,7 @@ app.post("/api/batch-convert", upload.array("files", 5), validateFileUpload, asy
 
     if (areAllImages) {
       // Combine all images into a single PDF
-      const pdfBuffer = await combineImagesToPDF(files.map((file) => file.path));
-      cleanupFiles(files);
-
+      const pdfBuffer = await convertImagesToPDF(files.map((file) => file.path));
       res.setHeader("Content-Disposition", 'attachment; filename="combined_images.pdf"');
       res.setHeader("Content-Type", "application/pdf");
       res.send(pdfBuffer);
@@ -357,31 +454,53 @@ app.post("/api/batch-convert", upload.array("files", 5), validateFileUpload, asy
         });
         console.log(`✅ Converted ${file.originalname} to PDF`);
       }
-      cleanupFiles(files);
-      console.log("✅ Batch Conversion Completed file cleanup");
       res.json(results);
     }
   } catch (error) {
     console.error("Batch Conversion Error:", error.message);
     res.status(500).json({ error: `Batch conversion failed: ${error.message}` });
+  } finally {
+    if (req.files) {
+      cleanupFiles(req.files);
+    }
   }
 });
 
 // -----------------------------------------
 // PDF Conversion Functions with libreoffice
 // -----------------------------------------
-const libreOfficePath = process.env.LIBREOFFICE_PATH || "/usr/bin/soffice";
-if (!libreOfficePath) {
-  console.error("❌ LIBREOFFICE_PATH is not set in .env file");
-  process.exit(1); // Stop execution if the variable is missing
-}else{
+const getLibreOfficePath = () => {
+  if (process.env.LIBREOFFICE_PATH) {
+    return process.env.LIBREOFFICE_PATH;
+  }
+
+  // Platform-specific default paths
+  switch (process.platform) {
+    case "win32": // Windows
+      return "C:\\Program Files\\LibreOffice\\program\\soffice.exe";
+    case "darwin": // macOS
+      return "/Applications/LibreOffice.app/Contents/MacOS/soffice";
+    case "linux":
+    default:
+      return "/usr/bin/soffice";
+  }
+};
+
+const libreOfficePath = getLibreOfficePath();
+
+if (!fs.existsSync(libreOfficePath)) {
+  console.error(`❌ LibreOffice executable not found at: ${libreOfficePath}`);
+  console.error("Please ensure LibreOffice is installed and its path is correctly configured in .env or is in a standard location.");
+  process.exit(1); // Stop execution if the executable is missing
+} else {
   console.log("✅ LibreOffice Path:", libreOfficePath);
 }
+
 // Convert a single file to PDF using LibreOffice
 const convertToPDF = (inputPath) => {
   return new Promise((resolve, reject) => {
     const outputDir = path.dirname(inputPath);
-    const command = `${libreOfficePath} --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+    const command = `\"${libreOfficePath}\" --headless --convert-to pdf --outdir \"${outputDir}\" \"${inputPath}\"`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -476,16 +595,6 @@ const processFileConversion = async (files) => {
   });
 };
 
-// Cleanup temporary files after download
-const cleanupFilesLibre = (files) => {
-  files.forEach((file) => {
-    if (fs.existsSync(file)) {
-      fs.unlinkSync(file);
-      console.log(`🗑️ Deleted temp file: ${file}`);
-    }
-  });
-};
-
 // -------------------------
 // API Endpoint
 // -------------------------
@@ -495,15 +604,87 @@ app.post("/api/files/upload", upload.array("files"), async (req, res) => {
       return res.status(400).json({ error: "No files uploaded." });
     }
 
+    // Validate each uploaded file's signature
+    for (const f of req.files) {
+      const ok = await validateUploadedFile(f.path, f.originalname);
+      if (!ok) {
+        cleanupFiles(req.files);
+        return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });
+      }
+    }
+
     const result = await processFileConversion(req.files);
     res.download(result.filePath, (err) => {
       if (err) {
         console.error("Download error:", err);
       }
-      cleanupFilesLibre(result.tempFiles);
+      cleanupFiles(result.tempFiles); // Use the consolidated cleanup function
     });
   } catch (error) {
     res.status(500).json({ error: error.toString() });
+  }
+});
+
+// ============================
+// 📄 Helper Function: Add Text to PDF
+// ============================
+const addTextToPdf = async (pdfDoc, page, text, x, y, size = 12, font = null, color = rgb(0, 0, 0)) => {
+  const helveticaFont = font || await pdfDoc.embedFont('Helvetica');
+  page.drawText(text, { x, y, font: helveticaFont, size, color });
+};
+
+// ============================
+// 📄 Helper Function: Remove Text from PDF (by drawing white rectangle)
+// ============================
+const removeTextFromPdf = (page, x, y, width, height) => {
+  page.drawRectangle({
+    x, y, width, height,
+    color: rgb(1, 1, 1), // White color to cover text
+  });
+};
+
+// ============================
+// 📂 API: PDF Editor
+// ============================
+app.post('/api/edit-pdf', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No PDF file uploaded." });
+  }
+
+  try {
+    const ok = await validateUploadedFile(req.file.path, req.file.originalname);
+    if (!ok) {
+      cleanupFiles(req.file);
+      return res.status(400).json({ error: 'Invalid or unsupported PDF file.' });
+    }
+    const pdfBytes = fs.readFileSync(req.file.path);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+
+    const { edits } = req.body; // Expecting an array of edit operations
+
+    for (const edit of edits) {
+      const page = pdfDoc.getPages()[edit.pageIndex];
+      if (!page) continue;
+
+      if (edit.type === 'addText') {
+        await addTextToPdf(pdfDoc, page, edit.text, edit.x, edit.y, edit.size, null, edit.color);
+      } else if (edit.type === 'removeText') {
+        removeTextFromPdf(page, edit.x, edit.y, edit.width, edit.height);
+      }
+    }
+
+    const modifiedPdfBytes = await pdfDoc.save();
+    cleanupFiles(req.file);
+
+    res.setHeader('Content-Disposition', 'attachment; filename="edited.pdf"');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(Buffer.from(modifiedPdfBytes));
+
+  } catch (error) {
+    console.error('❌ PDF Editor Error:', error.stack);
+    res.status(500).json({ error: `Failed to edit PDF: ${error.message}` });
+  } finally {
+    cleanupFiles(req.file);
   }
 });
 
@@ -513,3 +694,5 @@ app.post("/api/files/upload", upload.array("files"), async (req, res) => {
 app.listen(port, () => {
   console.log(`API running on port:${port}`);
 });
+
+export default app; // Export the app for testing

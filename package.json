@@ -1,0 +1,44 @@
+{
+  "name": "myconvertertool-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for myconvertertool.com client and server",
+  "main": "index.js",
+  "scripts": {
+    "client:install": "npm install --prefix client",
+    "server:install": "npm install --prefix server",
+    "install:all": "npm run client:install && npm run server:install",
+    "client:dev": "npm run dev --prefix client",
+    "server:dev": "npm run dev --prefix server",
+    "dev:all": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
+    "client:test": "npx vitest",
+    "server:test": "npm test --prefix server",
+    "client:lint": "npm run lint --prefix client",
+    "client:lighthouse": "npm run lighthouse --prefix client",
+    "server:k6": "k6 run server/tests/k6_load_test.js",
+    "test:all": "npm run client:lint && npm run client:test && npm run client:lighthouse && npm run server:test && npm run server:k6"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.18",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "^5.0.3",
+    "concurrently": "^8.2.2",
+    "cypress-axe": "^1.7.0",
+    "cypress-file-upload": "^5.0.8",
+    "eslint-plugin-cypress": "^5.1.1",
+    "jest": "^30.1.3",
+    "jsdom": "^24.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/vite": "^4.1.13",
+    "tailwindcss": "^4.1.13"
+  }
+}

@@ -1,5 +1,3 @@
-import React from "react";
-import { Helmet } from "react-helmet-async";
 import { FaCode, FaCompressAlt } from "react-icons/fa";
 import { BiCodeBlock } from "react-icons/bi";
 import { BsQrCode } from "react-icons/bs";
@@ -8,13 +6,38 @@ import { MdOutlinePictureAsPdf } from "react-icons/md";
 import { TbTransform } from "react-icons/tb";
 import { IoIosConstruct } from "react-icons/io";
 import { GiArtificialIntelligence } from "react-icons/gi";
+import ToolCard from "../components/ToolCard"; // Import the global ToolCard
+import PropTypes from "prop-types";
+import SEO from '../utils/SEO.jsx';
 
 const Tools = () => {
+  const seoData = {
+    title: 'Free Online Tools | Dev Tools, Text Tools, PDF Tools & More - MyConverterTool',
+    description: 'Access our collection of free online tools including PDF converters, JSON formatters, QR code generators, text tools, and more. Perfect for developers and digital professionals.',
+    keywords: 'online tools, developer tools, PDF tools, JSON formatter, QR code generator, text converter, base64 encoder, URL encoder, code beautifier, markdown converter',
+    canonicalUrl: '/tools',
+    ogType: 'website',
+    ogTitle: 'Free Online Developer Tools & Utilities - MyConverterTool',
+    ogDescription: 'Powerful collection of free online tools for developers, writers, and digital professionals. Convert, format, encode, and transform your data easily.',
+    ogImage: '/assets/MyConverterTool.png',
+    structuredData: {
+      '@type': 'WebPage',
+      name: 'MyConverterTool Online Tools',
+      description: 'Collection of free online developer tools and utilities',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        availability: 'https://schema.org/InStock'
+      }
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <Helmet>
-        <title>Free Online Tools | Dev Tools, Text Tools, PDF Tools & More</title>
-      </Helmet>
+      <SEO 
+        {...seoData}
+      />
 
       {/* 🔥 Improved Showcase Title */}
       <div className="text-center mb-12">
@@ -28,56 +51,40 @@ const Tools = () => {
 
       {/* 📄 PDF Tools */}
       <ToolSection title="📄 PDF Tools">
-        <ToolCard title="PDF Converter" link="/tools/pdf-converter" icon={<MdOutlinePictureAsPdf />} color="bg-red-500" />
+        <ToolCard title="PDF Converter" link="/tools/pdf-converter" icon={<MdOutlinePictureAsPdf />} color="red" />
       </ToolSection>
 
       {/* 🌐 SEO Tools */}
       <ToolSection title="🌐 SEO Tools">
-        <ToolCard title="QR Code Generator" link="/tools/qr-code-generator" icon={<BsQrCode />} color="bg-teal-500" />
+        <ToolCard title="QR Code Generator" link="/tools/qr-code-generator" icon={<BsQrCode />} color="teal" />
       </ToolSection>
 
       {/* 🛠 Dev Tools */}
       <ToolSection title="🛠 Dev Tools">
-        <ToolCard title="JSON Formatter" link="/tools/json-formatter" icon={<SiJsonwebtokens />} color="bg-indigo-500" />
-        <ToolCard title="Base64 Encoder/Decoder" link="/tools/base64-encoder" icon={<BiCodeBlock />} color="bg-purple-500" />
-        <ToolCard title="URL Encoder/Decoder" link="/tools/url-encoder" icon={<FaCode />} color="bg-yellow-500" />
-        <ToolCard title="Minify & Beautify Code" link="/tools/minify-beautify" icon={<FaCompressAlt />} color="bg-pink-500" />
+        <ToolCard title="JSON Formatter" link="/tools/json-formatter" icon={<SiJsonwebtokens />} color="indigo" />
+        <ToolCard title="Base64 Encoder/Decoder" link="/tools/base64-encoder" icon={<BiCodeBlock />} color="purple" />
+        <ToolCard title="URL Encoder/Decoder" link="/tools/url-encoder" icon={<FaCode />} color="yellow" />
+        <ToolCard title="Minify & Beautify Code" link="/tools/minify-beautify" icon={<FaCompressAlt />} color="pink" />
       </ToolSection>
 
       {/* 📜 Text Tools */}
       <ToolSection title="📜 Text Tools">
-        <ToolCard title="Text Case Converter" link="/tools/text-case-converter" icon={<TbTransform />} color="bg-green-500" />
-        <ToolCard title="Markdown to DOCX" link="/tools/markdown-to-docx" icon={<SiMarkdown />} color="bg-blue-500" />
+        <ToolCard title="Text Case Converter" link="/tools/text-case-converter" icon={<TbTransform />} color="green" />
+        <ToolCard title="Markdown to DOCX" link="/tools/markdown-to-docx" icon={<SiMarkdown />} color="blue" />
       </ToolSection>
 
       {/* ⚡ Electronics Tools */}
       <ToolSection title="⚡ Electronics Tools">
         <p className="text-gray-500 mb-4">🚀 No tools yet. Future tools: Resistor calculators, voltage dividers...</p>
-        <ToolCard title="Coming Soon" link="/" icon={<IoIosConstruct />} color="bg-gray-400" />
+        <ToolCard title="Coming Soon" link="/" icon={<IoIosConstruct />} color="gray" />
       </ToolSection>
 
       {/* 🤖 AI Tools */}
       <ToolSection title="🤖 AI Tools">
         <p className="text-gray-500 mb-4">🚀 No tools yet. Future tools: AI text generator, image generator...</p>
-        <ToolCard title="AI Tools Coming Soon" link="/" icon={<GiArtificialIntelligence />} color="bg-gray-400" />
+        <ToolCard title="AI Tools Coming Soon" link="/" icon={<GiArtificialIntelligence />} color="gray" />
       </ToolSection>
     </div>
-  );
-};
-
-// 🏆 Enhanced Tool Card Component
-const ToolCard = ({ title, link, icon, color }) => {
-  return (
-    <a
-      href={link}
-      className={`flex items-center justify-between p-5 rounded-lg shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 ${color}`}
-    >
-      {/* Left: Icon */}
-      <div className="text-white text-4xl">{icon}</div>
-
-      {/* Right: Tool Name */}
-      <h4 className="text-white font-semibold text-lg text-right w-full">{title}</h4>
-    </a>
   );
 };
 
@@ -94,6 +101,11 @@ const ToolSection = ({ title, children }) => {
       </div>
     </section>
   );
+};
+
+ToolSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
 };
 
 export default Tools;

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
-import API_BASE_URL from "../../../api.config";
+import API_BASE_URL from "../../config/api.config";
 
 const MarkdownToDocx = () => {
   const [file, setFile] = useState(null);

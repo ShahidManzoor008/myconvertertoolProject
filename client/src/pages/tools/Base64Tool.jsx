@@ -33,7 +33,7 @@ const Base64Tool = () => {
     try {
       setResult(btoa(text)); // Encode to Base64
       setError("");
-    } catch (err) {
+    } catch {
       setError("Encoding failed. Please check your input.");
       setResult("");
     }
@@ -44,7 +44,7 @@ const Base64Tool = () => {
     try {
       setResult(atob(text)); // Decode from Base64
       setError("");
-    } catch (err) {
+    } catch {
       setError("Decoding failed. Invalid Base64 input.");
       setResult("");
     }
@@ -96,7 +96,7 @@ const Base64Tool = () => {
           setText(text);
           setResult(atob(text));
           setError("");
-        } catch (err) {
+        } catch {
           setError("Decoding failed. Invalid Base64 file.");
           setResult("");
         }
@@ -126,7 +126,7 @@ const Base64Tool = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showPopup("Binary file exported!");
-      } catch (err) {
+      } catch {
         setError("Failed to export binary file. The decoded data may not be binary content.");
       }
     } else {
@@ -145,7 +145,7 @@ const Base64Tool = () => {
           .replace(/=+$/, "");
         setResult(urlSafeBase64);
         setError("");
-      } catch (err) {
+      } catch {
         setError("URL-safe encoding failed. Please check your input.");
         setResult("");
       }
@@ -163,7 +163,7 @@ const Base64Tool = () => {
         
         setResult(atob(standardBase64));
         setError("");
-      } catch (err) {
+      } catch {
         setError("URL-safe decoding failed. Invalid input.");
         setResult("");
       }

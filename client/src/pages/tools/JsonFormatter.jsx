@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Helmet } from "react-helmet-async";
+import SEO from '../../utils/SEO';
 import Popup from "../../components/Popup";
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { docco, atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { FaCopy, FaDownload, FaEraser, FaSyncAlt, FaSun, FaMoon, FaCheck, FaTimes } from "react-icons/fa";
+import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { FaCopy, FaDownload, FaSun, FaMoon, FaCheck, FaTimes } from "react-icons/fa";
 
 const JsonFormatter = () => {
   const [jsonInput, setJsonInput] = useState("");
@@ -52,8 +53,8 @@ const JsonFormatter = () => {
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
-    } catch (err) {
-      setError(`Invalid JSON: ${err.message}`);
+    } catch (error) {
+      setError(`Invalid JSON: ${error.message}`);
       setFormattedJson("");
       setJsonStats(null);
       setValidationResults(null);
@@ -67,8 +68,8 @@ const JsonFormatter = () => {
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
-    } catch (err) {
-      setError(`Invalid JSON: ${err.message}`);
+    } catch (error) {
+      setError(`Invalid JSON: ${error.message}`);
       setFormattedJson("");
       setJsonStats(null);
       setValidationResults(null);
@@ -143,23 +144,25 @@ const JsonFormatter = () => {
     
     // Check 1: No duplicate keys in objects
     try {
-      const duplicateKeys = {};
-      const checkDuplicateKeys = (str) => {
-        const matches = str.match(/"[^"]+"\s*:/g);
-        if (matches) {
-          matches.forEach(match => {
-            if (duplicateKeys[match]) {
-              duplicateKeys[match]++;
-            } else {
-              duplicateKeys[match] = 1;
-            }
-          });
+      let hasDuplicates = false;
+      const checkDuplicateKeys = (obj) => {
+        if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+          return;
+        }
+
+        const keys = [];
+        for (const key in obj) {
+          if (keys.includes(key)) {
+            hasDuplicates = true;
+            return;
+          }
+          keys.push(key);
+          checkDuplicateKeys(obj[key]);
         }
       };
-      
-      checkDuplicateKeys(JSON.stringify(json, null, 2));
-      
-      const hasDuplicates = Object.values(duplicateKeys).some(count => count > 1);
+
+      checkDuplicateKeys(json);
+
       results.validations.push({
         name: "No duplicate keys",
         passed: !hasDuplicates,
@@ -168,7 +171,7 @@ const JsonFormatter = () => {
       
       results.score += !hasDuplicates ? 1 : 0;
       results.maxScore += 1;
-    } catch (e) {
+    } catch {
       results.validations.push({
         name: "No duplicate keys",
         passed: false,
@@ -217,7 +220,7 @@ const JsonFormatter = () => {
       
       results.score += consistencyRatio > 0.9 ? 1 : 0;
       results.maxScore += 1;
-    } catch (e) {
+    } catch {
       results.validations.push({
         name: "Consistent naming convention",
         passed: false,
@@ -289,7 +292,7 @@ const JsonFormatter = () => {
       
       results.score += inconsistentArrays.length === 0 ? 1 : 0;
       results.maxScore += 1;
-    } catch (e) {
+    } catch {
       results.validations.push({
         name: "Array items consistency",
         passed: false,
@@ -382,7 +385,7 @@ const JsonFormatter = () => {
     reader.onload = (event) => {
       try {
         setJsonInput(event.target.result);
-      } catch (err) {
+      } catch {
         setError("Failed to load file");
       }
     };
@@ -391,26 +394,24 @@ const JsonFormatter = () => {
 
   const fixJson = () => {
     if (!jsonInput) return;
-    
+
     try {
-      // Attempt common JSON fixes
-      let fixed = jsonInput
-        // Fix missing quotes around property names
-        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":')
-        // Fix single quotes to double quotes
-        .replace(/'/g, '"')
-        // Fix trailing commas in objects
-        .replace(/,\s*}/g, '}')
-        // Fix trailing commas in arrays
-        .replace(/,\s*\]/g, ']');
-      
+      // A more robust way to fix JSON
+      const fixed = jsonInput
+        // Add quotes to unquoted keys.
+        .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+        // Replace single quotes with double quotes, but not in the middle of a word.
+        .replace(/(?<![a-zA-Z])'|'(?![a-zA-Z])/g, '"')
+         // remove trailing commas
+        .replace(/,(\s*[}\]])/g, '$1');
+
       // Test if it's valid JSON now
       JSON.parse(fixed);
       setJsonInput(fixed);
       showPopup("JSON fixed successfully!");
-    } catch (err) {
+    } catch (error) {
       // If still invalid, show error
-      setError(`Couldn't fix JSON automatically: ${err.message}`);
+      setError(`Couldn't fix JSON automatically: ${error.message}`);
     }
   };
 
@@ -423,22 +424,33 @@ const JsonFormatter = () => {
       if (language === "javascript") {
         output = `const data = ${formattedJson};`;
       } else if (language === "python") {
-        // Convert JSON to Python-style dictionary
-        output = JSON.stringify(parsed)
-          .replace(/"([^"]+)":/g, '$1:')  // Remove quotes from keys
-          .replace(/"/g, "'")              // Replace double quotes with single quotes
-          .replace(/null/g, "None")        // Replace null with None
-          .replace(/true/g, "True")        // Replace true with True
-          .replace(/false/g, "False");     // Replace false with False
-        output = "data = " + output;
+        // A more robust way to convert to Python dictionary
+        const toPython = (obj) => {
+          if (obj === null) return "None";
+          if (typeof obj === 'string') return `'${obj.replace(/'/g, "'")}'`;
+          if (typeof obj === 'boolean') return obj ? "True" : "False";
+          if (typeof obj === 'number') return obj.toString();
+          if (Array.isArray(obj)) {
+            return `[${obj.map(toPython).join(', ')}]`;
+          }
+          if (typeof obj === 'object') {
+            const pairs = Object.keys(obj).map(key => {
+              const formattedKey = `'${key.replace(/'/g, "'")}'`;
+              return `${formattedKey}: ${toPython(obj[key])}`;
+            });
+            return `{${pairs.join(', ')}}`;
+          }
+          return '""';
+        };
+        output = `data = ${toPython(parsed)}`;
       } else if (language === "php") {
         output = `<?php\n$data = ${formattedJson};\n?>`;
       }
       
       navigator.clipboard.writeText(output);
       showPopup(`Copied as ${language} code!`);
-    } catch (err) {
-      setError(`Failed to convert to ${language}: ${err.message}`);
+    } catch (error) {
+      setError(`Failed to convert to ${language}: ${error.message}`);
     }
   };
 
@@ -449,45 +461,31 @@ const JsonFormatter = () => {
       transition={{ duration: 0.5 }}
       className={`p-4 md:p-6 max-w-6xl mx-auto ${isDarkMode ? "dark" : ""}`}
     >
-      <Helmet>
-        <title>JSON Formatter & Validator | Format, Beautify, Analyze JSON Online</title>
-        <meta name="description" content="Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required." />
-        <meta name="keywords" content="JSON formatter, JSON beautifier, JSON validator, JSON analyzer, pretty print JSON, JSON error checker, minify JSON, format JSON online" />
-        <link rel="canonical" href="https://myconvertertool.com/tools/json-formatter" />
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://myconvertertool.com/tools/json-formatter" />
-        <meta property="og:title" content="JSON Formatter & Validator | Format, Beautify, Analyze JSON Online" />
-        <meta property="og:description" content="Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required." />
-        
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://myconvertertool.com/tools/json-formatter" />
-        <meta property="twitter:title" content="JSON Formatter & Validator | Format, Beautify, Analyze JSON Online" />
-        <meta property="twitter:description" content="Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required." />
-        
-        {/* JSON-LD structured data */}
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              "name": "JSON Formatter & Validator",
-              "url": "https://myconvertertool.com/tools/json-formatter",
-              "description": "Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool.",
-              "applicationCategory": "DeveloperApplication",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD"
-              },
-              "operatingSystem": "Web browser",
-              "browserRequirements": "Requires JavaScript. Compatible with most modern web browsers."
-            }
-          `}
-        </script>
-      </Helmet>
+      <SEO 
+        seoData={{
+          title: 'JSON Formatter & Validator | Format, Beautify, Analyze JSON Online - MyConverterTool',
+          description: 'Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required.',
+          keywords: 'JSON formatter, JSON beautifier, JSON validator, JSON analyzer, pretty print JSON, JSON error checker, minify JSON, format JSON online',
+          canonicalUrl: '/tools/json-formatter',
+          ogType: 'website',
+          ogTitle: 'JSON Formatter & Validator | Format, Beautify, Analyze JSON Online',
+          ogDescription: 'Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required.',
+          ogImage: '/assets/MyConverterTool.png',
+          structuredData: {
+            '@type': 'WebApplication',
+            name: 'JSON Formatter & Validator',
+            description: 'Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool.',
+            applicationCategory: 'DeveloperApplication',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD'
+            },
+            operatingSystem: 'Web browser',
+            browserRequirements: 'Requires JavaScript. Compatible with most modern web browsers.'
+          }
+        }}
+      />
 
       <header className="mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 text-center">

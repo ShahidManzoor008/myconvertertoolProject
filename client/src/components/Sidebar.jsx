@@ -1,43 +1,115 @@
 import { Link, useLocation } from "react-router-dom";
-import { FaCode, FaFilePdf, FaCog, FaTools, FaTerminal, FaQrcode, FaTextHeight, FaFileWord } from "react-icons/fa";
+import { tools } from "../data/tools.jsx";
+import PropTypes from "prop-types";
+import { motion, AnimatePresence } from "framer-motion";
 
-const tools = [
-  { name: "PDF Converter", path: "/tools/pdf-converter", icon: <FaFilePdf />, color: "bg-red-500" },
-  { name: "Markdown to DOCX", path: "/tools/markdown-to-docx", icon: <FaFileWord />, color: "bg-indigo-500" },
-  { name: "QR Code Generator", path: "/tools/qr-code-generator", icon: <FaQrcode />, color: "bg-pink-500" },
-  { name: "JSON Formatter", path: "/tools/json-formatter", icon: <FaCode />, color: "bg-blue-500" },
-  { name: "Base64 Encoder/Decoder", path: "/tools/base64-encoder", icon: <FaTerminal />, color: "bg-green-500" },
-  { name: "URL Encoder/Decoder", path: "/tools/url-encoder", icon: <FaCog />, color: "bg-purple-500" },
-  { name: "Minify & Beautify Code", path: "/tools/minify-beautify", icon: <FaTools />, color: "bg-yellow-500" },
-  { name: "Text Case Converter", path: "/tools/text-case-converter", icon: <FaTextHeight />, color: "bg-teal-500" }  
-];
-
-const Sidebar = () => {
+const Sidebar = ({ className, onLinkClick, isOpen, onToggle }) => {
   const location = useLocation();
 
+  const sidebarVariants = {
+    open: { 
+      x: 0,
+      width: "16rem",
+      transition: { 
+        type: "spring",
+        stiffness: 400,
+        damping: 40
+      }
+    },
+    closed: { 
+      x: "calc(100% - 3rem)",
+      width: "3rem",
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 40
+      }
+    }
+  };
+
   return (
-    <>
-      {/* ✅ Sidebar (ABSOLUTE, Floating on Right, Hidden on Mobile) */}
-      <aside className="hidden lg:block absolute top-25 right-4 w-44 bg-white dark:bg-gray-800 shadow-lg p-4 border-l border-gray-200 dark:border-gray-700 rounded-md">
-        <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400">📂 Tools</h2>
-        <ul className="mt-3 space-y-2">
-          {tools
-            .filter(tool => tool.path !== location.pathname) // Hide active tool
-            .map((tool, index) => (
-              <li key={index}>
-                <Link
-                  to={tool.path}
-                  className={`flex items-center gap-2 p-2 rounded-md text-white dark:text-gray-300 hover:opacity-90 transition duration-300 text-sm ${tool.color}`}
-                >
-                  <span className="text-lg">{tool.icon}</span>
-                  <span>{tool.name}</span>
-                </Link>
-              </li>
-            ))}
-        </ul>
-      </aside>
-    </>
+    <motion.aside
+      variants={sidebarVariants}
+      initial="closed"
+      animate={isOpen ? "open" : "closed"}
+      className={`fixed top-20 right-0 h-[calc(100vh-5rem)] bg-white dark:bg-gray-800 shadow-lg overflow-hidden transition-colors duration-300 ${className}`}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={onToggle}
+        className="absolute left-2 top-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+        aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        <motion.svg
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          className="w-5 h-5 text-gray-600 dark:text-gray-300"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d={isOpen ? "M13 19l-7-7 7-7" : "M11 5l7 7-7 7"}
+          />
+        </motion.svg>
+      </button>
+
+      <div className="p-4 overflow-y-auto h-full">
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4">
+                📂 Tools
+              </h2>
+              <ul className="space-y-2">
+                {tools
+                  .filter(tool => tool.path !== location.pathname)
+                  .map((tool, index) => (
+                    <motion.li
+                      key={index}
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <Link
+                        to={tool.path}
+                        onClick={onLinkClick}
+                        className={`group flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300`}
+                        aria-label={`Go to ${tool.name} tool`}
+                      >
+                        <span 
+                          className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-${tool.color}-500 text-white`} 
+                          aria-hidden="true"
+                        >
+                          {tool.icon}
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {tool.name}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.aside>
   );
+};
+
+Sidebar.propTypes = {
+  className: PropTypes.string,
+  onLinkClick: PropTypes.func,
+  isOpen: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func.isRequired
 };
 
 export default Sidebar;

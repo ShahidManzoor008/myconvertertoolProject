@@ -1,21 +1,82 @@
-import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd());
-
-  return {
-    plugins: [react(), tailwindcss()],
-    define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL),
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss({ config: './tailwind.config.js' }),
+  ],
+  server: {
+    port: 3000,
+    hmr: {
+      timeout: 5000,
+      overlay: true
     },
-    server: {
-      port: 3000, // ✅ Change if needed
+    watch: {
+      usePolling: true,
+      interval: 1000
     },
-    build: {
-      outDir: 'dist',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
     },
-    base: "/",
-  };
-});
+    extensions: ['.js', '.jsx', '.json']
+  },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          pdfjs: ['pdfjs-dist'],
+          'pdf-worker': ['pdfjs-dist/build/pdf.worker.min.js']
+        }
+      }
+    }
+  },
+  base: "/",
+  optimizeDeps: {
+    include: [
+      'react-pdf',
+      'pdfjs-dist',
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'framer-motion',
+      'react-dropzone',
+      'lucide-react',
+      'prop-types',
+      'date-fns'
+    ],
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx'
+      }
+    }
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    deps: {
+      optimizer: {
+        web: {
+          include: ['react-router-dom', 'react', 'react-dom'],
+        },
+      },
+    },
+    alias: {
+      'react/jsx-runtime': 'react/jsx-runtime.js',
+    },
+  },
+})

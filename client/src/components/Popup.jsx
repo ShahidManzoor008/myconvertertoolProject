@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import PropTypes from "prop-types";
 
 const Popup = ({ message, onClose }) => {
   useEffect(() => {
@@ -22,6 +23,11 @@ const Popup = ({ message, onClose }) => {
       </motion.div>
     </AnimatePresence>
   );
+};
+
+Popup.propTypes = {
+  message: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default Popup;

@@ -1,7 +1,8 @@
 // ============================
 // 📂 AdSenseAd.jsx (Reusable Component)
 // ============================
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import PropTypes from "prop-types";
 
 const AdSenseAd = ({ adSlot, layout = "in-article", format = "auto" }) => {
   useEffect(() => {
@@ -25,6 +26,12 @@ const AdSenseAd = ({ adSlot, layout = "in-article", format = "auto" }) => {
       data-full-width-responsive="true"
     ></ins>
   );
+};
+
+AdSenseAd.propTypes = {
+  adSlot: PropTypes.string.isRequired,
+  layout: PropTypes.string,
+  format: PropTypes.string,
 };
 
 export default AdSenseAd;
