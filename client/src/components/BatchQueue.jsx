@@ -74,13 +74,13 @@ const BatchQueue = ({ files, onRemoveFile, onStartProcessing, onPauseProcessing,
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
           Processing Queue
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleProcessing}
             disabled={files.length === 0}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${
+            className={`flex items-center justify-center w-full sm:w-auto gap-1 px-3 py-1.5 rounded-md ${
               queueStatus === 'processing'
                 ? 'bg-yellow-500 hover:bg-yellow-600'
                 : 'bg-green-500 hover:bg-green-600'
@@ -103,7 +103,7 @@ const BatchQueue = ({ files, onRemoveFile, onStartProcessing, onPauseProcessing,
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onDownload}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 text-white"
+              className="flex items-center justify-center w-full sm:w-auto gap-1 px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 text-white"
             >
               <Download className="w-4 h-4" />
               Download All
@@ -114,7 +114,7 @@ const BatchQueue = ({ files, onRemoveFile, onStartProcessing, onPauseProcessing,
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={showAuthPopup}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-purple-500 hover:bg-purple-600 text-white"
+              className="flex items-center justify-center w-full sm:w-auto gap-1 px-3 py-1.5 rounded-md bg-purple-500 hover:bg-purple-600 text-white"
             >
               <Save className="w-4 h-4" />
               Save to My Account

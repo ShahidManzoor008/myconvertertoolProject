@@ -62,6 +62,29 @@ const MinifyBeautifyTool = () => {
     highlightCode(code, language, setHighlightedInput);
   }, [code, language]);
 
+  const updatePreview = useCallback(() => {
+    if (iframeRef.current) {
+      let previewContent = result;
+      if (language === "css") {
+        previewContent = `
+          <style>${result}</style>
+          <div style="font-family: system-ui, sans-serif; padding: 20px;">
+            <h1 style="color: #333;">CSS Preview</h1>
+            <p>This preview shows how your CSS will look. The styling below is affected by your CSS.</p>
+            <div class="preview-element" style="padding: 20px; border: 1px solid #ddd; margin-top: 20px;">
+              <h2>Sample Heading</h2>
+              <p>Sample paragraph with <a href="#">link</a> and <strong>bold text</strong>.</p>
+              <button>Sample Button</button>
+            </div>
+          </div>
+        `;
+      } else if (language === "html") {
+        previewContent = result;
+      }
+      iframeRef.current.srcdoc = previewContent;
+    }
+  }, [iframeRef, result, language]);
+
   useEffect(() => {
     // Update preview when result or language changes
     if ((language === "html" || language === "css") && result) {
@@ -219,31 +242,6 @@ const MinifyBeautifyTool = () => {
     
     showPopup("File downloaded!");
   };
-
-  
-
-  const updatePreview = useCallback(() => {
-    if (iframeRef.current) {
-      let previewContent = result;
-      if (language === "css") {
-        previewContent = `
-          <style>${result}</style>
-          <div style="font-family: system-ui, sans-serif; padding: 20px;">
-            <h1 style="color: #333;">CSS Preview</h1>
-            <p>This preview shows how your CSS will look. The styling below is affected by your CSS.</p>
-            <div class="preview-element" style="padding: 20px; border: 1px solid #ddd; margin-top: 20px;">
-              <h2>Sample Heading</h2>
-              <p>Sample paragraph with <a href="#">link</a> and <strong>bold text</strong>.</p>
-              <button>Sample Button</button>
-            </div>
-          </div>
-        `;
-      } else if (language === "html") {
-        previewContent = result;
-      }
-      iframeRef.current.srcdoc = previewContent;
-    }
-  }, [iframeRef, result, language]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];

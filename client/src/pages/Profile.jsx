@@ -45,33 +45,33 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 bg-white border rounded">
-      <h2 className="text-xl font-bold mb-4">Profile</h2>
+    <div className="max-w-md mx-auto mt-10 p-4 bg-white dark:bg-gray-800 border rounded dark:border-gray-700 text-gray-900 dark:text-gray-200">
+      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Profile</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1 font-medium">Email</label>
-          <input type="email" value={user.email} disabled className="w-full p-2 border rounded bg-gray-100" />
+          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">Email</label>
+          <input type="email" value={user.email} disabled className="w-full p-2 border rounded bg-gray-100 dark:bg-gray-700 dark:text-gray-400" />
         </div>
         <div>
-          <label className="block mb-1 font-medium">Name</label>
+          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">Name</label>
           <input
             type="text"
             name="name"
             value={form.name}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600"
             minLength={2}
             required
           />
         </div>
         <div>
-          <label className="block mb-1 font-medium">New Password</label>
+          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">New Password</label>
           <input
             type="password"
             name="password"
             value={form.password}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600"
             minLength={8}
             placeholder="Leave blank to keep current password"
           />

@@ -34,17 +34,17 @@ const Tools = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
       <SEO 
         {...seoData}
       />
 
       {/* 🔥 Improved Showcase Title */}
       <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold text-gray-800 uppercase tracking-wide">
+        <h1 className="text-5xl font-extrabold text-gray-800 dark:text-white uppercase tracking-wide">
           🛠️ Tools Showcase
         </h1>
-        <p className="text-lg text-gray-600 mt-2">
+        <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
           Explore powerful online tools for developers, writers, and more.
         </p>
       </div>
@@ -75,13 +75,13 @@ const Tools = () => {
 
       {/* ⚡ Electronics Tools */}
       <ToolSection title="⚡ Electronics Tools">
-        <p className="text-gray-500 mb-4">🚀 No tools yet. Future tools: Resistor calculators, voltage dividers...</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">🚀 No tools yet. Future tools: Resistor calculators, voltage dividers...</p>
         <ToolCard title="Coming Soon" link="/" icon={<IoIosConstruct />} color="gray" />
       </ToolSection>
 
       {/* 🤖 AI Tools */}
       <ToolSection title="🤖 AI Tools">
-        <p className="text-gray-500 mb-4">🚀 No tools yet. Future tools: AI text generator, image generator...</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">🚀 No tools yet. Future tools: AI text generator, image generator...</p>
         <ToolCard title="AI Tools Coming Soon" link="/" icon={<GiArtificialIntelligence />} color="gray" />
       </ToolSection>
     </div>
@@ -93,7 +93,7 @@ const ToolSection = ({ title, children }) => {
   return (
     <section className="mb-12">
       {/* Left-Aligned Category Name */}
-      <h2 className="text-3xl font-bold mb-6 text-left text-gray-700">{title}</h2>
+      <h2 className="text-3xl font-bold mb-6 text-left text-gray-700 dark:text-gray-200">{title}</h2>
       
       {/* Tool Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

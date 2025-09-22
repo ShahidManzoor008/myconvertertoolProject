@@ -1,4 +1,4 @@
-import { pdfjs } from 'react-pdf';
+import * as pdfjs from 'pdfjs-dist';
 
 // Version management for PDF.js worker
 const PDFJS_VERSION = '3.5.141'; // Match this with your pdf.js version
@@ -7,7 +7,7 @@ const PDFJS_VERSION = '3.5.141'; // Match this with your pdf.js version
 const setupPdfWorker = () => {
   try {
     if (pdfjs.GlobalWorkerOptions.workerSrc) return;
-    pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
   } catch (error) {
     console.error('Failed to setup PDF worker:', error);
   }

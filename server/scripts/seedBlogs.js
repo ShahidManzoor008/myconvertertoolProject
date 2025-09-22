@@ -29,14 +29,21 @@ const seedBlogs = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
 
-    // Clear existing blogs before seeding to ensure fresh data
-    await Blog.deleteMany({});
-    console.log('Cleared existing blogs.');
+    let upsertedCount = 0;
+    for (const blogData of mappedBlogs) {
+      const result = await Blog.findOneAndUpdate(
+        { slug: blogData.slug }, // Find by slug
+        blogData, // Data to update or insert
+        { upsert: true, new: true, setDefaultsOnInsert: true } // Options: insert if not found, return new doc, apply defaults
+      );
+      if (result) {
+        upsertedCount++;
+        console.log(`Blog with slug "${blogData.slug}" was upserted.`);
+      }
+    }
 
-    // Insert mapped blogs
-    await Blog.insertMany(mappedBlogs);
-    console.log('Sample blogs created successfully from blogposts.json!');
-    console.log(`Created ${mappedBlogs.length} blog posts`);
+    console.log('Sample blogs upserted successfully from blogposts.json!');
+    console.log(`Upserted ${upsertedCount} blog posts`);
   } catch (error) {
     console.error('Error creating sample blogs:', error);
   } finally {

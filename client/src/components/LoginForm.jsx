@@ -150,9 +150,9 @@ const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-6 border rounded bg-white shadow-sm">
-      <h2 className="text-2xl font-semibold text-gray-800">Welcome back</h2>
-      <p className="text-sm text-gray-500">Sign in to continue to your tools</p>
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-6 border rounded bg-white dark:bg-gray-800 shadow-sm dark:border-gray-700 text-gray-900 dark:text-gray-200">
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Welcome back</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to continue to your tools</p>
 
       <div className="space-y-4 mt-4">
         <div className="space-y-1">
@@ -164,7 +164,7 @@ const LoginForm = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             className={`w-full p-2 border rounded form-control text-gray-900 dark:text-gray-100 ${
-              touched.email && formErrors.email ? 'border-red-500' : 'border-gray-300'
+              touched.email && formErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
           />
@@ -182,7 +182,7 @@ const LoginForm = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             className={`w-full p-2 border rounded form-control text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 ${
-              touched.password && formErrors.password ? 'border-red-500' : 'border-gray-300'
+              touched.password && formErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
           />
@@ -194,9 +194,9 @@ const LoginForm = () => {
 
       <div className="flex items-center justify-between">
         <div className="text-sm">
-          <a href="/forgot-password" className="text-blue-600 hover:underline">Forgot password?</a>
+          <a href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</a>
         </div>
-        <div className="text-sm text-gray-500">Need an account? <a href="/register" className="text-blue-600 hover:underline">Register</a></div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">Need an account? <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Register</a></div>
       </div>
 
       <button 
@@ -208,8 +208,8 @@ const LoginForm = () => {
       </button>
 
       <div className="relative my-4">
-        <hr className="border-gray-200" />
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-sm text-gray-400">or</span>
+        <hr className="border-gray-200 dark:border-gray-700" />
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 px-3 text-sm text-gray-400 dark:text-gray-300">or</span>
       </div>
 
       <div>
@@ -218,15 +218,15 @@ const LoginForm = () => {
       </div>
 
       {error && (
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-600 text-sm font-medium">{error}</p>
+        <div className="mt-2 p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
+          <p className="text-red-600 dark:text-red-300 text-sm font-medium">{error}</p>
           {error === ERROR_MESSAGES.network_error && (
-            <p className="text-red-500 text-xs mt-1">
+            <p className="text-red-500 dark:text-red-400 text-xs mt-1">
               Check your internet connection and try again.
             </p>
           )}
           {error === ERROR_MESSAGES.rate_limit_exceeded && (
-            <p className="text-red-500 text-xs mt-1">
+            <p className="text-red-500 dark:text-red-400 text-xs mt-1">
               Please wait a few minutes before trying again.
             </p>
           )}

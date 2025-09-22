@@ -35,7 +35,7 @@ const Home = () => {
     const fetchLatestPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/blog/posts?limit=3`); // Fetch latest 3 posts
+        const response = await fetch(`/api/blog/posts?limit=4`); // Fetch latest 4 posts
         const data = await response.json();
 
         if (!response.ok) {
@@ -58,7 +58,7 @@ const Home = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="p-6 max-w-5xl mx-auto"
+      className="container mx-auto p-4"
     >
       <SEO
         title={seoData.home.title}
@@ -140,44 +140,42 @@ const Home = () => {
           ))}
         </div>
       </section>
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* ✅ Latest Blog Posts Section */}
-        <section className="mt-16 md:mt-20" data-aos="fade-up">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 text-center">
-            Latest Blog Posts
-          </h2>
+      {/* ✅ Latest Blog Posts Section */}
+      <section className="mt-16 md:mt-20" data-aos="fade-up">
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 text-center">
+          Latest Blog Posts
+        </h2>
 
-          {error ? (
-            <div className="text-center text-red-600 dark:text-red-400">
-              <h2 className="text-2xl font-semibold mb-4">Error</h2>
-              <p>{error}</p>
-            </div>
-          ) : loading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              {latestPosts.map((post) => (
-                <BlogCard
-                  key={post._id}
-                  post={post}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* ✅ View All Button */}
-          <div className="mt-10 text-center">
-            <Link
-              to="/blog"
-              className="text-blue-600 dark:text-blue-400 hover:underline text-xl font-medium"
-            >
-              View All Posts →
-            </Link>
+        {error ? (
+          <div className="text-center text-red-600 dark:text-red-400">
+            <h2 className="text-2xl font-semibold mb-4">Error</h2>
+            <p>{error}</p>
           </div>
-        </section>
-      </div>
+        ) : loading ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <LoadingSpinner />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+            {latestPosts.map((post) => (
+              <BlogCard
+                key={post._id}
+                post={post}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ✅ View All Button */}
+        <div className="mt-10 text-center">
+          <Link
+            to="/blog"
+            className="text-blue-600 dark:text-blue-400 hover:underline text-xl font-medium"
+          >
+            View All Posts →
+          </Link>
+        </div>
+      </section>
     </motion.div>
   );
 };

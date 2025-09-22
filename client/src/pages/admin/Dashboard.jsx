@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users,
   FileText,
-  Tool,
+  Wrench,
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight
@@ -83,7 +83,7 @@ const Dashboard = () => {
       title: 'Active Tools',
       value: stats.tools.total.toLocaleString(),
       change: stats.tools.change,
-      icon: Tool,
+      icon: Wrench,
       changeType: stats.tools.change >= 0 ? 'increase' : 'decrease'
     },
     {

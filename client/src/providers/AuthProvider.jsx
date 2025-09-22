@@ -237,9 +237,9 @@ export const AuthProvider = ({ children }) => {
 
       storage.remove(TOKEN_STORAGE_KEY);
       storage.remove(USER_STORAGE_KEY);
-      setUser(null);
       // Notify other tabs
       channel?.postMessage({ type: 'logout' });
+      setUser(null);
     } catch (err) {
       setError('Logout failed');
       console.error('Logout failed:', err);

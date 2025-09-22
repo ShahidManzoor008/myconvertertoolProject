@@ -142,7 +142,7 @@ const BlogPost = () => {
               src={post.coverImage} 
               alt={post.title}
               className="w-full h-auto"
-              loading="eager"
+              loading="lazy"
             />
           </div>
         )}
@@ -151,7 +151,7 @@ const BlogPost = () => {
         <div className="prose prose-lg md:prose-xl dark:prose-invert prose-blue mx-auto">
           <div
             className="article-content"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md.render(post.content)) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
           />
         </div>
 

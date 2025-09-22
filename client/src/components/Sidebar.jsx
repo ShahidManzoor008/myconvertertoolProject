@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { tools } from "../data/tools.jsx";
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid"; // Import icons
 
 const Sidebar = ({ className, onLinkClick, isOpen, onToggle }) => {
   const location = useLocation();
@@ -37,23 +38,14 @@ const Sidebar = ({ className, onLinkClick, isOpen, onToggle }) => {
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className="absolute left-2 top-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+        className={`absolute top-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors ${isOpen ? 'right-2' : 'left-2'}`} // Conditional positioning
         aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
       >
-        <motion.svg
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          className="w-5 h-5 text-gray-600 dark:text-gray-300"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d={isOpen ? "M13 19l-7-7 7-7" : "M11 5l7 7-7 7"}
-          />
-        </motion.svg>
+        {isOpen ? (
+          <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" /> // Close icon
+        ) : (
+          <Bars3Icon className="w-6 h-6 text-gray-600 dark:text-gray-400" /> // Open icon
+        )}
       </button>
 
       <div className="p-4 overflow-y-auto h-full">

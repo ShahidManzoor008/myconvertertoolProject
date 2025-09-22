@@ -35,8 +35,8 @@ const RegisterForm = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-4 border rounded bg-white">
-      <h2 className="text-xl font-bold">Register</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-4 border rounded bg-white dark:bg-gray-800 dark:border-gray-700 text-gray-900 dark:text-gray-200">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Register</h2>
       <input
         type="text"
         name="name"
@@ -69,14 +69,14 @@ const RegisterForm = ({ onSuccess }) => {
       <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded" disabled={loading}>
         {loading ? 'Registering...' : 'Register'}
       </button>
-      <div className="text-center my-2">or</div>
+      <div className="text-center my-2 text-gray-600 dark:text-gray-400">or</div>
       <div className="max-w-md mx-auto">
         <GoogleSignIn redirectTo="/" buttonText="Continue with Google" />
       </div>
       {error && <div className="text-red-600">{error}</div>}
       {success && <div className="text-green-600">Registration successful! You can now log in.</div>}
       <div className="text-center">
-        <Link to="/login" className="text-blue-600 hover:underline">
+        <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
           Already have an account? Log in
         </Link>
       </div>

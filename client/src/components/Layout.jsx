@@ -56,7 +56,7 @@ const Layout = ({ children }) => {
         {/* Logo */}
         <Link
           to="/"
-          className="text-2xl font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition duration-300"
+          className="text-lg md:text-2xl font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition duration-300"
         >
           My Converter Tools 🚀
         </Link>
@@ -91,28 +91,31 @@ const Layout = ({ children }) => {
           )}
         </div>
 
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {darkMode ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-800" />}
-        </button>
+        {/* Dark Mode Toggle and Mobile Menu Button Group */}
+        <div className="flex items-center gap-4">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
+            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkMode ? <SunIcon className="w-6 h-6 text-yellow-400" /> : <MoonIcon className="w-6 h-6 text-gray-800" />}
+          </button>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden z-50"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label={isMenuOpen ? "Close mobile menu" : "Open mobile menu"}
-          aria-expanded={isMenuOpen}
-        >
-          {isMenuOpen ? (
-            <XMarkIcon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
-          ) : (
-            <Bars3Icon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
-          )}
-        </button>
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden z-50"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? "Close mobile menu" : "Open mobile menu"}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? (
+              <XMarkIcon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
+            ) : (
+              <Bars3Icon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
+            )}
+          </button>
+        </div>
 
         {/* Mobile Menu Overlay */}
         <AnimatePresence>
@@ -189,6 +192,52 @@ const Layout = ({ children }) => {
                         </motion.div>
                       ))}
                     </nav>
+
+                    {/* Auth links for Mobile */}
+                    {!user && (
+                      <>
+                        <motion.div
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: (navigation.length + 0) * 0.1 }}
+                        >
+                          <NavItem to="/register" text="Register" activePath={location.pathname} icon={<span>👤</span>} onClick={handleLinkClick} />
+                        </motion.div>
+                        <motion.div
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: (navigation.length + 1) * 0.1 }}
+                        >
+                          <NavItem to="/login" text="Login" activePath={location.pathname} icon={<span>🔑</span>} onClick={handleLinkClick} />
+                        </motion.div>
+                      </>
+                    )}
+                    {user && (
+                      <>
+                        <motion.div
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: (navigation.length + 0) * 0.1 }}
+                        >
+                          <NavItem to="/profile" text="Profile" activePath={location.pathname} icon={<UserCircleIcon className='w-5 h-5' />} onClick={handleLinkClick} />
+                        </motion.div>
+                        <motion.div
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: (navigation.length + 1) * 0.1 }}
+                        >
+                          <button
+                            onClick={() => { logout(); handleLinkClick(); }}
+                            className="w-full text-left px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-2"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                            </svg>
+                            Logout
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
 
                     {/* Tools Section */}
                     <div className="pt-4">
