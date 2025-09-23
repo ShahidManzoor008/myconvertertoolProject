@@ -1,5 +1,15 @@
 import Blog from '../models/Blog.js';
 import slugify from 'slugify';
+import { validationResult } from 'express-validator';
+import { cleanupFiles, validateUploadedFile } from '../utils/fileUtils.js';
+
+const allowedImageMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp'
+];
 
 // Get all blog posts
 export const getAllPosts = async (req, res) => {
@@ -43,8 +53,24 @@ export const getPostBySlug = async (req, res) => {
 
 // Create new blog post
 export const createPost = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    if (req.file) cleanupFiles(req.file.path);
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
-    const { title, content, excerpt, author, tags, coverImage } = req.body;
+    const { title, content, excerpt, author, tags } = req.body;
+    let coverImage = null;
+
+    if (req.file) {
+      const isValidImage = await validateUploadedFile(req.file.path, allowedImageMimeTypes);
+      if (!isValidImage) {
+        cleanupFiles(req.file.path);
+        return res.status(400).json({ message: 'Invalid cover image file type.' });
+      }
+      coverImage = `/api/blog/images/${req.file.filename}`;
+    }
+
     const slug = slugify(title, { lower: true, strict: true });
 
     const post = new Blog({
@@ -60,21 +86,35 @@ export const createPost = async (req, res) => {
     const savedPost = await post.save();
     res.status(201).json(savedPost);
   } catch (error) {
+    if (req.file) cleanupFiles(req.file.path);
     res.status(400).json({ message: error.message });
   }
 };
 
 // Update blog post
 export const updatePost = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    if (req.file) cleanupFiles(req.file.path);
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
-    const { title, content, excerpt, tags, coverImage } = req.body;
+    const { title, content, excerpt, tags } = req.body;
     const updates = {
       title,
       content,
       excerpt,
-      tags,
-      coverImage
+      tags
     };
+
+    if (req.file) {
+      const isValidImage = await validateUploadedFile(req.file.path, allowedImageMimeTypes);
+      if (!isValidImage) {
+        cleanupFiles(req.file.path);
+        return res.status(400).json({ message: 'Invalid cover image file type.' });
+      }
+      updates.coverImage = `/api/blog/images/${req.file.filename}`;
+    }
 
     if (title) {
       updates.slug = slugify(title, { lower: true, strict: true });
@@ -87,11 +127,13 @@ export const updatePost = async (req, res) => {
     );
 
     if (!post) {
+      if (req.file) cleanupFiles(req.file.path);
       return res.status(404).json({ message: 'Post not found' });
     }
 
     res.json(post);
   } catch (error) {
+    if (req.file) cleanupFiles(req.file.path);
     res.status(400).json({ message: error.message });
   }
 };

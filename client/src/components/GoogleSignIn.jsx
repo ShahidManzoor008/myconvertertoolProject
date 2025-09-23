@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { GOOGLE_CLIENT_ID } from '../config/auth.config';
-import API_BASE_URL from '../config/api.config';
+import GoogleSignInDebug from './GoogleSignInDebug';
 import useToast from '../hooks/useToast';
 
 // Loads the Google Identity Services script if not already present
@@ -61,18 +61,54 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
                 return;
               }
 
-              const ok = await login({ tokenId: res.credential });
-              console.debug('[GSI] login() returned', ok);
-              if (ok) {
-                onSuccess?.();
-                if (redirectTo) navigate(redirectTo);
-              } else {
-                console.warn('[GSI] login returned falsy, token exchange may have failed');
-                toast?.push?.('Google login failed: token exchange was not successful. Please try again or use email/password.', { type: 'error' });
+              const maxAttempts = 3;
+              const baseDelay = 500;
+              let attempt = 0;
+              let lastError = null;
+
+              while (attempt < maxAttempts) {
+                attempt += 1;
+                try {
+                  const ok = await login({ tokenId: res.credential });
+                  console.debug('[GSI] login() returned', ok);
+                  if (ok) {
+                    onSuccess?.();
+                    if (redirectTo) navigate(redirectTo);
+                    return; // Success - exit retry loop
+                  }
+                  
+                  // Login returned false but didn't throw - likely a token exchange issue
+                  lastError = new Error('Token exchange failed');
+                  console.warn('[GSI] login returned falsy on attempt', attempt);
+                } catch (err) {
+                  lastError = err;
+                  console.error('GoogleSignIn login attempt', attempt, 'failed:', err);
+
+                  // Don't retry client errors (invalid tokens, etc)
+                  if (err.code === 'invalid_token' || err.code === 'invalid_request') {
+                    throw err;
+                  }
+                }
+
+                // Apply exponential backoff with jitter for retries
+                const jitter = Math.random() * 200;
+                const delay = baseDelay * Math.pow(2, attempt - 1) + jitter;
+                await new Promise(resolve => setTimeout(resolve, delay));
               }
+
+              // If we get here, all retries failed
+              throw lastError || new Error('Login failed after multiple attempts');
             } catch (err) {
-              console.error('GoogleSignIn login failed', err);
-              toast?.push?.('Google login failed: ' + (err?.message || 'unknown error'), { type: 'error' });
+              // Map error types to user-friendly messages
+              const errorMessage = {
+                invalid_token: 'Google sign-in failed: Invalid or expired token',
+                invalid_request: 'Google sign-in failed: Invalid request',
+                network_error: 'Network error. Please check your connection and try again',
+                server_error: 'Server error. Please try again later',
+                default: 'Google sign-in failed. Please try again or use email/password'
+              }[err.code] || err.message || 'An unexpected error occurred';
+
+              toast?.push?.(errorMessage, { type: 'error' });
             } finally {
               setLoading(false);
             }
@@ -89,6 +125,7 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
           }
         } catch (e) {
           console.warn('renderButton failed', e);
+          toast?.push?.('Failed to load Google sign-in button. Please try again later.', { type: 'error' });
         }
 
         // expose a prompt function to trigger the popup/prompt programmatically
@@ -97,10 +134,12 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
             window.google.accounts.id.prompt();
           } catch (e) {
             console.warn('googleSignIn prompt failed', e);
+            toast?.push?.('Failed to show Google sign-in prompt. Please try again.', { type: 'error' });
           }
         };
       } catch (err) {
         console.warn('Failed to load Google Identity script', err);
+        toast?.push?.('Failed to load Google sign-in. Please try again later.', { type: 'error' });
       }
     };
 
@@ -122,6 +161,7 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
       window.google?.accounts?.id?.prompt();
     } catch (e) {
       console.warn('Google prompt not available', e);
+      toast?.push?.('Failed to show Google sign-in prompt. Please try again.', { type: 'error' });
     }
   };
 
@@ -130,53 +170,7 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
     return (
       <div className={className}>
         <div id={containerId} />
-        {import.meta.env.MODE !== 'production' && (
-          <div className="mt-2 text-xs text-gray-500">
-            <details>
-              <summary className="cursor-pointer">Debug: Manual token exchange</summary>
-              <p className="mt-2">Paste an ID token here to POST to /api/auth/google for debugging.</p>
-              <textarea id="gsi-debug-token" className="w-full p-2 border rounded mt-1" rows={3} />
-              <div className="flex gap-2 mt-2">
-                <button type="button" className="bg-gray-200 p-1 rounded" onClick={async () => {
-                  const token = document.getElementById('gsi-debug-token')?.value?.trim();
-                  if (!token) return toast?.push?.('Paste a token into the textarea', { type: 'info' });
-
-                  // Simple retry/backoff
-                  const maxAttempts = 3;
-                  let attempt = 0;
-                  let lastErr = null;
-                  while (attempt < maxAttempts) {
-                    attempt += 1;
-                    try {
-                      const res = await fetch(`${API_BASE_URL}/api/auth/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
-                      const j = await res.json().catch(() => ({}));
-                      console.log('Manual exchange result', res.ok, j);
-                      if (res.ok) {
-                        toast?.push?.('Manual exchange succeeded - check localStorage for auth_token', { type: 'success' });
-                        break;
-                      } else {
-                        lastErr = j?.error || JSON.stringify(j);
-                        // If 4xx, don't retry
-                        if (res.status >= 400 && res.status < 500) {
-                          toast?.push?.('Manual exchange failed: ' + lastErr, { type: 'error' });
-                          break;
-                        }
-                      }
-                    } catch (e) {
-                      console.error('Manual exchange attempt failed', attempt, e);
-                      lastErr = e?.message || String(e);
-                    }
-                    // backoff
-                    await new Promise(r => setTimeout(r, 500 * attempt));
-                  }
-                  if (attempt >= maxAttempts && lastErr) {
-                    toast?.push?.('Manual exchange failed after retries: ' + lastErr, { type: 'error' });
-                  }
-                }}>Exchange token</button>
-              </div>
-            </details>
-          </div>
-        )}
+        <GoogleSignInDebug className={className} />
       </div>
     );
   }

@@ -13,7 +13,8 @@ const sessionSchema = new mongoose.Schema({
   },
   userAgent: {
     type: String,
-    required: true
+    required: false,
+    default: null
   },
   isValid: {
     type: Boolean,
@@ -27,8 +28,8 @@ const sessionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for token lookups
-sessionSchema.index({ token: 1 });
+// Token has `unique: true` defined on the field, so no separate index() call is needed.
+// Avoid duplicate index definitions which cause Mongoose warnings.
 
 // Index for user session lookups
 sessionSchema.index({ user: 1, isValid: 1 });

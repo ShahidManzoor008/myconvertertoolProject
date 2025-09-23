@@ -1,8 +1,12 @@
-const request = require('supertest');
-const fs = require('fs').promises;
-const path = require('path');
-const { PDFDocument } = require('pdf-lib');
-const app = require('../index');
+import request from 'supertest';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { PDFDocument } from 'pdf-lib';
+import app from '../index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Helper to create a sample PDF file for testing
 async function createSamplePdf(pages = 1) {
@@ -58,12 +62,12 @@ describe('PDF Operations API', () => {
       expect(mergedPdf.getPageCount()).toBe(4);
     });
 
-    it('should return 500 if no files are provided', async () => {
+    it('should return 400 if no files are provided', async () => {
       const res = await request(app)
         .post('/api/pdf/merge')
         .send();
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('error');
     });
   });

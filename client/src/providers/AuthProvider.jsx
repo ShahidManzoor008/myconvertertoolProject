@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import AuthContext from '../context/AuthContext'; // Import from new location
-import API_BASE_URL from '../config/api.config';
+import AuthContext from '../context/AuthContext';
+import { authApi } from '../utils/apiClient';
+import { AppError } from '../utils/AppError';
 
 const TOKEN_STORAGE_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'auth_user';
@@ -58,24 +59,16 @@ export const AuthProvider = ({ children }) => {
 
         if (token && userData) {
           // Verify token with backend
-          const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const parsedUser = JSON.parse(userData);
-            setUser({ ...parsedUser, isAdmin: parsedUser.role === 'admin' });
-          } else {
-            // Token invalid - clear storage
-            storage.remove(TOKEN_STORAGE_KEY);
-            storage.remove(USER_STORAGE_KEY);
-            channel?.postMessage({ type: 'logout' });
-          }
+          const { user: verifiedUser } = await authApi.verify();
+          const parsedUser = JSON.parse(userData);
+          setUser({ ...parsedUser, ...verifiedUser, isAdmin: verifiedUser.role === 'admin' });
         }
       } catch (err) {
-        setError('Failed to initialize authentication');
+        // Token invalid - clear storage
+        storage.remove(TOKEN_STORAGE_KEY);
+        storage.remove(USER_STORAGE_KEY);
+        channel?.postMessage({ type: 'logout' });
+        setError('Session expired. Please login again.');
         console.error('Auth initialization failed:', err);
       } finally {
         setLoading(false);
@@ -115,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       window.removeEventListener('storage', handleStorage);
       channel?.removeEventListener('message', handleMessage);
-      channel?.close();
+      // channel?.close(); // Removed to prevent premature channel closure
     };
   }, [channel]);
 
@@ -135,23 +128,10 @@ export const AuthProvider = ({ children }) => {
       } else if (payload && (payload.tokenId || payload.credential || payload.token)) {
         // Normalize various shapes for Google credential
         const googleToken = payload.tokenId || payload.credential || payload.token;
-        // Exchange Google token for our JWT on the backend
-        const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ token: googleToken })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || 'Login failed');
-        }
-
-        data = await response.json();
+        // Exchange Google token for our JWT
+        data = await authApi.googleAuth(googleToken);
       } else {
-        throw new Error('Invalid login payload');
+        throw new AppError('Invalid login payload', 400);
       }
 
       // Store in localStorage
@@ -162,10 +142,10 @@ export const AuthProvider = ({ children }) => {
         channel?.postMessage({ type: 'login', user: { ...data.user, isAdmin: data.user.role === 'admin' } });
         return true;
       } else {
-        throw new Error('Failed to store auth data');
+        throw new AppError('Failed to store auth data', 500);
       }
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message);
       console.error('Login failed:', err);
       return false;
     } finally {
@@ -178,41 +158,21 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Register user on backend
-      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Registration failed');
-      }
+      // Register user
+      await authApi.register({ name, email, password });
 
       // Auto-login after successful registration
-      const loginRes = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (!loginRes.ok) {
-        const d = await loginRes.json().catch(() => ({}));
-        throw new Error(d.error || 'Auto-login failed after registration');
-      }
-
-      const data = await loginRes.json();
+      const data = await authApi.login({ email, password });
 
       if (storage.set(TOKEN_STORAGE_KEY, data.token) && storage.set(USER_STORAGE_KEY, JSON.stringify(data.user))) {
         setUser({ ...data.user, isAdmin: data.user.role === 'admin' });
         channel?.postMessage({ type: 'login', user: { ...data.user, isAdmin: data.user.role === 'admin' } });
         return true;
       } else {
-        throw new Error('Failed to store auth data');
+        throw new AppError('Failed to store auth data', 500);
       }
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err.message);
       console.error('Registration failed:', err);
       return false;
     } finally {
@@ -226,13 +186,7 @@ export const AuthProvider = ({ children }) => {
       const token = storage.get(TOKEN_STORAGE_KEY);
 
       if (token) {
-        // Notify backend of logout
-        await fetch(`${API_BASE_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        await authApi.logout();
       }
 
       storage.remove(TOKEN_STORAGE_KEY);
@@ -241,7 +195,7 @@ export const AuthProvider = ({ children }) => {
       channel?.postMessage({ type: 'logout' });
       setUser(null);
     } catch (err) {
-      setError('Logout failed');
+      setError(err.message);
       console.error('Logout failed:', err);
     } finally {
       setLoading(false);

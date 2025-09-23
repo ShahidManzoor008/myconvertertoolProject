@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { Document, Page } from 'react-pdf';
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
@@ -17,13 +17,18 @@ import {
 import ThumbnailsSidebar from './ThumbnailsSidebar';
 import SearchBar from './SearchBar';
 import AnnotationTools from './AnnotationTools';
-import setupPdfWorker, { PDF_VIEWER_OPTIONS } from '../utils/pdfWorker';
 
-// Initialize PDF worker
-setupPdfWorker();
+const PDF_VIEWER_OPTIONS = {
+  cMapUrl: 'cmaps/',
+  cMapPacked: true,
+  standardFontDataUrl: 'standard_fonts/',
+  disableAutoFetch: true,
+  disableStream: false,
+  maxImageSize: 1024 * 1024,
+  isEvalSupported: false,
+  disableFontFace: false
+};
 
-// Memory management
-const CLEAN_UP_DELAY = 1000; // 1 second delay before cleanup
 
 const PdfViewer = ({ file, filename }) => {
   const [numPages, setNumPages] = useState(null);
@@ -36,54 +41,13 @@ const PdfViewer = ({ file, filename }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchResult, setCurrentSearchResult] = useState(0);
   const [annotations, setAnnotations] = useState([]);
-  const pdfDocumentRef = useRef(null);
 
-  // Clean up resources when unmounting or changing files
-  useEffect(() => {
-    let cleanup = null;
-
-    const cleanupResources = () => {
-      // Clear any cached page objects
-      if (pdfDocumentRef.current) {
-        try {
-          pdfDocumentRef.current.cleanup();
-          pdfDocumentRef.current.destroy();
-        } catch (e) {
-          console.error('Error cleaning up PDF:', e);
-        }
-        pdfDocumentRef.current = null;
-      }
-    };
-
-    // Initialize PDF document
-    if (file) {
-      import('pdfjs-dist').then(({ getDocument }) => {
-        getDocument(file).promise.then(pdf => {
-          pdfDocumentRef.current = pdf;
-        }).catch(console.error);
-      });
-    }
-
-    return () => {
-      // Delay cleanup to prevent flickering during page changes
-      if (cleanup) clearTimeout(cleanup);
-      cleanup = setTimeout(cleanupResources, CLEAN_UP_DELAY);
-    };
-  }, [file]);
+  
 
   const onDocumentLoadSuccess = useCallback(({ numPages }) => {
     setNumPages(numPages);
     setLoading(false);
-    // Pre-fetch next page for smoother navigation
-    if (numPages > 1) {
-      import('pdfjs-dist').then(({ getDocument }) => {
-        getDocument(file).promise.then(doc => {
-          // Pre-fetch next page silently
-          doc.getPage(2).catch(() => {});
-        }).catch(() => {});
-      });
-    }
-  }, [file]);
+  }, []);
 
   const onDocumentLoadError = (error) => {
     console.error('PDF Load Error:', error);

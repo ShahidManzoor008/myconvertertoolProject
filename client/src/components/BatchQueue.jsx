@@ -10,10 +10,11 @@ import {
   CheckCircle,
   Trash2,
   Download
+  , Save
 } from 'lucide-react';
 import PropTypes from 'prop-types';
 
-const BatchQueue = ({ files, onRemoveFile, onStartProcessing, onPauseProcessing, onDownload, showAuthPopup }) => {
+const BatchQueue = ({ files, onRemoveFile, onStartProcessing, onPauseProcessing, onDownload, showAuthPopup, isLoggedIn = false }) => {
   const [queueStatus, setQueueStatus] = useState('idle'); // idle, processing, paused
   const [processedFiles, setProcessedFiles] = useState([]);
   const [currentFile, setCurrentFile] = useState(null);
@@ -213,6 +214,8 @@ BatchQueue.propTypes = {
   onStartProcessing: PropTypes.func.isRequired,
   onPauseProcessing: PropTypes.func,
   onDownload: PropTypes.func.isRequired,
+  showAuthPopup: PropTypes.func,
+  isLoggedIn: PropTypes.bool,
 };
 
 export default BatchQueue;

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,27 +11,34 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
-    hmr: {
-      timeout: 5000,
-      overlay: true
-    },
-    watch: {
-      usePolling: true,
-      interval: 1000
-    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-        ws: true
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req && req.method && req.url) console.log('Sending Request:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req) => {
+            if (req && req.url) console.log('Received Response:', proxyRes && proxyRes.statusCode, req.url);
+          });
+        }
       }
     }
   },
   resolve: {
     alias: {
-      '@': '/src'
+      '@': '/src',
+      // Ensure tooling (Vitest/Vite) resolves React to the client's node_modules
+      react: path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom')
     },
+    // Dedupe React to avoid multiple copies being loaded by the optimizer
+    dedupe: ['react', 'react-dom'],
     extensions: ['.js', '.jsx', '.json']
   },
   build: {
@@ -39,7 +47,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           pdfjs: ['pdfjs-dist'],
-          'pdf-worker': ['pdfjs-dist/build/pdf.worker.min.js']
+          // Use the ESM worker path (.mjs) so Rollup can resolve it at build time
+          'pdf-worker': ['pdfjs-dist/build/pdf.worker.min.mjs']
         }
       }
     }
@@ -61,13 +70,20 @@ export default defineConfig({
     esbuildOptions: {
       loader: {
         '.js': 'jsx'
-      }
+      },
+      target: 'es2022' // Add this line to set the target environment
     }
   },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
+    // Ensure Vitest bundles these deps so a single React instance is used
+    server: {
+      deps: {
+        inline: ['react', 'react-dom', 'react-router-dom'],
+      }
+    },
     deps: {
       optimizer: {
         web: {
@@ -76,7 +92,11 @@ export default defineConfig({
       },
     },
     alias: {
-      'react/jsx-runtime': 'react/jsx-runtime.js',
+      'react/jsx-runtime': path.resolve(__dirname, './node_modules/react/jsx-runtime.js'),
+      // Ensure tests resolve React to the client's node_modules
+      react: path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+      'react-dom/client': path.resolve(__dirname, './node_modules/react-dom/client.js')
     },
   },
 })

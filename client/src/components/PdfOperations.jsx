@@ -1,32 +1,23 @@
-import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
-  Combine, 
-  Scissors, 
   RotateCw, 
   Image as ImageIcon, 
   FileDown,
   MoveVertical,
   Stamp,
-  Lock
+  Lock,
+  Edit,
+  
 } from 'lucide-react';
 
-const PdfOperations = ({ onOperation, loading }) => {
-  const [activeOperation, setActiveOperation] = useState(null);
-
+const PdfOperations = ({ onOperation, loading, currentOperation }) => {
   const operations = [
     {
-      id: 'merge',
-      name: 'Merge PDFs',
-      icon: <Combine className="w-5 h-5" />,
-      description: 'Combine multiple PDF files into one'
-    },
-    {
-      id: 'split',
-      name: 'Split PDF',
-      icon: <Scissors className="w-5 h-5" />,
-      description: 'Split PDF into multiple documents'
+      id: 'edit',
+      name: 'Edit PDF',
+      icon: <Edit className="w-5 h-5" />,
+      description: 'Add text, shapes, and annotations'
     },
     {
       id: 'rotate',
@@ -67,7 +58,6 @@ const PdfOperations = ({ onOperation, loading }) => {
   ];
 
   const handleOperationClick = (operation) => {
-    setActiveOperation(operation.id);
     onOperation(operation.id);
   };
 
@@ -85,13 +75,13 @@ const PdfOperations = ({ onOperation, loading }) => {
             onClick={() => handleOperationClick(operation)}
             disabled={loading}
             className={`flex flex-col items-center p-4 rounded-lg transition-colors ${
-              activeOperation === operation.id
+              currentOperation === operation.id
                 ? 'bg-blue-50 dark:bg-blue-900'
                 : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
             } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className={`mb-2 ${
-              activeOperation === operation.id
+              currentOperation === operation.id
                 ? 'text-blue-500'
                 : 'text-gray-600 dark:text-gray-300'
             }`}>
@@ -113,6 +103,7 @@ const PdfOperations = ({ onOperation, loading }) => {
 PdfOperations.propTypes = {
   onOperation: PropTypes.func.isRequired,
   loading: PropTypes.bool.isRequired,
+  currentOperation: PropTypes.string.isRequired,
 };
 
 export default PdfOperations;

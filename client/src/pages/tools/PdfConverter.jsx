@@ -1,25 +1,27 @@
-import { useState, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
-import { motion } from "framer-motion";
-import { FileText, Upload, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { motion } from 'framer-motion';
+import { Upload, X } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from '../../utils/SEO';
-import PdfViewer from '../../components/PdfViewer';
 import PdfOperations from '../../components/PdfOperations';
-import BatchQueue from '../../components/BatchQueue';
 import FileHistory from '../../components/FileHistory';
-import API_BASE_URL from "../../config/api.config";
+import PdfViewer from '../../components/PdfViewer';
+import { pdfApi } from '../../utils/apiClient';
+import { createFormDataWithFiles } from '../../utils/fileUtils';
+import { AppError } from '../../utils/AppError';
 
 const PdfConverter = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [convertedFiles, setConvertedFiles] = useState([]); // For storing converted files
-  const [currentOperation, setCurrentOperation] = useState("convert"); // Default operation
+  // selectedOperation controls the high-level card choice (null = show action cards)
+  const [selectedOperation, setSelectedOperation] = useState(null);
+  const [currentOperation, setCurrentOperation] = useState("convert"); // Default sub-operation
   const [recentFiles, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
-  // Auth hook not needed here directly; AuthPopup/GoogleSignIn will handle login
 
   // Handle file download
   const handleDownload = () => {
@@ -60,27 +62,47 @@ const PdfConverter = () => {
     });
   };
 
-  // Configure dropzone for file uploads
+  // Determine accepted file types based on the chosen high-level operation
+  const getAcceptForOperation = (op) => {
+    switch (op) {
+      case 'convert':
+        return {
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ['.docx'],
+          "application/msword": ['.doc'],
+          "application/vnd.ms-excel": ['.xlsx', '.xls'],
+          "application/vnd.ms-powerpoint": ['.ppt', '.pptx'],
+          "text/markdown": ['.md', '.MD'],
+          "text/plain": ['.txt'],
+          'image/jpeg': ['.jpg', '.jpeg'],
+          'image/png': ['.png'],
+        };
+      case 'edit':
+        // Operations that operate on existing PDFs only
+        return {
+          'application/pdf': ['.pdf'],
+        };
+      default:
+        // Default to convert types if no operation is selected or an unknown one
+        return getAcceptForOperation('convert');
+    }
+  };
+
+  // Configure dropzone for file uploads (hidden until an operation is selected)
   const { getRootProps, getInputProps } = useDropzone({
     multiple: true,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/vnd.ms-excel": [".xlsx"],
-      "text/markdown": [".md", ".MD"],
-      "application/vnd.ms-powerpoint": [".ppt", ".pptx"],
-      "image/jpeg": [".jpg", ".jpeg", ".JPEG"],
-      "image/png": [".png"],
-    },
+    accept: getAcceptForOperation(selectedOperation || 'convert'),
     onDrop: (acceptedFiles, rejectedFiles) => {
       if (rejectedFiles.length > 0) {
         showPopup(`Invalid file types: ${rejectedFiles.map((f) => f.name).join(", ")}`);
       }
 
-      // Filter valid files
+      const allowedMimeTypes = getAcceptForOperation(selectedOperation || 'convert');
+      const allowedExtensions = Object.values(allowedMimeTypes).flat().map(ext => ext.substring(1)); // Remove the dot
+
+      // Filter valid files based on the allowed extensions for the current operation
       const filteredFiles = acceptedFiles.filter((file) => {
         const ext = file.name.split(".").pop().toLowerCase();
-        return ["pdf", "docx", "xlsx","xls", "md", "ppt", "pptx", "jpg", "jpeg", "png"].includes(ext);
+        return allowedExtensions.includes(ext);
       });
 
       if (filteredFiles.length === 0) {
@@ -100,97 +122,62 @@ const PdfConverter = () => {
     showPopup("Selection cleared");
   };
 
-  // Check if all files are images
-  const areAllImages = (files) => {
-    return files.every((file) => {
-      const ext = file.name.split(".").pop().toLowerCase();
-      return ["jpg", "jpeg", "png"].includes(ext);
-    });
+  // Helper: determine file extension
+  const getFileExt = (file) => (file?.name || '').split('.').pop().toLowerCase();
+
+  // Determine if a single file can be processed for the selected operation
+  const canProcessSingle = (file, operation) => {
+    if (!file) return false;
+    const ext = getFileExt(file);
+    switch (operation) {
+      case 'convert':
+        return true; // can convert many input types
+      case 'edit':
+        return ext === 'pdf';
+      default:
+        return false;
+    }
   };
 
-  // Handle PDF operations
-  const handlePdfOperation = async () => {
-    if (uploadedFiles.length === 0) {
-      showPopup("No files selected");
-      return;
-    }
-
-    setLoading(true);
-    const formData = new FormData();
-    uploadedFiles.forEach((file) => formData.append("files", file));
-
+  // Process a single file (used by BatchQueue and batch processor)
+  const processFile = async (file) => {
     try {
-      let response;
-      let endpoint = "";
-
-      switch (currentOperation) {
-        case "merge":
-          endpoint = "/api/pdf/merge";
-          break;
-        case "split":
-          endpoint = "/api/pdf/split";
-          break;
-        case "rotate":
-          endpoint = "/api/pdf/rotate";
-          break;
-        case "watermark":
-          endpoint = "/api/pdf/watermark";
-          break;
-        case "protect":
-          endpoint = "/api/pdf/protect";
-          break;
-        case "compress":
-          endpoint = "/api/pdf/compress";
-          break;
-        default:
-          if (areAllImages(uploadedFiles)) {
-            endpoint = "/api/batch-convert";
-          } else {
-            endpoint = "/api/files/upload";
-          }
-      }
-
-      response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        body: formData,
+      const formData = createFormDataWithFiles(file, {
+        operation: currentOperation,
       });
 
-      if (response.status === 401) {
-        // Show login popup so user can sign in and retry
-        setShowAuthPopup(true);
-        throw new Error('Unauthorized: please sign in to continue');
-      }
-
-      if (!response.ok) {
-        throw new Error(`${currentOperation} operation failed`);
-      }
-
-      const contentType = response.headers.get("Content-Type");
-      if (contentType && contentType.includes("application/json")) {
-        const results = await response.json();
-        setConvertedFiles(
-          results.map((result) => ({
-            filename: result.filename,
-            url: `data:application/pdf;base64,${result.base64}`,
-          }))
-        );
-      } else {
-        const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        setConvertedFiles([
-          {
-            filename: uploadedFiles.length > 1 ? "processed_files.zip" : "processed_document.pdf",
-            url: downloadUrl,
-          },
-        ]);
-      }
-
-      showPopup(`${currentOperation} operation completed successfully!`);
+      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
+      const result = await apiCall(formData);
+      const resultWithDetails = { ...result, originalName: file.name };
+      setConvertedFiles(prev => [...prev, resultWithDetails]);
+      addToRecent(resultWithDetails);
+      return resultWithDetails;
     } catch (err) {
+      if (err instanceof AppError && err.status === 401) setShowAuthPopup(true);
       showPopup(`${currentOperation} operation failed: ${err.message}`);
-    } finally {
-      setLoading(false);
+      throw err;
     }
+  };
+
+  // Batch processing: start sequential processing of all uploaded files
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
+
+  const startProcessingAll = async () => {
+    if (uploadedFiles.length === 0) return showPopup('No files to process');
+    setBatchProcessing(true);
+    setBatchProgress({ done: 0, total: uploadedFiles.length });
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      try {
+        await processFile(uploadedFiles[i]);
+        setBatchProgress(prev => ({ ...prev, done: prev.done + 1 }));
+      } catch (err) {
+        // continue processing remaining files but notify user
+        console.error('Batch file failed', uploadedFiles[i].name, err);
+      }
+    }
+    setBatchProcessing(false);
+    showPopup('Batch processing complete');
   };
 
   return (
@@ -201,25 +188,19 @@ const PdfConverter = () => {
       className="p-6"
     >
       <SEO
-        seoData={{
-          title: 'Free PDF Converter | Convert Word, Excel, Images to PDF Online - MyConverterTool',
-          description: 'Use our free PDF converter to convert Word to PDF, Excel to PDF, images to PDF, and more. Merge, split, compress PDFs online instantly.',
-          keywords: 'pdf converter, word to pdf, excel to pdf, image to pdf, merge pdf, split pdf, compress pdf, online pdf tools',
-          canonicalUrl: '/tools/pdf-converter',
-          ogType: 'website',
-          ogTitle: 'Free PDF Converter | Convert Word, Excel, Images to PDF Online',
-          ogDescription: 'Convert documents and images to PDF format instantly. Free online PDF converter with advanced features.',
-          ogImage: '/assets/MyConverterTool.png',
-          structuredData: {
-            '@type': 'WebApplication',
-            name: 'PDF Converter',
-            description: 'Free online PDF converter tool with support for multiple file formats',
-            applicationCategory: 'DocumentManagement',
-            offers: {
-              '@type': 'Offer',
-              price: '0',
-              priceCurrency: 'USD'
-            }
+        title={'Free PDF Converter | Convert Word, Excel, Images to PDF Online - MyConverterTool'}
+        description={'Use our free PDF converter to convert Word to PDF, Excel to PDF, images to PDF, and more. Merge, split, compress PDFs online instantly.'}
+        keywords={'pdf converter, word to pdf, excel to pdf, image to pdf, merge pdf, split pdf, compress pdf, online pdf tools'}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebApplication',
+          name: 'PDF Converter',
+          description: 'Free online PDF converter tool with support for multiple file formats',
+          applicationCategory: 'DocumentManagement',
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'USD'
           }
         }}
       />
@@ -242,9 +223,46 @@ const PdfConverter = () => {
         Convert DOCX, XLSX, Images, Markdown to PDF, merge or preview files.
       </motion.p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Upload and Convert */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="grid grid-cols-1 gap-6">
+        {/* Operation selection cards - show when no operation selected */}
+        {!selectedOperation && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { key: 'convert', title: 'Convert to PDF', desc: 'Convert DOCX, XLSX, Images, Markdown to PDF' },
+              { key: 'edit', title: 'Edit PDF', desc: 'Split, rotate, delete pages from a PDF' },
+            ].map(card => (
+              <motion.div
+                key={card.key}
+                className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition"
+                whileHover={{ scale: 1.02 }}
+                onClick={() => {
+                  setSelectedOperation(card.key);
+                  setCurrentOperation(card.key === 'edit' ? 'edit' : card.key);
+                }}
+              >
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{card.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{card.desc}</p>
+                <div className="mt-4 text-xs text-blue-500">Click to select</div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+        {/* Left Column - Upload and Convert (shown after selecting an operation) */}
+        {selectedOperation && (
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600 dark:text-gray-300">Selected: <span className="font-medium">{selectedOperation}</span></div>
+              <button
+                className="text-sm text-red-500 hover:underline"
+                onClick={() => {
+                  setSelectedOperation(null);
+                  setUploadedFiles([]);
+                  setConvertedFiles([]);
+                }}
+              >
+                Go Back to Main Menu
+              </button>
+            </div>
           {/* File Dropzone */}
           <motion.div
             {...getRootProps()}
@@ -257,155 +275,101 @@ const PdfConverter = () => {
               Drag & drop files here, or click to select
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Supports DOCX, XLSX, Images, Markdown, and more
+              {selectedOperation === 'convert'
+                ? 'Supports DOCX, XLSX, Images, Markdown, and more (PDF not allowed)'
+                : 'Supports PDF files only'}
             </p>
           </motion.div>
 
-          {/* PDF Operations */}
-          <div className="mb-6">
-            <PdfOperations
-              onOperation={setCurrentOperation}
-              loading={loading}
-            />
-          </div>
+          {/* Display uploaded file names */}
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Uploaded Files:</h4>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
+                {uploadedFiles.map((file, index) => (
+                  <li key={index} className="flex items-center justify-between py-1">
+                    <span className="truncate">{file.name}</span>
+                    <button
+                      onClick={() => {
+                        const newFiles = uploadedFiles.filter((_, i) => i !== index);
+                        setUploadedFiles(newFiles);
+                        showPopup(`${file.name} removed.`);
+                      }}
+                      className="text-red-500 hover:text-red-700 ml-2"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Batch Processing Queue */}
-          <BatchQueue
-            files={uploadedFiles}
-            onRemoveFile={(file) => {
-              setUploadedFiles(files => files.filter(f => f.name !== file.name));
-            }}
-            onStartProcessing={async (file) => {
-              const formData = new FormData();
-              formData.append("file", file);
-
-              // Determine endpoint using same logic as handlePdfOperation
-              let endpoint = "";
-
-              if (areAllImages([file])) {
-                endpoint = "/api/batch-convert";
-              } else {
-                switch (currentOperation) {
-                  case "merge":
-                    endpoint = "/api/pdf/merge";
-                    break;
-                  case "split":
-                    endpoint = "/api/pdf/split";
-                    break;
-                  case "rotate":
-                    endpoint = "/api/pdf/rotate";
-                    break;
-                  case "watermark":
-                    endpoint = "/api/pdf/watermark";
-                    break;
-                  case "protect":
-                    endpoint = "/api/pdf/protect";
-                    break;
-                  case "compress":
-                    endpoint = "/api/pdf/compress";
-                    break;
-                  default:
-                    // Default conversion (no auth required on server) -> files upload endpoint
-                    endpoint = "/api/files/upload";
-                }
-              }
-
-              const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                method: "POST",
-                body: formData,
-              });
-
-              if (response.status === 401) {
-                setShowAuthPopup(true);
-                throw new Error('Unauthorized: please sign in to continue');
-              }
-
-              if (!response.ok) {
-                const text = await response.text().catch(() => response.statusText);
-                throw new Error(`Failed to process ${file.name}: ${response.status} ${text}`);
-              }
-
-              const contentType = response.headers.get("Content-Type");
-              let result;
-
-              if (contentType && contentType.includes("application/json")) {
-                const data = await response.json();
-                result = {
-                  filename: data.filename,
-                  url: `data:application/pdf;base64,${data.base64}`,
-                };
-              } else {
-                const blob = await response.blob();
-                result = {
-                  filename: file.name.replace(/\.[^/.]+$/, "") + ".pdf",
-                  url: URL.createObjectURL(blob),
-                };
-              }
-
-              const resultWithDetails = { ...result, originalName: file.name };
-              setConvertedFiles(prev => [...prev, resultWithDetails]);
-              addToRecent(resultWithDetails);
-              return resultWithDetails;
-            }}
-            onPauseProcessing={() => {
-              showPopup("Processing paused");
-            }}
-            onDownload={() => {
-              if (convertedFiles.length === 1) {
-                const link = document.createElement('a');
-                link.href = convertedFiles[0].url;
-                link.download = convertedFiles[0].filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              } else if (convertedFiles.length > 1) {
-                // Download ZIP of all files
-                fetch(`${API_BASE_URL}/api/download-batch`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}),
-                  },
-                  body: JSON.stringify({ files: convertedFiles }),
-                })
-                  .then(response => response.blob())
-                  .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = "processed_files.zip";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  })
-                  .catch(error => {
-                    showPopup("Failed to download files: " + error.message);
-                  });
-              }
-            }}
-          />
+          {/* PDF Operations: hide when user is doing an initial 'convert' until a PDF is produced */}
+          {!(selectedOperation === 'convert' && convertedFiles.length === 0) && (
+            <div className="mb-6">
+              <PdfOperations
+                onOperation={setCurrentOperation}
+                loading={loading}
+                currentOperation={currentOperation}
+              />
+            </div>
+          )}
+          
+          {/* PDF Viewer for Edit operation */}
+          {selectedOperation === 'edit' && uploadedFiles.length > 0 && uploadedFiles[0].type === 'application/pdf' && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Preview & Edit:</h4>
+              <PdfViewer
+                file={URL.createObjectURL(uploadedFiles[0])}
+                filename={uploadedFiles[0].name}
+              />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handlePdfOperation}
-              disabled={loading || uploadedFiles.length === 0}
-              className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Upload className="w-5 h-5" />
-              Process Files
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleClearSelection}
-              className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-red-500 hover:bg-red-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-              Clear All
-            </motion.button>
+            {uploadedFiles.length === 1 && canProcessSingle(uploadedFiles[0], selectedOperation) && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={async () => {
+                  setLoading(true);
+                  await processFile(uploadedFiles[0]);
+                  setLoading(false);
+                }}
+                disabled={loading}
+                className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Upload className="w-5 h-5" />
+                {selectedOperation === 'convert' ? 'Convert to PDF' : `Process ${uploadedFiles[0].name}`}
+              </motion.button>
+            )}
+
+            {uploadedFiles.length > 1 && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={startProcessingAll}
+                disabled={batchProcessing || loading}
+                className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Upload className="w-5 h-5" />
+                {batchProcessing ? `Processing (${batchProgress.done}/${batchProgress.total})` : 'Start Batch Processing'}
+              </motion.button>
+            )}
+
+            {uploadedFiles.length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleClearSelection}
+                className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-red-500 hover:bg-red-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+                Clear All
+              </motion.button>
+            )}
           </div>
 
           {/* File History */}
@@ -423,26 +387,8 @@ const PdfConverter = () => {
             />
           </div>
         </div>
+        )}
 
-        {/* Right Column - PDF Preview */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden min-h-[600px]">
-          {convertedFiles.length > 0 ? (
-            <PdfViewer
-              file={convertedFiles[0].url}
-              filename={convertedFiles[0].filename}
-            />
-          ) : uploadedFiles.length > 0 ? ( // Check if there are uploaded files
-            <PdfViewer
-              file={URL.createObjectURL(uploadedFiles[0])} // Create a URL for the uploaded file
-              filename={uploadedFiles[0].name}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-              <FileText className="w-16 h-16 mb-4" />
-              <p>Upload a PDF to preview it here</p> {/* Updated message */}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Popup Message */}

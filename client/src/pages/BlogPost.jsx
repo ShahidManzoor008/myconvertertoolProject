@@ -101,13 +101,40 @@ const BlogPost = () => {
       {/* Hero Section */}
       <div className="w-full bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 py-12">
         <div className="max-w-4xl mx-auto px-6">
+          {/* Article structured data and canonical/og metadata for better sharing and rich results */}
           <SEO
             title={`${post.title} - MyConverterTool Blog`}
             description={post.excerpt}
             keywords={`${post.title.toLowerCase()}, blog, tutorial, web development, myconvertertool blog`}
-            // Note: canonicalUrl, ogType, ogTitle, ogDescription, ogImage, articleMeta are not direct props of SEO component based on SEO.jsx
-            // If these are needed, the SEO component itself needs to be updated to accept them.
-            // For now, I'm only addressing the missing required props.
+            canonicalUrl={`/blog/${post.slug}`}
+            ogImage={post.coverImage || '/assets/MyConverterTool.png'}
+            ogTitle={`${post.title} - MyConverterTool Blog`}
+            ogDescription={post.excerpt}
+            jsonLd={{
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": post.title,
+              "description": post.excerpt,
+              "image": post.coverImage ? [post.coverImage] : ['/assets/MyConverterTool.png'],
+              "author": {
+                "@type": "Person",
+                "name": post.author || 'MyConverterTool'
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "MyConverterTool",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "/assets/MyConverterTool.png"
+                }
+              },
+              "datePublished": post.createdAt,
+              "dateModified": post.updatedAt || post.createdAt,
+              "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": `/blog/${post.slug}`
+              }
+            }}
           />
 
           {/* Post Title */}

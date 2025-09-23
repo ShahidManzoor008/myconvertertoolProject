@@ -2,79 +2,26 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import GoogleSignIn from './GoogleSignIn';
-
-// Validation rules
-const VALIDATION_RULES = {
-  email: {
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    minLength: 5,
-    maxLength: 50,
-    message: 'Please enter a valid email address'
-  },
-  password: {
-    minLength: 8,
-    maxLength: 100,
-    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
-    message: 'Password must be at least 8 characters and contain uppercase, lowercase, and numbers'
-  }
-};
-
-// Error messages mapping for common server responses
-const ERROR_MESSAGES = {
-  'invalid_credentials': 'Invalid email or password',
-  'account_locked': 'Account locked. Please contact support',
-  'account_not_verified': 'Please verify your email address',
-  'rate_limit_exceeded': 'Too many login attempts. Please try again later',
-  'server_error': 'Server error. Please try again later',
-  'network_error': 'Network error. Please check your connection'
-};
-
-const getErrorMessage = (error) => {
-  if (error.code && ERROR_MESSAGES[error.code]) {
-    return ERROR_MESSAGES[error.code];
-  }
-  if (error.errors && Array.isArray(error.errors)) {
-    return error.errors.map(e => e.msg).join(', ');
-  }
-  return error.message || 'An unexpected error occurred';
-};
+import LoadingSpinner from './common/LoadingSpinner';
+import { 
+  validateField, 
+  validateForm, 
+  getErrorMessage, 
+  ERROR_MESSAGES,
+  createInitialTouchedState, 
+  touchAllFields 
+} from '../utils/validation';
 
 const LoginForm = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [touched, setTouched] = useState(createInitialTouchedState(form));
   const { login } = useAuth();
   const navigate = useNavigate();
 
   // GoogleSignIn component handles initialization and redirect on success
-
-  const validateField = (name, value) => {
-    const rules = VALIDATION_RULES[name];
-    if (!rules) return '';
-
-    if (value.length < rules.minLength) {
-      return `Must be at least ${rules.minLength} characters`;
-    }
-    if (value.length > rules.maxLength) {
-      return `Must be less than ${rules.maxLength} characters`;
-    }
-    if (!rules.pattern.test(value)) {
-      return rules.message;
-    }
-    return '';
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    Object.keys(form).forEach(field => {
-      const error = validateField(field, form[field]);
-      if (error) errors[field] = error;
-    });
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,11 +48,15 @@ const LoginForm = () => {
     setError(null);
     
     // Mark all fields as touched and validate form
-    setTouched({ email: true, password: true });
-    if (!validateForm()) {
+    setTouched(touchAllFields(form));
+    const errors = validateForm(form);
+    setFormErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       setLoading(false);
       return;
     }
+    
     try {
       if (!navigator.onLine) {
         throw { code: 'network_error' };
@@ -150,13 +101,20 @@ const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-6 border rounded bg-white dark:bg-gray-800 shadow-sm dark:border-gray-700 text-gray-900 dark:text-gray-200">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Welcome back</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to continue to your tools</p>
+    <form 
+      onSubmit={handleSubmit} 
+      className="space-y-4 max-w-md mx-auto p-6 border rounded bg-white dark:bg-gray-800 shadow-sm dark:border-gray-700 text-gray-900 dark:text-gray-200"
+      aria-labelledby="login-title"
+      noValidate
+    >
+      <h1 id="login-title" className="text-2xl font-semibold text-gray-800 dark:text-white">Welcome back</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400" id="login-description">Sign in to continue to your tools</p>
 
       <div className="space-y-4 mt-4">
         <div className="space-y-1">
+          <label className="sr-only" htmlFor="email">Email address</label>
           <input
+            id="email"
             type="email"
             name="email"
             placeholder="Email"
@@ -167,14 +125,27 @@ const LoginForm = () => {
               touched.email && formErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
+            aria-required="true"
+            aria-invalid={touched.email && formErrors.email ? "true" : "false"}
+            aria-describedby={touched.email && formErrors.email ? "email-error" : undefined}
+            autoComplete="email"
           />
           {touched.email && formErrors.email && (
-            <p className="text-red-500 text-sm">{formErrors.email}</p>
+            <p 
+              id="email-error" 
+              className="text-red-500 text-sm" 
+              role="alert"
+              aria-live="polite"
+            >
+              {formErrors.email}
+            </p>
           )}
         </div>
 
         <div className="space-y-1">
+          <label className="sr-only" htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             name="password"
             placeholder="Password"
@@ -185,26 +156,64 @@ const LoginForm = () => {
               touched.password && formErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
+            aria-required="true"
+            aria-invalid={touched.password && formErrors.password ? "true" : "false"}
+            aria-describedby={touched.password && formErrors.password ? "password-error" : undefined}
+            autoComplete="current-password"
           />
           {touched.password && formErrors.password && (
-            <p className="text-red-500 text-sm">{formErrors.password}</p>
+            <p 
+              id="password-error" 
+              className="text-red-500 text-sm"
+              role="alert"
+              aria-live="polite"
+            >
+              {formErrors.password}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm">
-          <a href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</a>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <a 
+            href="/forgot-password" 
+            className="text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-sm px-1"
+          >
+            Forgot password?
+          </a>
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">Need an account? <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Register</a></div>
+        <div>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Need an account? </span>
+          <a 
+            href="/register" 
+            className="text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-sm px-1"
+          >
+            Register
+          </a>
+        </div>
       </div>
 
       <button 
         type="submit" 
-        className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-400" 
+        className={`w-full p-2 rounded transition-all duration-150 relative
+          ${loading 
+            ? 'bg-blue-500 cursor-not-allowed' 
+            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+          }
+        `}
         disabled={loading}
+        aria-busy={loading}
       >
-        {loading ? 'Logging in...' : 'Login'}
+        <span className={`inline-block transition-opacity duration-150 ${loading ? 'opacity-0' : 'opacity-100'}`}>
+          Login
+        </span>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <LoadingSpinner size="sm" className="text-white" />
+            <span className="ml-2 text-white">Logging in...</span>
+          </div>
+        )}
       </button>
 
       <div className="relative my-4">
@@ -212,13 +221,22 @@ const LoginForm = () => {
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 px-3 text-sm text-gray-400 dark:text-gray-300">or</span>
       </div>
 
-      <div>
-        {/* Google Sign In Button moved below the form controls to follow standard UX */}
-        <GoogleSignIn redirectTo="/" buttonText="Continue with Google" />
+      <div className="relative">
+        <GoogleSignIn 
+          redirectTo="/" 
+          buttonText="Continue with Google"
+          disabled={loading}
+          className={loading ? 'opacity-70 cursor-not-allowed' : ''}
+        />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-800/50">
+            <LoadingSpinner size="sm" className="text-gray-600 dark:text-gray-300" />
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="mt-2 p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md" role="alert">
           <p className="text-red-600 dark:text-red-300 text-sm font-medium">{error}</p>
           {error === ERROR_MESSAGES.network_error && (
             <p className="text-red-500 dark:text-red-400 text-xs mt-1">

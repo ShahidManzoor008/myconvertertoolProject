@@ -4,7 +4,9 @@ import SEO from '../../utils/SEO';
 import Popup from "../../components/Popup";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+// 'atomOneDark' is not exported from the prism styles in this package version.
+// Use 'oneDark' (or 'atomDark') which are the actual exported names.
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FaCopy, FaDownload, FaSun, FaMoon, FaCheck, FaTimes } from "react-icons/fa";
 
 const JsonFormatter = () => {
@@ -730,7 +732,7 @@ const JsonFormatter = () => {
                 
                 <SyntaxHighlighter 
                   language="json" 
-                  style={isDarkMode ? atomOneDark : docco} 
+                  style={isDarkMode ? oneDark : docco} 
                   className="rounded-md text-sm overflow-auto"
                   showLineNumbers={true}
                   wrapLines={true}

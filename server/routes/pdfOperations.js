@@ -1,25 +1,15 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
 import { promises as fs } from 'fs';
+import path from 'path';
 import * as pdfOperations from '../controllers/pdfOperations.js';
+import { upload } from '../middleware/upload.js';
+import { createZipArchive } from '../utils/archiveUtils.js';
 
 const router = express.Router();
 
-// Helper to sanitize filenames
-const sanitizeFilename = (filename) => {
-  return path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
-};
-
-const upload = multer({
-  dest: 'uploads/',
-  limits: { fileSize: 25 * 1024 * 1024 } // 25MB per file
-});
-// Moved imports to the top
-
 // Helper function to send file response
 async function sendFileResponse(res, pdfBuffer, originalFilename) {
-  const sanitizedFilename = sanitizeFilename(originalFilename);
+  const sanitizedFilename = path.basename(originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
   res.set({
     'Content-Type': 'application/pdf',
     'Content-Disposition': `attachment; filename="${sanitizedFilename}"`,
@@ -30,29 +20,47 @@ async function sendFileResponse(res, pdfBuffer, originalFilename) {
 // Merge PDFs
 router.post('/merge', upload.array('files'), async (req, res) => {
   try {
+    if (!req.files || req.files.length < 2) {
+      return res.status(400).json({ error: 'At least two files are required for merge' });
+    }
     const mergedPdf = await pdfOperations.mergePDFs(req.files);
     await sendFileResponse(res, mergedPdf, 'merged.pdf');
   } catch (error) {
+    console.error('Merge PDFs error:', error);
     res.status(500).json({ error: 'Failed to merge PDFs' });
   } finally {
     // Cleanup uploaded files
-    await Promise.all(req.files.map(file => fs.unlink(file.path)));
+    if (req.files) await Promise.all(req.files.map(file => fs.unlink(file.path)));
   }
 });
 
 // Split PDF
 router.post('/split', upload.single('file'), async (req, res) => {
   try {
-    const ranges = JSON.parse(req.body.ranges);
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
+    let ranges;
+    try {
+      ranges = JSON.parse(req.body.ranges);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid ranges' });
+    }
     const splitPdfs = await pdfOperations.splitPDF(req.file, ranges);
     
     if (splitPdfs.length === 1) {
       await sendFileResponse(res, splitPdfs[0], 'split.pdf');
     } else {
-      // TODO: Implement ZIP file creation for multiple PDFs
-      res.status(501).json({ error: 'Multiple file download not implemented' });
+      const zipPath = path.join('uploads', 'split_pdfs.zip');
+      const filesToZip = splitPdfs.map((pdf, i) => ({
+        path: pdf,
+        name: `split_${i + 1}.pdf`
+      }));
+      await createZipArchive(filesToZip, zipPath);
+      res.download(zipPath, 'split_pdfs.zip', async () => {
+        await fs.unlink(zipPath);
+      });
     }
   } catch (error) {
+    console.error('Split PDF error:', error);
     res.status(500).json({ error: 'Failed to split PDF' });
   } finally {
     if (req.file) await fs.unlink(req.file.path);
@@ -62,11 +70,57 @@ router.post('/split', upload.single('file'), async (req, res) => {
 // Rotate PDF pages
 router.post('/rotate', upload.single('file'), async (req, res) => {
   try {
-    const rotations = JSON.parse(req.body.rotations);
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
+    let rotations;
+    try {
+      rotations = JSON.parse(req.body.rotations);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid rotations' });
+    }
     const rotatedPdf = await pdfOperations.rotatePDF(req.file, rotations);
     await sendFileResponse(res, rotatedPdf, 'rotated.pdf');
   } catch (error) {
+    console.error('Rotate PDF error:', error);
     res.status(500).json({ error: 'Failed to rotate PDF pages' });
+  } finally {
+    if (req.file) await fs.unlink(req.file.path);
+  }
+});
+
+// Reorder PDF pages
+router.post('/reorder', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
+    let order;
+    try {
+      order = JSON.parse(req.body.order);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid order' });
+    }
+    const reorderedPdf = await pdfOperations.reorderPDF(req.file, order);
+    await sendFileResponse(res, reorderedPdf, 'reordered.pdf');
+  } catch (error) {
+    console.error('Reorder PDF error:', error);
+    res.status(500).json({ error: 'Failed to reorder PDF pages' });
+  } finally {
+    if (req.file) await fs.unlink(req.file.path);
+  }
+});
+
+// Extract images from PDF
+router.post('/extract-images', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
+    const images = await pdfOperations.extractImages(req.file);
+    const zipPath = path.join('uploads', 'extracted_images.zip');
+    await createZipArchive(images, zipPath);
+    res.download(zipPath, 'extracted_images.zip', async () => {
+      await fs.unlink(zipPath);
+      await Promise.all(images.map(image => fs.unlink(image.path)));
+    });
+  } catch (error) {
+    console.error('Extract images error:', error);
+    res.status(500).json({ error: 'Failed to extract images from PDF' });
   } finally {
     if (req.file) await fs.unlink(req.file.path);
   }
@@ -75,14 +129,17 @@ router.post('/rotate', upload.single('file'), async (req, res) => {
 // Add watermark
 router.post('/watermark', upload.single('file'), async (req, res) => {
   try {
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
     const { watermarkText, options } = req.body;
+    const parsedOptions = options ? JSON.parse(options) : {};
     const watermarkedPdf = await pdfOperations.addWatermark(
       req.file,
       watermarkText,
-      JSON.parse(options)
+      parsedOptions
     );
     await sendFileResponse(res, watermarkedPdf, 'watermarked.pdf');
   } catch (error) {
+    console.error('Add watermark error:', error);
     res.status(500).json({ error: 'Failed to add watermark' });
   } finally {
     if (req.file) await fs.unlink(req.file.path);
@@ -92,10 +149,12 @@ router.post('/watermark', upload.single('file'), async (req, res) => {
 // Protect PDF
 router.post('/protect', upload.single('file'), async (req, res) => {
   try {
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
     const { password } = req.body;
     const protectedPdf = await pdfOperations.protectPDF(req.file, password);
     await sendFileResponse(res, protectedPdf, 'protected.pdf');
   } catch (error) {
+    console.error('Protect PDF error:', error);
     res.status(500).json({ error: 'Failed to protect PDF' });
   } finally {
     if (req.file) await fs.unlink(req.file.path);
@@ -105,9 +164,11 @@ router.post('/protect', upload.single('file'), async (req, res) => {
 // Compress PDF
 router.post('/compress', upload.single('file'), async (req, res) => {
   try {
+    if (!req.file) return res.status(400).json({ error: 'File is required' });
     const compressedPdf = await pdfOperations.compressPDF(req.file);
     await sendFileResponse(res, compressedPdf, 'compressed.pdf');
   } catch (error) {
+    console.error('Compress PDF error:', error);
     res.status(500).json({ error: 'Failed to compress PDF' });
   } finally {
     if (req.file) await fs.unlink(req.file.path);

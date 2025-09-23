@@ -12,7 +12,7 @@ import { seoData } from "../utils/seoData";
 import LoadingSpinner from "../components/LoadingSpinner.jsx"; // Import LoadingSpinner
 
 const popularToolNames = [
-  "PDF Converter",
+  "PDF Tools",
   "Markdown to DOCX",
   "QR Code Generator",
   "JSON Formatter",
@@ -109,14 +109,8 @@ const Home = () => {
             color="yellow"
           />
           <CategoryCard
-            title="Electronics Tools"
-            link="/tools/electronics"
-            color="purple"
-          />
-          <CategoryCard title="AI Tools" link="/tools/ai" color="red" />
-          <CategoryCard
             title="PDF Tools"
-            link="/tools/pdf"
+            link="/tools/pdf-converter"
             color="pink"
           />
         </div>

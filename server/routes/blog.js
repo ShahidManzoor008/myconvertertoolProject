@@ -1,6 +1,4 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import {
   getAllPosts,
   getPostBySlug,
@@ -8,11 +6,9 @@ import {
   updatePost,
   deletePost
 } from '../controllers/blogController.js';
+import { body } from 'express-validator';
 import { auth } from '../middleware/auth.js';
-import upload from '../middleware/upload.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -21,14 +17,28 @@ router.get('/posts', getAllPosts);
 router.get('/posts/:slug', getPostBySlug);
 
 // Protected routes - require authentication
-router.post('/posts', auth, upload.single('coverImage'), createPost);
-router.put('/posts/:slug', auth, upload.single('coverImage'), updatePost);
+router.post(
+  '/posts',
+  auth,
+  upload.single('coverImage'),
+  [
+    body('title').notEmpty().withMessage('Title is required'),
+    body('content').notEmpty().withMessage('Content is required'),
+    body('author').notEmpty().withMessage('Author is required'),
+  ],
+  createPost
+);
+router.put(
+  '/posts/:slug',
+  auth,
+  upload.single('coverImage'),
+  [
+    body('title').optional().notEmpty().withMessage('Title cannot be empty'),
+    body('content').optional().notEmpty().withMessage('Content cannot be empty'),
+    body('author').optional().notEmpty().withMessage('Author cannot be empty'),
+  ],
+  updatePost
+);
 router.delete('/posts/:slug', auth, deletePost);
-
-// Serve uploaded images
-router.get('/images/:filename', (req, res) => {
-  const { filename } = req.params;
-  res.sendFile(path.join(__dirname, '../uploads/blog-images', filename));
-});
 
 export default router;

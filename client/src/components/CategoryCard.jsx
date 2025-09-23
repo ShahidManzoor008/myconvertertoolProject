@@ -10,7 +10,7 @@ const CategoryCard = ({ title, link, color }) => {
         className={`block p-6 bg-${color}-500 text-white rounded-md text-center shadow-lg transition-transform duration-300 transform hover:shadow-2xl`}
         aria-label={`View ${title} tools`}
       >
-        <h3 className="text-lg font-bold">{title}</h3>
+        <h3 className="text-base sm:text-lg font-bold">{title}</h3>
       </Link>
     </motion.div>
   );

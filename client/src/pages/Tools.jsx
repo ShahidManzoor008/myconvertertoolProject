@@ -4,8 +4,7 @@ import { BsQrCode } from "react-icons/bs";
 import { SiMarkdown, SiJsonwebtokens } from "react-icons/si";
 import { MdOutlinePictureAsPdf } from "react-icons/md";
 import { TbTransform } from "react-icons/tb";
-import { IoIosConstruct } from "react-icons/io";
-import { GiArtificialIntelligence } from "react-icons/gi";
+
 import ToolCard from "../components/ToolCard"; // Import the global ToolCard
 import PropTypes from "prop-types";
 import SEO from '../utils/SEO.jsx';
@@ -73,17 +72,7 @@ const Tools = () => {
         <ToolCard title="Markdown to DOCX" link="/tools/markdown-to-docx" icon={<SiMarkdown />} color="blue" />
       </ToolSection>
 
-      {/* ⚡ Electronics Tools */}
-      <ToolSection title="⚡ Electronics Tools">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">🚀 No tools yet. Future tools: Resistor calculators, voltage dividers...</p>
-        <ToolCard title="Coming Soon" link="/" icon={<IoIosConstruct />} color="gray" />
-      </ToolSection>
 
-      {/* 🤖 AI Tools */}
-      <ToolSection title="🤖 AI Tools">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">🚀 No tools yet. Future tools: AI text generator, image generator...</p>
-        <ToolCard title="AI Tools Coming Soon" link="/" icon={<GiArtificialIntelligence />} color="gray" />
-      </ToolSection>
     </div>
   );
 };
