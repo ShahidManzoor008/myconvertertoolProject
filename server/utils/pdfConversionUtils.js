@@ -29,6 +29,61 @@ export const convertImagesToPDF = async (imagePaths) => {
   return Buffer.from(await pdfDoc.save());
 };
 
+// Helper Function: Convert Text to PDF
+const convertTextToPDF = async (filePath) => {
+  let text = fs.readFileSync(filePath, 'utf-8');
+  
+  // Sanitize text to remove characters not supported by WinAnsi encoding
+  text = text.replace(/[^\x00-\x7F]/g, ""); // This removes non-ASCII characters
+
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage();
+  const { width, height } = page.getSize();
+  const font = await pdfDoc.embedFont('Helvetica');
+  const fontSize = 12;
+  const margin = 50;
+  const textWidth = width - 2 * margin;
+  const lineHeight = 15;
+  let y = height - margin;
+
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+
+  for (const line of lines) {
+    // Simple line wrapping logic
+    let currentLine = line;
+    while (font.widthOfTextAtSize(currentLine, fontSize) > textWidth) {
+      let breakPoint = Math.floor(currentLine.length * textWidth / font.widthOfTextAtSize(currentLine, fontSize));
+      let part = currentLine.substring(0, breakPoint);
+      
+      // Try to break at the last space
+      const lastSpace = part.lastIndexOf(' ');
+      if (lastSpace > -1 && part.length > lastSpace) {
+        breakPoint = lastSpace;
+        part = currentLine.substring(0, breakPoint);
+      }
+
+      if (y < margin + lineHeight) {
+        page = pdfDoc.addPage();
+        y = height - margin;
+      }
+
+      page.drawText(part, { x: margin, y, font, size: fontSize, color: rgb(0, 0, 0) });
+      y -= lineHeight;
+      currentLine = currentLine.substring(breakPoint).trim();
+    }
+
+    if (y < margin + lineHeight) {
+      page = pdfDoc.addPage();
+      y = height - margin;
+    }
+    page.drawText(currentLine, { x: margin, y, font, size: fontSize, color: rgb(0, 0, 0) });
+    y -= lineHeight;
+  }
+
+  return Buffer.from(await pdfDoc.save());
+};
+
+
 // PDF Conversion Functions with libreoffice
 const getLibreOfficePath = () => {
   if (process.env.LIBREOFFICE_PATH) {
@@ -61,36 +116,27 @@ if (!fs.existsSync(libreOfficePath)) {
 const convertToPDF = (inputPath) => {
   return new Promise((resolve, reject) => {
     const outputDir = path.dirname(inputPath);
-    const command = `"${libreOfficePath}" --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+    const baseName = path.basename(inputPath, path.extname(inputPath));
+    
+    const toPdfCommand = `"${libreOfficePath}" --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
 
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error("❌ LibreOffice Conversion Error:", stderr);
-        return reject("LibreOffice failed to convert the file.");
+    exec(toPdfCommand, (pdfError, pdfStdout, pdfStderr) => {
+      if (pdfError) {
+        console.error("❌ LibreOffice to PDF Conversion Error:", pdfStderr);
+        return reject("LibreOffice failed to convert the file to PDF.");
       }
 
-      console.log("📄 LibreOffice Output:", stdout);
+      console.log("📄 LibreOffice to PDF Output:", pdfStdout);
 
-      // Find the generated PDF file in the output directory
-      const files = fs.readdirSync(outputDir);
-      const pdfFile = files.find(
-        (file) =>
-          file.endsWith(".pdf") &&
-          file.includes(path.basename(inputPath, path.extname(inputPath)))
-      );
-
-      if (!pdfFile) {
-        console.error("❌ PDF file was not created.");
-        return reject("Conversion failed: No output file.");
-      }
-
+      const pdfFile = `${baseName}.pdf`;
       const generatedPdfPath = path.join(outputDir, pdfFile);
-      console.log(`✅ PDF Successfully Created: ${generatedPdfPath}`);
 
       if (!fs.existsSync(generatedPdfPath)) {
-        return reject("File conversion failed: PDF file not found.");
+        console.error("❌ PDF file was not created.");
+        return reject("Conversion failed: No PDF output file.");
       }
 
+      console.log(`✅ PDF Successfully Created: ${generatedPdfPath}`);
       resolve(generatedPdfPath);
     });
   });
@@ -99,11 +145,14 @@ const convertToPDF = (inputPath) => {
 // Helper Function: Convert Files to PDF for Batch Mode
 export const convertFileToPDF = async (filePath, fileType) => {
   const supportedImageTypes = ["png", "jpg", "jpeg"];
-  const supportedLibreOfficeTypes = ["md", "docx", "pptx", "xlsx", "odt", "ods", "odp", "txt"];
+  const supportedTextTypes = ["md", "txt"];
+  const supportedLibreOfficeTypes = ["docx", "pptx", "xlsx", "odt", "ods", "odp"];
 
   if (supportedImageTypes.includes(fileType)) {
     // convertImagesToPDF expects an array, so wrap filePath in an array
     return await convertImagesToPDF([filePath]);
+  } else if (supportedTextTypes.includes(fileType)) {
+    return await convertTextToPDF(filePath);
   } else if (supportedLibreOfficeTypes.includes(fileType)) {
     const pdfPath = await convertToPDF(filePath);
     const pdfBuffer = fs.readFileSync(pdfPath);
@@ -117,8 +166,38 @@ export const convertFileToPDF = async (filePath, fileType) => {
 // Process conversion for one or more files
 export const processFileConversion = async (files) => {
   const convertedResults = [];
+  const imageFiles = [];
+  const otherFiles = [];
 
+  // Separate image files from other files
   for (const file of files) {
+    const extension = path.extname(file.originalname).toLowerCase().replace(".", "");
+    const supportedImageTypes = ["png", "jpg", "jpeg"];
+    if (supportedImageTypes.includes(extension)) {
+      imageFiles.push(file);
+    } else {
+      otherFiles.push(file);
+    }
+  }
+
+  // Process image files together
+  if (imageFiles.length > 0) {
+    try {
+      const imagePaths = imageFiles.map(file => file.path);
+      const pdfBuffer = await convertImagesToPDF(imagePaths);
+      convertedResults.push({
+        filename: "converted_images.pdf",
+        base64: Buffer.from(pdfBuffer).toString("base64"),
+        temp: imagePaths, // Keep original temp paths for cleanup
+        convertedTemp: null
+      });
+    } catch (error) {
+      console.error(`❌ Error converting images:`, error);
+    }
+  }
+
+  // Process other files individually
+  for (const file of otherFiles) {
     try {
       const extension = path.extname(file.originalname).toLowerCase().replace(".", "");
       const pdfBuffer = await convertFileToPDF(file.path, extension);
@@ -130,7 +209,6 @@ export const processFileConversion = async (files) => {
       });
     } catch (error) {
       console.error(`❌ Error converting ${file.originalname}:`, error);
-      // Optionally, push an error result or skip this file
     }
   }
 

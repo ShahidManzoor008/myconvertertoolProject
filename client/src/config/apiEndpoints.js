@@ -19,7 +19,7 @@ export const API_ENDPOINTS = {
   pdf: {
     operations: `${API_BASE_URL}/api/pdf`,
     editor: `${API_BASE_URL}/api/edit-pdf`,
-    converter: `${API_BASE_URL}/api/convert`,
+    converter: `${API_BASE_URL}/api/convert/upload`,
   },
   markdown: {
     toDocx: `${API_BASE_URL}/api/convert-md-to-docx`,

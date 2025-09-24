@@ -69,7 +69,8 @@ export default defineConfig({
     ],
     esbuildOptions: {
       loader: {
-        '.js': 'jsx'
+        '.js': 'jsx',
+        '.jsx': 'jsx' // Explicitly handle .jsx files as JSX
       },
       target: 'es2022' // Add this line to set the target environment
     }

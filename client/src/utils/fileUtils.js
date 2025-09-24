@@ -72,11 +72,11 @@ export const createFormDataWithFiles = (files, additionalData = {}) => {
   
   // Add files to form data
   if (Array.isArray(files)) {
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, file);
+    files.forEach((file) => {
+      formData.append('files', file);
     });
   } else {
-    formData.append('file', files);
+    formData.append('files', files);
   }
 
   // Add additional data

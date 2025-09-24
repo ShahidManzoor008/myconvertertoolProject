@@ -1,27 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Eye } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from '../../utils/SEO';
 import PdfOperations from '../../components/PdfOperations';
 import FileHistory from '../../components/FileHistory';
 import PdfViewer from '../../components/PdfViewer';
+import LoadingSpinner from '../../components/common/LoadingSpinner'; // Import LoadingSpinner
+import ConversionProgressBar from '../../components/common/ConversionProgressBar'; // Import ConversionProgressBar
 import { pdfApi } from '../../utils/apiClient';
 import { createFormDataWithFiles } from '../../utils/fileUtils';
 import { AppError } from '../../utils/AppError';
+import { useAuth } from '../../providers/AuthProvider'; // Import useAuth
 
 const PdfConverter = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [convertedFiles, setConvertedFiles] = useState([]); // For storing converted files
+  const [viewingFile, setViewingFile] = useState(null); // For storing the file to be viewed
   // selectedOperation controls the high-level card choice (null = show action cards)
   const [selectedOperation, setSelectedOperation] = useState(null);
   const [currentOperation, setCurrentOperation] = useState("convert"); // Default sub-operation
   const [recentFiles, setRecentFiles] = useState([]);
+  const [totalConversions, setTotalConversions] = useState(0); // New state for total conversions
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
+  const { user } = useAuth(); // Get user from AuthProvider
 
   // Handle file download
   const handleDownload = () => {
@@ -41,10 +47,12 @@ const PdfConverter = () => {
     setTimeout(() => setPopupMessage(""), 2500);
   };
 
-  // Load recent files from localStorage
+  // Load recent files and total conversions from localStorage
   useEffect(() => {
     const loadedRecent = JSON.parse(localStorage.getItem('recentFiles') || '[]');
     setRecentFiles(loadedRecent);
+    const loadedTotalConversions = parseInt(localStorage.getItem('totalConversions') || '0', 10);
+    setTotalConversions(loadedTotalConversions);
   }, []);
 
   // Add file to recent conversions
@@ -56,9 +64,39 @@ const PdfConverter = () => {
     };
 
     setRecentFiles(prev => {
-      const updated = [newFile, ...prev.slice(0, 9)]; // Keep only last 10 files
-      localStorage.setItem('recentFiles', JSON.stringify(updated));
+      const updated = [newFile, ...prev.slice(0, 4)]; // Keep only last 5 files
+      
+      // Remove the base64 content before storing in localStorage to prevent QuotaExceededError
+      const storedUpdated = updated.map(f => {
+        const fileData = f.filename ? f : (f[0] || {});
+        const { base64, ...rest } = fileData;
+        if (f.filename) {
+          return rest;
+        }
+        return { ...f, 0: rest };
+      });
+
+      try {
+        localStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
+      } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+          console.error("Could not add to recent files, storage quota exceeded. Clearing recent files and trying again.");
+          localStorage.removeItem('recentFiles');
+          try {
+            localStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
+          } catch (e) {
+            console.error("Still unable to save recent files after clearing.", e);
+          }
+        }
+      }
+      
       return updated;
+    });
+
+    setTotalConversions(prev => {
+      const newTotal = prev + 1;
+      localStorage.setItem('totalConversions', newTotal.toString());
+      return newTotal;
     });
   };
 
@@ -118,7 +156,7 @@ const PdfConverter = () => {
   // Clear selected files
   const handleClearSelection = () => {
     setUploadedFiles([]);
-    setConvertedFiles([]); // Clear converted files
+    // setConvertedFiles([]); // Removed: Converted files should persist for download/preview
     showPopup("Selection cleared");
   };
 
@@ -130,8 +168,11 @@ const PdfConverter = () => {
     if (!file) return false;
     const ext = getFileExt(file);
     switch (operation) {
-      case 'convert':
-        return true; // can convert many input types
+      case 'convert': {
+        const acceptedTypes = getAcceptForOperation('convert');
+        const allowedExtensions = Object.values(acceptedTypes).flat().map(e => e.substring(1));
+        return allowedExtensions.includes(ext);
+      }
       case 'edit':
         return ext === 'pdf';
       default:
@@ -151,6 +192,7 @@ const PdfConverter = () => {
       const resultWithDetails = { ...result, originalName: file.name };
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
+      handleClearSelection(); // Clear dropzone after successful conversion
       return resultWithDetails;
     } catch (err) {
       if (err instanceof AppError && err.status === 401) setShowAuthPopup(true);
@@ -165,19 +207,30 @@ const PdfConverter = () => {
 
   const startProcessingAll = async () => {
     if (uploadedFiles.length === 0) return showPopup('No files to process');
-    setBatchProcessing(true);
-    setBatchProgress({ done: 0, total: uploadedFiles.length });
-    for (let i = 0; i < uploadedFiles.length; i++) {
-      try {
-        await processFile(uploadedFiles[i]);
-        setBatchProgress(prev => ({ ...prev, done: prev.done + 1 }));
-      } catch (err) {
-        // continue processing remaining files but notify user
-        console.error('Batch file failed', uploadedFiles[i].name, err);
-      }
+    setLoading(true);
+    try {
+      const formData = createFormDataWithFiles(uploadedFiles, {
+        operation: currentOperation,
+      });
+
+      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
+      const results = await apiCall(formData);
+
+      const newConvertedFiles = results.map((result, index) => {
+        const originalFile = uploadedFiles[index];
+        return { ...result, originalName: originalFile ? originalFile.name : `file_${index}` };
+      });
+
+      setConvertedFiles(prev => [...prev, ...newConvertedFiles]);
+      newConvertedFiles.forEach(file => addToRecent(file));
+      handleClearSelection();
+      showPopup('Batch processing complete');
+    } catch (err) {
+      if (err instanceof AppError && err.status === 401) setShowAuthPopup(true);
+      showPopup(`${currentOperation} operation failed: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-    setBatchProcessing(false);
-    showPopup('Batch processing complete');
   };
 
   return (
@@ -258,6 +311,7 @@ const PdfConverter = () => {
                   setSelectedOperation(null);
                   setUploadedFiles([]);
                   setConvertedFiles([]);
+                  setViewingFile(null);
                 }}
               >
                 Go Back to Main Menu
@@ -323,6 +377,14 @@ const PdfConverter = () => {
               <PdfViewer
                 file={URL.createObjectURL(uploadedFiles[0])}
                 filename={uploadedFiles[0].name}
+                onFileUpdate={(newBlobUrl) => {
+                  // Create a dummy File object for the updated PDF blob
+                  const updatedFile = new File([newBlobUrl], uploadedFiles[0].name, { type: 'application/pdf' });
+                  // Revoke the old URL to prevent memory leaks
+                  URL.revokeObjectURL(URL.createObjectURL(uploadedFiles[0]));
+                  // Update the uploadedFiles state with the new blob URL
+                  setUploadedFiles([Object.assign(updatedFile, { preview: newBlobUrl })]);
+                }}
               />
             </div>
           )}
@@ -338,11 +400,11 @@ const PdfConverter = () => {
                   await processFile(uploadedFiles[0]);
                   setLoading(false);
                 }}
-                disabled={loading}
+                disabled={loading || uploadedFiles.length === 0}
                 className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Upload className="w-5 h-5" />
-                {selectedOperation === 'convert' ? 'Convert to PDF' : `Process ${uploadedFiles[0].name}`}
+                {loading ? 'Converting...' : (selectedOperation === 'convert' ? 'Convert to PDF' : `Process ${uploadedFiles[0].name}`)}
               </motion.button>
             )}
 
@@ -351,11 +413,11 @@ const PdfConverter = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startProcessingAll}
-                disabled={batchProcessing || loading}
+                disabled={loading || uploadedFiles.length === 0}
                 className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Upload className="w-5 h-5" />
-                {batchProcessing ? `Processing (${batchProgress.done}/${batchProgress.total})` : 'Start Batch Processing'}
+                {loading ? `Processing...` : 'Start Batch Processing'}
               </motion.button>
             )}
 
@@ -372,19 +434,128 @@ const PdfConverter = () => {
             )}
           </div>
 
+          {/* Loading Indicator */}
+          {loading && (
+            <div className="mt-4">
+              <ConversionProgressBar
+                message={'Converting files...'}
+              />
+            </div>
+          )}
+
+          {/* Display Converted Files and Download Button */}
+          {convertedFiles.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Converted Files:</h4>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
+                {convertedFiles.map((file, index) => {
+                  const converted = file.filename ? file : (file[0] || {});
+                  return (
+                    <li key={index} className="flex items-center justify-between py-1">
+                      <span className="truncate">{converted.filename || file.originalName}</span>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setViewingFile(converted)}
+                          disabled={viewingFile && viewingFile.filename === converted.filename}
+                          className="ml-2 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            if (!converted.base64) return;
+                            const link = document.createElement('a');
+                            link.href = `data:application/pdf;base64,${converted.base64}`;
+                            link.download = converted.filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            showPopup(`${converted.filename} downloaded.`);
+                          }}
+                          className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                        >
+                          Download
+                        </motion.button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* PDF Viewer for Edit operation and Converted PDF */}
+          {( (selectedOperation === 'edit' && uploadedFiles.length > 0 && uploadedFiles[0].type === 'application/pdf') || viewingFile) ? (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Preview:</h4>
+              <PdfViewer
+                file={viewingFile ? `data:application/pdf;base64,${viewingFile.base64}` : URL.createObjectURL(uploadedFiles[0])}
+                filename={viewingFile ? viewingFile.filename : uploadedFiles[0].name}
+                onFileUpdate={(newBlobUrl) => {
+                  // This part is primarily for 'edit' operations
+                  if (selectedOperation === 'edit') {
+                    const updatedFile = new File([newBlobUrl], uploadedFiles[0].name, { type: 'application/pdf' });
+                    URL.revokeObjectURL(URL.createObjectURL(uploadedFiles[0]));
+                    setUploadedFiles([Object.assign(updatedFile, { preview: newBlobUrl })]);
+                  } else if (viewingFile) {
+                    // For converted files, if there's an update, we might need to handle it differently
+                    // For now, we'll just update the first converted file's URL
+                    const updatedConvertedFile = { ...viewingFile, url: newBlobUrl };
+                    setConvertedFiles(convertedFiles.map(f => f.filename === viewingFile.filename ? updatedConvertedFile : f));
+                  }
+                }}
+              />
+            </div>
+          ) : null}
+
           {/* File History */}
           <div className="mt-6">
-            <FileHistory
-              files={recentFiles}
-              onDownload={(file) => {
-                const link = document.createElement('a');
-                link.href = file.url;
-                link.download = file.filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-            />
+            <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center">
+              Total Conversions: 
+              <motion.span
+                key={totalConversions} // Key change to trigger animation on update
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="ml-2 text-blue-600 dark:text-blue-400"
+              >
+                {totalConversions}
+              </motion.span>
+              <span className="ml-4 flex items-center text-yellow-500">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 18.896l-7.416 3.917 1.48-8.279L.001 9.306l8.332-1.151L12 .587z"/></svg>
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 18.896l-7.416 3.917 1.48-8.279L.001 9.306l8.332-1.151L12 .587z"/></svg>
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 18.896l-7.416 3.917 1.48-8.279L.001 9.306l8.332-1.151L12 .587z"/></svg>
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 18.896l-7.416 3.917 1.48-8.279L.001 9.306l8.332-1.151L12 .587z"/></svg>
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 18.896l-7.416 3.917 1.48-8.279L.001 9.306l8.332-1.151L12 .587z"/></svg>
+              </span>
+            </h4>
+            {user ? (
+              <FileHistory
+                files={recentFiles}
+                onDownload={(file) => {
+                  const link = document.createElement('a');
+                  link.href = file.url;
+                  link.download = file.filename;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              />
+            ) : (
+              <div className="text-center p-4 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <p className="mb-2">Login or Register to view your recent file conversions.</p>
+                <button
+                  onClick={() => setShowAuthPopup(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Login / Register
+                </button>
+              </div>
+            )}
           </div>
         </div>
         )}
@@ -418,7 +589,27 @@ const PdfConverter = () => {
           }
         }}
         onSkip={() => {
-          handleDownload();
+          setShowAuthPopup(false);
+          if (downloadData) {
+            handleDownload();
+          } else if (convertedFiles.length > 0) {
+            // If no specific downloadData, try to download the most recent converted file
+            const latestConverted = convertedFiles[convertedFiles.length - 1];
+            if (latestConverted && (latestConverted.base64 || latestConverted[0]?.base64)) {
+              const fileData = latestConverted.base64 ? latestConverted : latestConverted[0];
+              const link = document.createElement('a');
+              link.href = `data:application/pdf;base64,${fileData.base64}`;
+              link.download = fileData.filename || latestConverted.originalName || 'document.pdf';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showPopup(`${fileData.filename || latestConverted.originalName} downloaded.`);
+            } else {
+              showPopup("No file available for download.");
+            }
+          } else {
+            showPopup("No file available for download.");
+          }
         }}
       />
     </motion.div>

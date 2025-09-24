@@ -117,22 +117,19 @@ export const uploadFiles = async (req, res) => {
   try {
     // Validate each uploaded file's signature
     for (const f of req.files) {
-      const ok = await validateUploadedFile(f.path, allowedConversionMimeTypes);
+      const ok = await validateUploadedFile(f.path, f.originalname);
       if (!ok) {
         cleanupFiles(req.files.map(file => file.path));
         return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });
       }
     }
 
-    const convertedResults = await processFileConversion(req.files); // This now returns an array of { filename, base64 }
+    const convertedResults = await processFileConversion(req.files);
 
-    res.json(convertedResults); // Send the array of converted files as JSON
+    res.json(convertedResults);
 
   } catch (error) {
     console.error("Error in /api/files/upload:", error);
     res.status(500).json({ error: error.toString() });
-  } finally {
-    // The original uploaded files are cleaned up in processFileConversion.
-    // Any other temp files created by convertFileToPDF are cleaned up within that function.
   }
 };

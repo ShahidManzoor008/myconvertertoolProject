@@ -1,5 +1,4 @@
 import fs from 'fs';
-import * as fileType from 'file-type';
 import path from 'path';
 
 // Helper function: Cleanup Uploaded Files
@@ -17,16 +16,16 @@ export const cleanupFiles = (files) => {
 // Helper: Validate uploaded file by inspecting magic numbers
 export const validateUploadedFile = async (filePath, originalName) => {
   try {
-    // Read a reasonable chunk from the file (first 4KB) for detection
-    const fd = fs.openSync(filePath, 'r');
-    const buffer = Buffer.alloc(4100);
-    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
-    fs.closeSync(fd);
+    const fileTypeModule = await import('file-type');
+    const type = await fileTypeModule.fileTypeFromFile(filePath);
 
-    const slice = buffer.slice(0, bytesRead);
-    const type = await fileType.fromBuffer(slice);
-
+    // For file types that file-type may not recognize (like plain text), we can add a fallback.
     if (!type) {
+      const ext = path.extname(originalName).toLowerCase().substring(1);
+      if (['md', 'txt'].includes(ext)) {
+        console.log(`✅ Allowed fallback for extension: ${ext}`);
+        return true;
+      }
       console.warn(`⚠️ Could not determine file type for ${originalName}`);
       return false;
     }
