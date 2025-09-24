@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "npx nodemon index.js",
-  "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --detectOpenHandles --runInBand"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --detectOpenHandles --runInBand"
   },
   "keywords": [],
   "author": "Shahid Manzoor",
@@ -27,6 +27,7 @@
     "helmet": "^8.0.0",
     "image-size": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.11.0",
     "markdown-it": "^14.1.0",
     "mongoose": "^8.18.2",
     "morgan": "^1.10.1",
