@@ -1,6 +1,4 @@
-import { API_CONFIG } from './api.config';
-
-const API_BASE_URL = API_CONFIG?.BASE_URL || '';
+import API_BASE_URL from '../../api.config.js';
 
 export const API_ENDPOINTS = {
   auth: {
