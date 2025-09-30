@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Popup from "../../components/Popup";
+import { showPopup as showPopupUtil, handleDownload as handleDownloadUtil } from "../../utils/uiUtils";
 
 const TextCaseTool = () => {
   const [text, setText] = useState("");
@@ -8,8 +9,7 @@ const TextCaseTool = () => {
   const [popupMessage, setPopupMessage] = useState("");
 
   const showPopup = (message) => {
-    setPopupMessage(message);
-    setTimeout(() => setPopupMessage(""), 2000); // Auto-hide popup
+    showPopupUtil(setPopupMessage, message, 2000);
   };
 
   const toUpperCase = () => setConvertedText(text.toUpperCase());
@@ -25,14 +25,7 @@ const TextCaseTool = () => {
   };
 
   const handleDownload = () => {
-    const blob = new Blob([convertedText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "converted_text.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    handleDownloadUtil(convertedText, "converted_text.txt", "text/plain");
     showPopup("File downloaded!");
   };
 

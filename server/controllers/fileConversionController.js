@@ -33,7 +33,7 @@ export const convertMdToDocx = async (req, res) => {
     return res.status(400).json({ error: "No Markdown file uploaded." });
   }
   try {
-    const ok = await validateUploadedFile(req.file.path, allowedMarkdownMimeTypes);
+    const ok = await validateUploadedFile(req.file.path, req.file.originalname);
     if (!ok) {
       cleanupFiles(req.file.path);
       return res.status(400).json({ error: 'Invalid or unsupported Markdown file.' });
@@ -49,7 +49,9 @@ export const convertMdToDocx = async (req, res) => {
     console.error('❌ Markdown to DOCX Error:', error.stack);
     res.status(500).json({ error: `Failed to convert Markdown to DOCX: ${error.message}` });
   } finally {
-    cleanupFiles(req.file.path);
+    if (req.file && req.file.path) {
+      cleanupFiles(req.file.path);
+    }
   }
 };
 

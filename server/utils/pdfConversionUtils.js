@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { cleanupFiles } from './fileUtils.js';
+import puppeteer from 'puppeteer';
+import markdownit from 'markdown-it';
 
 // Helper Function: Convert Image(s) to PDF
 export const convertImagesToPDF = async (imagePaths) => {
@@ -29,58 +31,67 @@ export const convertImagesToPDF = async (imagePaths) => {
   return Buffer.from(await pdfDoc.save());
 };
 
-// Helper Function: Convert Text to PDF
+// Helper Function: Convert Text to PDF (with Markdown styling)
 const convertTextToPDF = async (filePath) => {
-  let text = fs.readFileSync(filePath, 'utf-8');
-  
-  // Sanitize text to remove characters not supported by WinAnsi encoding
-  text = text.replace(/[^\x00-\x7F]/g, ""); // This removes non-ASCII characters
+  const extension = path.extname(filePath).toLowerCase();
+  let htmlContent;
 
-  const pdfDoc = await PDFDocument.create();
-  let page = pdfDoc.addPage();
-  const { width, height } = page.getSize();
-  const font = await pdfDoc.embedFont('Helvetica');
-  const fontSize = 12;
-  const margin = 50;
-  const textWidth = width - 2 * margin;
-  const lineHeight = 15;
-  let y = height - margin;
-
-  const lines = text.replace(/\r\n/g, '\n').split('\n');
-
-  for (const line of lines) {
-    // Simple line wrapping logic
-    let currentLine = line;
-    while (font.widthOfTextAtSize(currentLine, fontSize) > textWidth) {
-      let breakPoint = Math.floor(currentLine.length * textWidth / font.widthOfTextAtSize(currentLine, fontSize));
-      let part = currentLine.substring(0, breakPoint);
-      
-      // Try to break at the last space
-      const lastSpace = part.lastIndexOf(' ');
-      if (lastSpace > -1 && part.length > lastSpace) {
-        breakPoint = lastSpace;
-        part = currentLine.substring(0, breakPoint);
-      }
-
-      if (y < margin + lineHeight) {
-        page = pdfDoc.addPage();
-        y = height - margin;
-      }
-
-      page.drawText(part, { x: margin, y, font, size: fontSize, color: rgb(0, 0, 0) });
-      y -= lineHeight;
-      currentLine = currentLine.substring(breakPoint).trim();
-    }
-
-    if (y < margin + lineHeight) {
-      page = pdfDoc.addPage();
-      y = height - margin;
-    }
-    page.drawText(currentLine, { x: margin, y, font, size: fontSize, color: rgb(0, 0, 0) });
-    y -= lineHeight;
+  // Read file and convert Markdown to HTML if applicable
+  const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+  if (extension === '.md') {
+    const md = markdownit();
+    htmlContent = md.render(fileContent);
+  } else {
+    // For plain text, wrap in <pre> for basic formatting
+    htmlContent = `<pre>${fileContent.replace(/[&<>"']/g, (match) => {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[match];
+    })}</pre>`;
   }
 
-  return Buffer.from(await pdfDoc.save());
+  // Read the GitHub Markdown CSS
+  const cssPath = path.resolve(path.dirname(filePath), '..', 'assets', 'markdown-styles.css');
+  const cssContent = await fs.promises.readFile(cssPath, 'utf-8');
+
+  // Launch Puppeteer
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  const page = await browser.newPage();
+
+  // Set the HTML content with embedded styles
+  await page.setContent(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>${cssContent}</style>
+    </head>
+    <body class="markdown-body">
+      ${htmlContent}
+    </body>
+    </html>
+  `, { waitUntil: 'networkidle0' });
+
+  // Generate PDF
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: {
+      top: '20mm',
+      right: '20mm',
+      bottom: '20mm',
+      left: '20mm'
+    }
+  });
+
+  await browser.close();
+  return pdfBuffer;
 };
 
 

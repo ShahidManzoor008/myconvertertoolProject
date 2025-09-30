@@ -1,16 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { GOOGLE_CLIENT_ID } from '../config/auth.config';
+import { GOOGLE_AUTH_ERROR_MESSAGES } from '../utils/googleAuthErrors';
 import GoogleSignInDebug from './GoogleSignInDebug';
 import useToast from '../hooks/useToast';
 
 // Loads the Google Identity Services script if not already present
 const loadGsi = () => {
   if (window.google && window.google.accounts && window.google.accounts.id) return Promise.resolve();
+  
   const existing = document.getElementById('google-signin');
-  if (existing) return new Promise((res) => { existing.addEventListener('load', res); });
+  if (existing) {
+    return new Promise((res) => {
+      if (window.google?.accounts?.id) {
+        res();
+      } else {
+        existing.addEventListener('load', res);
+      }
+    });
+  }
 
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -18,9 +28,24 @@ const loadGsi = () => {
     script.id = 'google-signin';
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.body.appendChild(script);
+    script.crossOrigin = 'anonymous';
+    
+    // Add timeout to detect loading failures
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Google Sign-In script loading timed out'));
+    }, 10000); // 10 second timeout
+
+    script.onload = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+    
+    script.onerror = (error) => {
+      clearTimeout(timeoutId);
+      reject(new Error(`Failed to load Google Sign-In script: ${error.message}`));
+    };
+
+    document.head.appendChild(script); // Append to head instead of body
   });
 };
 
@@ -33,19 +58,32 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
 
   useEffect(() => {
     let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
 
     const init = async () => {
       try {
+        console.debug('[GSI] Loading Google Sign-In script...');
         await loadGsi();
         if (!mounted) return;
 
-        if (!(window.google && window.google.accounts && window.google.accounts.id)) {
+        // Verify Google Sign-In is available
+        if (!(window.google?.accounts?.id)) {
           console.warn('[GSI] google.accounts.id not available after load');
-          return;
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            console.debug(`[GSI] Retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+            setTimeout(init, delay);
+            return;
+          }
+          throw new Error('Google Sign-In failed to initialize after multiple attempts');
         }
 
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
+          auto_select: true, // Enable auto sign-in with One Tap
+          use_cookies: true, // Use secure HTTPS cookies
           callback: async (res) => {
             console.debug('[GSI] callback invoked', res);
             if (!res?.credential) {
@@ -170,7 +208,7 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
     return (
       <div className={className}>
         <div id={containerId} />
-        <GoogleSignInDebug className={className} />
+        {import.meta.env.DEV && <GoogleSignInDebug className={className} />}
       </div>
     );
   }

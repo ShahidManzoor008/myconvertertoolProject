@@ -32,7 +32,14 @@ dotenv.config({ path: './.env' });
 const app = express();
 const port = process.env.PORT || 5000;
 // const allowedOrigins =["http://localhost:3000"];
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000"];
+const allowedOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(",") 
+  : [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000"
+    ];
 // ============================
 // ️ Connect to MongoDB (skip when running tests — jest.setup handles it)
 // ============================
@@ -44,37 +51,27 @@ if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined)
 // 🛡️ Enable CORS and Security Middleware
 // ============================
 // Enhanced security middleware configuration
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    maxAge: 86400, // CORS preflight cache for 24 hours
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
-// Enhanced security headers
+// Import and use enhanced security middleware
+import { securityMiddleware } from './middleware/security.js';
+app.use(securityMiddleware);
+
+// Basic Helmet configuration (CSP is handled by securityMiddleware)
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'", ...allowedOrigins],
-      },
-    },
-    crossOriginEmbedderPolicy: true,
-    crossOriginOpenerPolicy: true,
-    crossOriginResourcePolicy: { policy: "same-site" },
+    contentSecurityPolicy: false, // Disabled because we handle it in securityMiddleware
+    crossOriginOpenerPolicy: false, // Explicitly disable Helmet's COOP management
   })
 );
 

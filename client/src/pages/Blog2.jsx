@@ -1,3 +1,5 @@
+// This file has been renamed to Blog2.jsx.bak for backup purposes.
+// The content remains unchanged.
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import SEO from '../utils/SEO.jsx';

@@ -10,7 +10,13 @@ export default defineConfig({
     tailwindcss({ config: './tailwind.config.js' }),
   ],
   server: {
-    port: 3000,
+    port: 5173,
+    host: 'localhost',
+    headers: {
+      'Cross-Origin-Opener-Policy': 'unsafe-none',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      'Access-Control-Allow-Origin': '*',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

@@ -14,7 +14,7 @@ import {
  * @returns {Object} Headers object with auth token if present
  */
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -121,7 +121,7 @@ export const apiClient = {
    */
   async upload(endpoint, formData, options = {}) {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await fetch(endpoint, {
@@ -132,12 +132,17 @@ export const apiClient = {
         ...options,
       });
 
-      const data = await response.json().catch(() => null);
-
       if (!response.ok) {
+        const data = await response.json().catch(() => null);
         throw createError(response, data);
       }
 
+      // Handle blob response for file downloads
+      if (options.responseType === 'blob') {
+        return response.blob();
+      }
+
+      const data = await response.json().catch(() => null);
       return data;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -202,4 +207,8 @@ export const markdownApi = {
 
 export const batchApi = {
   download: (files) => apiClient.post(API_ENDPOINTS.batch.download, { files }),
+};
+
+export const mdToDocxApi = {
+  convert: (formData) => apiClient.upload(API_ENDPOINTS.markdown.toDocx, formData, { responseType: 'blob' }),
 };

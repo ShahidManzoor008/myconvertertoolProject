@@ -58,18 +58,31 @@ export const AuthProvider = ({ children }) => {
         const userData = storage.get(USER_STORAGE_KEY);
 
         if (token && userData) {
-          // Verify token with backend
-          const { user: verifiedUser } = await authApi.verify();
-          const parsedUser = JSON.parse(userData);
-          setUser({ ...parsedUser, ...verifiedUser, isAdmin: verifiedUser.role === 'admin' });
+          try {
+            // Verify token with backend
+            const { user: verifiedUser } = await authApi.verify();
+            const parsedUser = JSON.parse(userData);
+            setUser({ ...parsedUser, ...verifiedUser, isAdmin: verifiedUser.role === 'admin' });
+          } catch (verifyError) {
+            // Handle 401/403 errors silently - just clear the session
+            if (verifyError instanceof AuthenticationError || 
+                verifyError instanceof AuthorizationError) {
+              storage.remove(TOKEN_STORAGE_KEY);
+              storage.remove(USER_STORAGE_KEY);
+              channel?.postMessage({ type: 'logout' });
+              // Don't set error for normal session expiration
+              console.debug('Session expired, cleared auth data');
+            } else {
+              // For other errors, might be temporary server issues
+              console.error('Token verification failed:', verifyError);
+              setError('Unable to verify session. Please try again later.');
+            }
+          }
         }
       } catch (err) {
-        // Token invalid - clear storage
-        storage.remove(TOKEN_STORAGE_KEY);
-        storage.remove(USER_STORAGE_KEY);
-        channel?.postMessage({ type: 'logout' });
-        setError('Session expired. Please login again.');
+        // Handle initialization errors (like localStorage access)
         console.error('Auth initialization failed:', err);
+        setError('Failed to initialize authentication. Please try refreshing the page.');
       } finally {
         setLoading(false);
       }

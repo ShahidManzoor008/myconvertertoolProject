@@ -1,69 +1,72 @@
-// ============================
-// 📂 MarkdownToDocx.jsx
-// ============================
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Helmet } from "react-helmet-async";
-import API_BASE_URL from "../../config/api.config";
+import { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { motion } from 'framer-motion';
+import { Upload, X, FileText, Download } from 'lucide-react';
+import SEO from '../../utils/SEO';
+import { mdToDocxApi } from '../../utils/apiClient';
+import { AppError } from '../../utils/AppError';
+import ConversionProgressBar from '../../components/common/ConversionProgressBar';
 
 const MarkdownToDocx = () => {
-  const [file, setFile] = useState(null);
-  const [popupMessage, setPopupMessage] = useState("");
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [convertedFile, setConvertedFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
 
-  // Show Popup Function
   const showPopup = (message) => {
     setPopupMessage(message);
-    setTimeout(() => setPopupMessage(""), 2500);
+    setTimeout(() => setPopupMessage(""), 3000);
   };
 
-  // Handle File Upload
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile && selectedFile.name.toLowerCase().endsWith(".md")) {
-      setFile(selectedFile);
-      showPopup(`Selected file: ${selectedFile.name}`);
-    } else {
-      showPopup("Please upload a Markdown (.md) file");
-    }
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
+    accept: { 'text/markdown': ['.md', '.markdown'] },
+    onDrop: (acceptedFiles, rejectedFiles) => {
+      if (rejectedFiles.length > 0) {
+        showPopup(`Invalid file type. Please upload a .md file.`);
+      }
+      if (acceptedFiles.length > 0) {
+        setUploadedFile(acceptedFiles[0]);
+        setConvertedFile(null); // Clear previous conversion
+        showPopup(`File selected: ${acceptedFiles[0].name}`);
+      }
+    },
+  });
+
+  const handleClearSelection = () => {
+    setUploadedFile(null);
+    setConvertedFile(null);
+    showPopup("Selection cleared");
   };
 
-  // Handle Clear Selection
-  const handleClearFile = () => {
-    setFile(null);
-    showPopup("File selection cleared!");
-  };
-
-  // Handle Convert to DOCX
   const handleConvert = async () => {
-    if (!file) return showPopup("No Markdown file selected!");
+    if (!uploadedFile) {
+      return showPopup('No Markdown file selected!');
+    }
 
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', uploadedFile);
+      const response = await mdToDocxApi.convert(formData);
 
-      const response = await fetch(`${API_BASE_URL}/api/convert-md-to-docx`, {
-        method: "POST",
-        body: formData,
+      const blob = response;
+      const url = URL.createObjectURL(blob);
+      
+      setConvertedFile({
+        name: `${uploadedFile.name.replace(/\.[^/.]+$/, '')}.docx`,
+        url: url,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to convert Markdown to DOCX");
+      showPopup('Markdown converted to DOCX successfully!');
+      setUploadedFile(null);
+    } catch (err) {
+      if (err instanceof AppError) {
+        showPopup(`Conversion failed: ${err.message}`);
+      } else {
+        showPopup('An unexpected error occurred during conversion.');
       }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "converted-markdown.docx";
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      showPopup("Markdown converted to DOCX successfully!");
-    } catch (error) {
-      console.error("Markdown to DOCX Error:", error);
-      showPopup("Failed to convert Markdown to DOCX");
+      console.error("Markdown to DOCX Error:", err);
     } finally {
       setLoading(false);
     }
@@ -71,113 +74,130 @@ const MarkdownToDocx = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="p-6 bg-white border rounded shadow"
+      className="p-6"
     >
-      {/* ✅ SEO Optimization */}
-      <Helmet>
-        <title>Free Markdown to DOCX Converter - Convert MD to Word</title>
-        <meta
-          name="description"
-          content="Easily convert Markdown (.md) to DOCX (Word) for free. No sign-up required, fast & secure conversion!"
-        />
-        <meta
-          name="keywords"
-          content="Markdown to DOCX, free Markdown converter, MD to Word, online Markdown to DOCX converter, convert Markdown to Word, no sign-up, free document tools"
-        />
-        <meta
-          property="og:title"
-          content="Free Markdown to DOCX Converter - Convert MD to Word"
-        />
-        <meta
-          property="og:description"
-          content="Easily convert Markdown (.md) to DOCX (Word) for free. No sign-up required, fast & secure conversion!"
-        />
-        <meta
-          property="og:url"
-          content="https://myconvertertool.com/tools/markdown-to-docx"
-        />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <SEO
+        title={'Free Markdown to DOCX Converter | MyConverterTool'}
+        description={'Convert your Markdown (.md) files to DOCX (Word) documents for free. Fast, secure, and easy to use.'}
+        keywords={'markdown to docx, md to docx, convert markdown, markdown converter, free tool'}
+      />
 
-      <h2 className="text-3xl font-bold text-blue-600 mb-4 text-center">
+      <motion.h2
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="text-3xl font-bold text-blue-600 mb-4 text-center"
+      >
         Markdown to DOCX Converter
-      </h2>
-      <p className="text-center text-gray-500 mb-6">
-        Upload a Markdown file (.md) and convert it to DOCX.
-      </p>
+      </motion.h2>
 
-      {/* ✅ File Upload Section with Clear Button */}
-      <div className="flex flex-col items-center">
-        <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-          <div className="flex flex-col items-center justify-center">
-            <svg
-              className="w-10 h-10 text-gray-500 dark:text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16V12M17 16V12M12 16V8M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Click or drag & drop your{" "}
-              <span className="font-semibold">Markdown (.md)</span> file here
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="text-center text-gray-500 mb-6"
+      >
+        Easily convert your Markdown files to Microsoft Word documents.
+      </motion.p>
+
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+        {!convertedFile && (
+          <motion.div
+            {...getRootProps()}
+            whileHover={{ scale: 1.02 }}
+            className={`border-2 border-dashed p-8 text-center cursor-pointer rounded-lg mb-6 transition-colors ${
+              isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-blue-300 dark:border-blue-500 hover:border-blue-500'
+            }`}
+          >
+            <input {...getInputProps()} />
+            <Upload className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+            <p className="text-gray-600 dark:text-gray-300 mb-2">
+              {isDragActive ? 'Drop the file here...' : 'Drag & drop a .md file here, or click to select'}
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Only .md or .markdown files are accepted.
+            </p>
+          </motion.div>
+        )}
+
+        {uploadedFile && !convertedFile && (
+          <div className="mt-4">
+            <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Selected File:</h4>
+            <div className="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <span className="truncate font-medium">{uploadedFile.name}</span>
+              </div>
+              <button
+                onClick={handleClearSelection}
+                className="text-red-500 hover:text-red-700 ml-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <input
-            type="file"
-            accept=".md"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
+        )}
 
-        {/* ✅ Show Selected File with Clear Button */}
-        {file && (
-          <div className="mt-4 flex items-center justify-between w-full max-w-md p-3 bg-gray-100 dark:bg-gray-700 rounded-md">
-            <p className="text-gray-700 dark:text-gray-200 text-sm truncate">
-              📄 {file.name}
-            </p>
-            <button
-              onClick={handleClearFile}
-              className="ml-4 bg-red-500 text-white px-3 py-1 text-xs rounded-md hover:bg-red-600 transition"
+        {convertedFile && (
+          <div className="mt-4">
+            <h4 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-2">Conversion Successful!</h4>
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-gray-700 rounded-md border border-green-200 dark:border-green-600">
+              <div className="flex items-center gap-3">
+                <FileText className="w-6 h-6 text-green-500" />
+                <span className="truncate font-medium">{convertedFile.name}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <a
+                  href={convertedFile.url}
+                  download={convertedFile.name}
+                  className="flex items-center gap-2 px-4 py-2 rounded-md text-white font-semibold bg-blue-500 hover:bg-blue-600 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  Download
+                </a>
+                <button
+                  onClick={handleClearSelection}
+                  className="text-red-500 hover:text-red-700"
+                  title="Clear"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!convertedFile && (
+          <div className="flex justify-center gap-4 mt-6">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleConvert}
+              disabled={!uploadedFile || loading}
+              className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Clear Selection
-            </button>
+              <FileText className="w-5 h-5" />
+              {loading ? 'Converting...' : 'Convert to DOCX'}
+            </motion.button>
+          </div>
+        )}
+
+        {loading && (
+          <div className="mt-4">
+            <ConversionProgressBar message="Converting your Markdown file..." />
           </div>
         )}
       </div>
 
-      {/* ✅ Convert & Clear Buttons */}
-      <div className="flex justify-center gap-4 mt-6">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleConvert}
-          disabled={loading}
-          className={`px-4 py-2 text-white rounded-md transition ${
-            loading ? "bg-gray-400" : "bg-indigo-500 hover:bg-indigo-600"
-          }`}
-        >
-          {loading ? "Converting..." : "Convert to DOCX"}
-        </motion.button>
-      </div>
-
-      {/* ✅ Popup Notification */}
       {popupMessage && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="mt-4 p-2 bg-green-100 text-green-700 text-center rounded"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg"
         >
           {popupMessage}
         </motion.div>

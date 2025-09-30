@@ -1,15 +1,10 @@
-// Read Google Client ID from Vite env (VITE_GOOGLE_CLIENT_ID) when available.
-// When running locally, create `client/.env.local` with VITE_GOOGLE_CLIENT_ID or set the variable in your environment.
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+// Google Identity Services (GIS) Configuration
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-// Google OAuth configuration
-export const googleConfig = {
-  client_id: GOOGLE_CLIENT_ID,
-  scope: 'openid email profile',
-};
-
-// OAuth endpoints
-export const authEndpoints = {
-  google: 'https://accounts.google.com/o/oauth2/v2/auth',
-  token: 'https://oauth2.googleapis.com/token',
-};
+// No redirect URIs needed for GIS
+// The flow is:
+// 1. User clicks sign-in button
+// 2. GIS shows popup/prompt
+// 3. On success, we get ID token in the callback
+// 4. Send ID token to backend for verification
+// 5. Backend verifies with Google and issues our app's JWT
