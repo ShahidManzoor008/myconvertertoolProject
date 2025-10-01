@@ -30,18 +30,19 @@ const connectDB = async () => {
       }
     }
 
-    console.log('MongoDB URI:', process.env.MONGODB_URI);
+    const mongoURI = process.env.MONGODB_URI;
+    if (!mongoURI) {
+      throw new Error('MONGODB_URI is not defined in your environment variables.');
+    }
+    console.log('Connecting to MongoDB Atlas...');
 
   mongoose.set('bufferTimeoutMS', 30000);
-  const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/myconvertertool', { serverSelectionTimeoutMS: 30000 });
+  const conn = await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 30000 });
 
   // Test the connection
   await mongoose.connection.db.admin().ping();
   console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-  // Log the available collections
-  const collections = await mongoose.connection.db.listCollections().toArray();
-  console.log('Available collections:', collections.map(c => c.name));
     return conn;
   } catch (err) {
     console.error('MongoDB connection error:', err);
