@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import AuthContext from '../context/AuthContext';
 import { authApi } from '../utils/apiClient';
-import { AppError } from '../utils/AppError';
+import { AppError, AuthenticationError, AuthorizationError } from '../utils/AppError';
 
 const TOKEN_STORAGE_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'auth_user';
