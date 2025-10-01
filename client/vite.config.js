@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     host: 'localhost',
     headers: {
-      'Cross-Origin-Opener-Policy': 'unsafe-none',
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
       'Access-Control-Allow-Origin': '*',
     },
