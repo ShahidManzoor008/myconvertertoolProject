@@ -18,11 +18,16 @@ import authRouter from './routes/auth.js'; // Import authRouter
 import { auth } from './middleware/auth.js'; // Keep auth middleware import
 import blogRouter from './routes/blog.js';
 import batchDownloadRouter from './routes/batchDownload.js';
-import morgan from 'morgan';
+import compression from 'compression';
+import logger from './utils/logger.js';
 
 // Import helper functions
 import pdfEditorRouter from './routes/pdfEditor.js';
 import fileConversionRouter from './routes/fileConversion.js';
+import { setupMiddleware } from './middleware/index.js';
+import dashboardRouter from './routes/dashboard.js';
+import notificationsRouter from './routes/notifications.js';
+import statsRouter from './routes/stats.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,8 +37,8 @@ dotenv.config({ path: './.env' });
 const app = express();
 const port = process.env.PORT || 5000;
 // const allowedOrigins =["http://localhost:3000"];
-const allowedOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(",") 
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
   : [
       "http://localhost:5173",
       "http://127.0.0.1:5173",
@@ -50,66 +55,11 @@ if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined)
 // ============================
 // 🛡️ Enable CORS and Security Middleware
 // ============================
-// Enhanced security middleware configuration
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (allowedOrigins.includes(origin) || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-};
-app.use(cors(corsOptions));
-
-// Import and use enhanced security middleware
-import { securityMiddleware } from './middleware/security.js';
-app.use(securityMiddleware);
-
-// Basic Helmet configuration (CSP is handled by securityMiddleware)
-app.use(
-  helmet({
-    contentSecurityPolicy: false, // Disabled because we handle it in securityMiddleware
-    crossOriginOpenerPolicy: false, // Explicitly disable Helmet's COOP management
-  })
-);
-
-// Parse cookies and JSON with size limits
-app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Development logging
-app.use(morgan('dev'));
-
-// Trust proxy for secure cookies in production
-app.set('trust proxy', 1);
-
-// ============================
-// 🛡️ Rate Limiting
-// ============================
-const globalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // Global limit
-  message: { error: "Too many requests, please try again later." },
-});
-const authLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 5, // Stricter limit for auth endpoints
-  message: { error: "Too many auth requests, please try again later." },
-});
-app.use(globalLimiter);
-app.use("/api/auth", authLimiter);
+setupMiddleware(app, allowedOrigins);
 
 // ============================
 // Routes
 // ============================
-// Add route logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-  next();
-});
 
 // Mount specific path routes first
 // When running tests, skip auth middleware to exercise endpoints directly
@@ -127,6 +77,9 @@ app.use('/api/auth', authRouter);
 app.use('/api/batch', batchDownloadRouter);
 app.use('/api/editor', pdfEditorRouter);
 app.use('/api/convert', fileConversionRouter);
+app.use('/api/dashboard', auth, dashboardRouter);
+app.use('/api/notifications', auth, notificationsRouter);
+app.use('/api/stats', statsRouter);
 
 // Serve uploaded blog images
 app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images')));
@@ -149,7 +102,7 @@ app.use(errorHandler);
 let server;
 if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
   server = app.listen(port, () => {
-    console.log(`API running on port:${port}`);
+    logger.info(`API running on port:${port}`);
   });
 
   // Handle uncaught errors

@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 // Mock the useAuth hook
 const mockLogin = vi.fn();
-vi.mock('../context/useAuth', () => ({
+vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
     login: mockLogin,
     user: null,

@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import { GOOGLE_CLIENT_ID } from '../config/auth.config';
 import { GOOGLE_AUTH_ERROR_MESSAGES } from '../utils/googleAuthErrors';
 import GoogleSignInDebug from './GoogleSignInDebug';
@@ -16,8 +16,6 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
   const [containerId] = useState(() => `gsi-button-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
-    let mounted = true;
-
     const init = () => {
       if (!window.google) {
         console.warn('[GSI] Google script not loaded yet');
@@ -72,7 +70,6 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
     }
 
     return () => {
-      mounted = false;
       try { delete window.googleSignIn; } catch (e) { console.warn('cleanup googleSignIn failed', e); }
     };
   }, [login, navigate, redirectTo, onSuccess, containerId, renderNative, toast]);

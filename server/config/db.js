@@ -50,6 +50,11 @@ const connectDB = async () => {
     if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
       throw err;
     }
+    // For development, don't exit - allow server to run without database
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Running in development mode without database connection. Some features may not work.');
+      return null;
+    }
     process.exit(1);
   }
 };

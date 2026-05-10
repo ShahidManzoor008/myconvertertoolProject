@@ -5,6 +5,9 @@ import App from './App.jsx'
 import { AuthProvider } from './providers/AuthProvider.jsx' // Import AuthProvider
 import ToastProvider from './components/Toast.jsx'
 import { pdfjs } from 'react-pdf'; // Import pdfjs from react-pdf
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 // Import react-pdf styles
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -15,10 +18,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <ToastProvider>
-        <App />
-      </ToastProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
 )

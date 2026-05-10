@@ -1,6 +1,13 @@
 import express from 'express';
-import { body } from 'express-validator';
 import { auth } from '../middleware/auth.js';
+import {
+  validate,
+  registerSchema,
+  loginSchema,
+  updateProfileSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema
+} from '../utils/validation.js';
 import {
   registerUser,
   loginUser,
@@ -19,21 +26,14 @@ const router = express.Router();
 // User Registration (non-OAuth)
 router.post(
   '/register',
-  [
-    body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-    body('email').isEmail().withMessage('Valid email required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  ],
+  validate(registerSchema),
   registerUser
 );
 
 // User Login (non-OAuth)
 router.post(
   '/login',
-  [
-    body('email').isEmail().withMessage('Valid email required'),
-    body('password').notEmpty().withMessage('Password is required'),
-  ],
+  validate(loginSchema),
   loginUser
 );
 
@@ -41,10 +41,7 @@ router.post(
 router.put(
   '/profile',
   auth,
-  [
-    body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-    body('password').optional().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  ],
+  validate(updateProfileSchema),
   updateProfile
 );
 
@@ -57,20 +54,34 @@ router.post('/google', googleAuth);
 // Logout
 router.post('/logout', auth, logoutUser);
 
+// Get Profile (authenticated)
+router.get('/profile', auth, async (req, res) => {
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        avatar: req.user.avatar
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
 // Request Password Reset
 router.post(
   '/reset-password/request',
-  body('email').isEmail().withMessage('Valid email required'),
+  validate(requestPasswordResetSchema),
   requestPasswordReset
 );
 
 // Reset Password
 router.post(
   '/reset-password',
-  [
-    body('token').notEmpty().withMessage('Token is required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  ],
+  validate(resetPasswordSchema),
   resetPassword
 );
 

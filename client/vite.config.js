@@ -41,10 +41,11 @@ export default defineConfig({
       '@': '/src',
       // Ensure tooling (Vitest/Vite) resolves React to the client's node_modules
       react: path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom')
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve(__dirname, './node_modules/react/jsx-runtime.js')
     },
     // Dedupe React to avoid multiple copies being loaded by the optimizer
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
     extensions: ['.js', '.jsx', '.json']
   },
   build: {
@@ -88,13 +89,13 @@ export default defineConfig({
     // Ensure Vitest bundles these deps so a single React instance is used
     server: {
       deps: {
-        inline: ['react', 'react-dom', 'react-router-dom'],
+        inline: ['react', 'react-dom', 'react/jsx-runtime', 'react-router-dom'],
       }
     },
     deps: {
       optimizer: {
         web: {
-          include: ['react-router-dom', 'react', 'react-dom'],
+          include: ['react-router-dom', 'react', 'react-dom', 'react/jsx-runtime'],
         },
       },
     },

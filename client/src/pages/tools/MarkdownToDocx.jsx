@@ -48,7 +48,7 @@ const MarkdownToDocx = () => {
     try {
       const formData = new FormData();
       formData.append('file', uploadedFile);
-      const response = await mdToDocxApi.convert(formData);
+      const response = await mdToDocxApi.convert(formData, { responseType: 'blob' });
 
       const blob = response;
       const url = URL.createObjectURL(blob);

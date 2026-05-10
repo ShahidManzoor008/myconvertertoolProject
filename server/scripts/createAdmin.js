@@ -1,7 +1,8 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const User = require('../models/User');
+import dotenv from 'dotenv';
+dotenv.config();
+import mongoose from 'mongoose';
+import argon2 from 'argon2';
+import User from '../models/User.js';
 
 const createInitialAdmin = async () => {
   try {
@@ -15,7 +16,7 @@ const createInitialAdmin = async () => {
       const adminUser = new User({
         name: process.env.INITIAL_ADMIN_NAME || 'Admin User',
         email: process.env.INITIAL_ADMIN_EMAIL,
-        password: await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD, 10),
+        password: process.env.INITIAL_ADMIN_PASSWORD, // User model will hash it in pre-save
         role: 'admin',
         status: 'active',
         emailVerified: true

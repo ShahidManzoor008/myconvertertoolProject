@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import GoogleSignIn from './GoogleSignIn';
 import LoadingSpinner from './common/LoadingSpinner';
 import { 

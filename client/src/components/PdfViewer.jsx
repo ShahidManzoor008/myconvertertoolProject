@@ -38,7 +38,7 @@ const PDF_VIEWER_OPTIONS = {
 };
 
 const PageWithObserver = ({ pageNumber, scale, handleMouseMove, handlePageClick, onVisibilityChange }) => {
-  const { ref, inView } = useInView({
+  const { ref } = useInView({
     threshold: 0.5,
     onChange: (inView) => {
       if (inView) {
@@ -98,8 +98,6 @@ const PdfViewer = ({ file, filename, onFileUpdate }) => {
   // const fileReaderRef = useRef(null); // No longer needed
   const [textToAdd, setTextToAdd] = useState(''); // State for text to add
   const [isAddingText, setIsAddingText] = useState(false); // State to control text adding mode
-  const [textInputPosition, setTextInputPosition] = useState({ x: 0, y: 0 }); // Position of the text input box
-  const [clickCoordinates, setClickCoordinates] = useState(null); // Stores the coordinates where the user clicked
   const pageRefs = useRef([]);
 
   useEffect(() => {
@@ -244,7 +242,7 @@ const PdfViewer = ({ file, filename, onFileUpdate }) => {
     } finally {
       setLoading(false);
     }
-  }, [file, filename, onFileUpdate, onDocumentLoadSuccess]);
+  }, [file, filename, onFileUpdate]);
 
   const handleAddPage = useCallback(async () => {
     await performPdfOperation('/pdf-editor/add-page');
@@ -267,7 +265,6 @@ const PdfViewer = ({ file, filename, onFileUpdate }) => {
       });
       setTextToAdd(''); // Clear text input
       setIsAddingText(false); // Exit text adding mode
-      setClickCoordinates(null); // Clear click coordinates
     }
   }, [textToAdd, pageNumber, performPdfOperation]);
 
@@ -276,14 +273,14 @@ const PdfViewer = ({ file, filename, onFileUpdate }) => {
       const rect = event.target.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = rect.height - (event.clientY - rect.top); // PDF coordinates are from bottom-left
-      setClickCoordinates({ x, y });
       handleAddText(x, y); // Call handleAddText with the clicked coordinates
     }
   }, [isAddingText, textToAdd, handleAddText]);
 
-  const handleMouseMove = useCallback((event) => {
+  const handleMouseMove = useCallback(() => {
     if (isAddingText) {
-      setTextInputPosition({ x: event.clientX + 10, y: event.clientY + 10 });
+      // Mouse move handling for text input positioning
+      console.log('Mouse moved while adding text');
     }
   }, [isAddingText]);
 

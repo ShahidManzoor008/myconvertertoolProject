@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../index.js';
 import User from '../models/User.js';
-import bcrypt from 'bcrypt';
+import argon2 from 'argon2';
 
 describe('Auth API', () => {
   afterEach(async () => {

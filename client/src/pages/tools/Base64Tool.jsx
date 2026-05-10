@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Popup from "../../components/Popup";
 import { Helmet } from "react-helmet-async";
 import { Copy, Download, RotateCcw, Upload, FileText, HelpCircle } from "lucide-react";
+import { statsApi } from "../../utils/apiClient";
 
 const Base64Tool = () => {
   const [text, setText] = useState("");
@@ -28,22 +29,36 @@ const Base64Tool = () => {
     setTimeout(() => setPopupMessage(""), 2000);
   };
 
-  const handleEncode = () => {
+  const handleEncode = async () => {
     setMode("encode");
     try {
-      setResult(btoa(text)); // Encode to Base64
+      const encoded = btoa(text);
+      setResult(encoded); // Encode to Base64
       setError("");
+      
+      // Log conversion
+      statsApi.increment({
+        toolName: 'base64-encode',
+        fileSize: text.length
+      }).catch(err => console.error('Failed to log stats:', err));
     } catch {
       setError("Encoding failed. Please check your input.");
       setResult("");
     }
   };
 
-  const handleDecode = () => {
+  const handleDecode = async () => {
     setMode("decode");
     try {
-      setResult(atob(text)); // Decode from Base64
+      const decoded = atob(text);
+      setResult(decoded); // Decode from Base64
       setError("");
+
+      // Log conversion
+      statsApi.increment({
+        toolName: 'base64-decode',
+        fileSize: text.length
+      }).catch(err => console.error('Failed to log stats:', err));
     } catch {
       setError("Decoding failed. Invalid Base64 input.");
       setResult("");

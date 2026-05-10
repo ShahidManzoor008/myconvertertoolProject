@@ -30,7 +30,13 @@ export async function createZipArchive(filesToZip, outputZipPath) {
     archive.pipe(output);
 
     filesToZip.forEach(file => {
-      archive.file(file.path, { name: file.name });
+      if (file.path instanceof Buffer || file.path instanceof Uint8Array) {
+        archive.append(Buffer.from(file.path), { name: file.name });
+      } else if (typeof file.path === 'string') {
+        archive.file(file.path, { name: file.name });
+      } else {
+        console.warn('Unsupported file type for ZIP archive:', file);
+      }
     });
 
     archive.finalize();

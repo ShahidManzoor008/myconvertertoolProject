@@ -212,3 +212,8 @@ export const batchApi = {
 export const mdToDocxApi = {
   convert: (formData) => apiClient.upload(API_ENDPOINTS.markdown.toDocx, formData, { responseType: 'blob' }),
 };
+
+export const statsApi = {
+  getTotal: () => apiClient.get(API_ENDPOINTS.stats.total),
+  increment: (data) => apiClient.post(API_ENDPOINTS.stats.increment, data),
+};

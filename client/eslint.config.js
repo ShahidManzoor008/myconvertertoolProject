@@ -3,7 +3,7 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import cypressPlugin from 'eslint-plugin-cypress/flat'
+import cypressPlugin from 'eslint-plugin-cypress'
 
 export default [
   { ignores: ['dist', 'cypress/**', 'cypress.config.js', '**/pdf.worker.min.js'] }, // Ignore minified files and cypress

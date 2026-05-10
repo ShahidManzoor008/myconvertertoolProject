@@ -2,25 +2,26 @@
   "name": "myconvertertool-monorepo",
   "version": "1.0.0",
   "description": "Monorepo for myconvertertool.com client and server",
-  "main": "index.js",
+  "private": true,
+  "packageManager": "npm@10.2.3",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "client:install": "npm install --prefix client",
-    "server:install": "npm install --prefix server",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
     "install:all": "npm run client:install && npm run server:install",
-    "client:dev": "npm run dev --prefix client",
-    "server:dev": "npm run dev --prefix server",
-    "dev:all": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
-    "client:test": "npx vitest",
-    "server:test": "npm test --prefix server",
-    "client:lint": "npm run lint --prefix client",
-    "client:lighthouse": "npm run lighthouse --prefix client",
-    "server:k6": "k6 run server/tests/k6_load_test.js",
-    "test:all": "npm run client:lint && npm run client:test && npm run client:lighthouse && npm run server:test && npm run server:k6"
+    "client:install": "npm install --prefix client",
+    "server:install": "npm install --prefix server"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "turbo": "^2.9.12"
   }
 }

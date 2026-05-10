@@ -7,7 +7,7 @@ import ScrollToTop from "./ScrollToTop";
 import NavBar from "./NavBar";
 import { navigation } from "../data/navigation.jsx";
 import PropTypes from "prop-types";
-import { useAuth } from "../context/useAuth"; // Changed from default to named import
+import { useAuth } from "../hooks/useAuth"; // Changed from default to named import
 
 const Layout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

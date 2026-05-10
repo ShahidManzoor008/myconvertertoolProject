@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
+import argon2 from 'argon2';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -69,8 +70,7 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await argon2.hash(this.password);
     next();
   } catch (error) {
     next(error);
@@ -79,7 +79,11 @@ userSchema.pre('save', async function(next) {
 
 // Method to check password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  try {
+    return await argon2.verify(this.password, candidatePassword);
+  } catch (err) {
+    return false;
+  }
 };
 
 // Add indexes

@@ -134,22 +134,24 @@ export const editPdf = async (req, res) => {
 
     const { edits } = req.body; // Expecting an array of edit operations
 
-    for (const edit of edits) {
-      const page = pdfDoc.getPages()[edit.pageIndex];
-      if (!page) continue;
+    if (edits && edits.length > 0) {
+      for (const edit of edits) {
+        const page = pdfDoc.getPages()[edit.pageIndex];
+        if (!page) continue;
 
-      if (edit.type === 'addText') {
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        page.drawText(edit.text, {
-          x: edit.x || 50,
-          y: edit.y || (page.getHeight() - 50),
-          font,
-          size: edit.size || 24,
-          color: edit.color ? rgb(edit.color.r, edit.color.g, edit.color.b) : rgb(0, 0, 0),
-        });
-      } else if (edit.type === 'removeText') {
-        // removeTextFromPdf(page, edit.x, edit.y, edit.width, edit.height); // This utility needs to be re-implemented with pdf-lib
-        console.warn("removeText operation is not yet implemented with pdf-lib.");
+        if (edit.type === 'addText') {
+          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          page.drawText(edit.text, {
+            x: edit.x || 50,
+            y: edit.y || (page.getHeight() - 50),
+            font,
+            size: edit.size || 24,
+            color: edit.color ? rgb(edit.color.r, edit.color.g, edit.color.b) : rgb(0, 0, 0),
+          });
+        } else if (edit.type === 'removeText') {
+          // Placeholder: removeTextFromPdf(page, edit.x, edit.y, edit.width, edit.height);
+          console.warn("removeText operation is not yet implemented with pdf-lib.");
+        }
       }
     }
 

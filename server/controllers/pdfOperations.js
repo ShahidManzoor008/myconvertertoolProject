@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import * as pdfExtractImage from 'pdf-extract-image';
 import { createZipArchive } from '../utils/archiveUtils.js';
+import { logConversion } from '../utils/statsUtils.js';
 
 // Helper function to load PDF file
 async function loadPDF(filePath) {

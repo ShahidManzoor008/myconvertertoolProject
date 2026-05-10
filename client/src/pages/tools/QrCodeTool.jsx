@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
 import Popup from "../../components/Popup";
 import SEO from '../../utils/SEO';
+import { statsApi } from "../../utils/apiClient";
 import { 
   Download, 
   Link, 
@@ -58,7 +59,6 @@ const QrCodeTool = () => {
     contact: { name: "", phone: "", email: "", address: "", website: "" }
   });
 
-  // Validate content when it changes
   // Validate content when it changes
   useEffect(() => {
     if (content) {
@@ -156,8 +156,6 @@ const QrCodeTool = () => {
     setContentType(type);
   };
 
-  
-
   const handleFormChange = (type, field, value) => {
     setFormFields(prev => {
       if (typeof prev[type] === 'object') {
@@ -207,6 +205,12 @@ const QrCodeTool = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       showPopup("QR Code downloaded!");
+
+      // Log conversion
+      statsApi.increment({
+        toolName: 'qrcode-generator',
+        fileName: `qrcode-${title || "code"}.png`
+      }).catch(err => console.error('Failed to log stats:', err));
     }
   };
 
@@ -217,6 +221,12 @@ const QrCodeTool = () => {
         const item = new ClipboardItem({ "image/png": blob });
         navigator.clipboard.write([item]);
         showPopup("QR Code copied to clipboard!");
+
+        // Log conversion
+        statsApi.increment({
+          toolName: 'qrcode-generator',
+          status: 'copy'
+        }).catch(err => console.error('Failed to log stats:', err));
       });
     }
   };
@@ -757,142 +767,142 @@ const QrCodeTool = () => {
                     accept="image/*"
                     onChange={handleLogoUpload}
                     className="hidden"
-                    id=                    "logo-upload"
-                    />
-                    <label
-                      htmlFor="logo-upload"
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition"
-                    >
-                      Upload Logo
-                    </label>
-                    {logo && (
-                      <button
-                        onClick={removeLogo}
-                        className="ml-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                      >
-                        Remove Logo
-                      </button>
-                    )}
-                  </div>
+                    id="logo-upload"
+                  />
+                  <label
+                    htmlFor="logo-upload"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition"
+                  >
+                    Upload Logo
+                  </label>
                   {logo && (
-                    <div className="mt-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Logo Size
-                      </label>
-                      <div className="flex items-center">
-                        <input
-                          type="range"
-                          min="10"
-                          max="50"
-                          step="5"
-                          value={logoSize}
-                          onChange={(e) => setLogoSize(Number(e.target.value))}
-                          className="w-full cursor-pointer"
-                        />
-                        <span className="ml-2 text-gray-700 dark:text-gray-300 w-16 text-center">{logoSize}%</span>
-                      </div>
-                    </div>
+                    <button
+                      onClick={removeLogo}
+                      className="ml-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                    >
+                      Remove Logo
+                    </button>
                   )}
                 </div>
+                {logo && (
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Logo Size
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="range"
+                        min="10"
+                        max="50"
+                        step="5"
+                        value={logoSize}
+                        onChange={(e) => setLogoSize(Number(e.target.value))}
+                        className="w-full cursor-pointer"
+                      />
+                      <span className="ml-2 text-gray-700 dark:text-gray-300 w-16 text-center">{logoSize}%</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* QR Code Preview */}
+      <div className="mt-6 flex justify-center">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <QRCodeCanvas
+            value={content}
+            size={qrSize}
+            fgColor={qrColor}
+            bgColor={bgColor}
+            includeMargin={includeMargin}
+            level={errorCorrection}
+            imageSettings={
+              logo
+                ? {
+                    src: logo,
+                    excavate: true,
+                    width: (qrSize * logoSize) / 100,
+                    height: (qrSize * logoSize) / 100,
+                  }
+                : undefined
+            }
+            ref={qrRef}
+          />
         </div>
-  
-        {/* QR Code Preview */}
-        <div className="mt-6 flex justify-center">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-            <QRCodeCanvas
-              value={content}
-              size={qrSize}
-              fgColor={qrColor}
-              bgColor={bgColor}
-              includeMargin={includeMargin}
-              level={errorCorrection}
-              imageSettings={
-                logo
-                  ? {
-                      src: logo,
-                      excavate: true,
-                      width: (qrSize * logoSize) / 100,
-                      height: (qrSize * logoSize) / 100,
-                    }
-                  : undefined
-              }
-              ref={qrRef}
-            />
-          </div>
-        </div>
-  
-        {/* Action Buttons */}
-        <div className="mt-6 flex justify-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDownload}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition flex items-center"
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-6 flex justify-center gap-4">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleDownload}
+          className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition flex items-center"
+        >
+          <Download size={16} className="mr-2" />
+          Download
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleCopy}
+          className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition flex items-center"
+        >
+          <Copy size={16} className="mr-2" />
+          Copy
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handlePreview}
+          className="px-6 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition flex items-center"
+        >
+          <Image size={16} className="mr-2" />
+          Preview
+        </motion.button>
+      </div>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {isPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={closePreview}
           >
-            <Download size={16} className="mr-2" />
-            Download
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCopy}
-            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition flex items-center"
-          >
-            <Copy size={16} className="mr-2" />
-            Copy
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handlePreview}
-            className="px-6 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition flex items-center"
-          >
-            <Image size={16} className="mr-2" />
-            Preview
-          </motion.button>
-        </div>
-  
-        {/* Preview Modal */}
-        <AnimatePresence>
-          {isPreview && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-              onClick={closePreview}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-full"
+              onClick={(e) => e.stopPropagation()}
             >
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
-                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-full"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                    QR Code Preview
-                  </h2>
-                  <button
-                    onClick={closePreview}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                  >
-                    <X size={20} className="text-gray-800 dark:text-gray-200" />
-                  </button>
-                </div>
-                <img src={previewUrl} alt="QR Code Preview" className="w-full max-w-sm mx-auto" />
-              </motion.div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                  QR Code Preview
+                </h2>
+                <button
+                  onClick={closePreview}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                >
+                  <X size={20} className="text-gray-800 dark:text-gray-200" />
+                </button>
+              </div>
+              <img src={previewUrl} alt="QR Code Preview" className="w-full max-w-sm mx-auto" />
             </motion.div>
-          )}
-        </AnimatePresence>
-  
-        {/* Popup Notification */}
-        {popupMessage && <Popup message={popupMessage} onClose={() => setPopupMessage("")} />}
-      </motion.div>
-    );
-  };
-  
-  export default QrCodeTool;
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Popup Notification */}
+      {popupMessage && <Popup message={popupMessage} onClose={() => setPopupMessage("")} />}
+    </motion.div>
+  );
+};
+
+export default QrCodeTool;

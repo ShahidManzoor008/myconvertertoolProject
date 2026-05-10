@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 const AdminRoute = ({ children }) => {
   const { user, loading, isAuthenticated } = useAuth();

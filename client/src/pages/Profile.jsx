@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 const Profile = () => {
   const { user, isAuthenticated } = useAuth();
@@ -26,7 +26,7 @@ const Profile = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({
           name: form.name,

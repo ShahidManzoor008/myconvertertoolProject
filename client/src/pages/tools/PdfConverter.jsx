@@ -7,12 +7,13 @@ import SEO from '../../utils/SEO';
 import PdfOperations from '../../components/PdfOperations';
 import FileHistory from '../../components/FileHistory';
 import PdfViewer from '../../components/PdfViewer';
-import LoadingSpinner from '../../components/common/LoadingSpinner'; // Import LoadingSpinner
 import ConversionProgressBar from '../../components/common/ConversionProgressBar'; // Import ConversionProgressBar
 import { pdfApi } from '../../utils/apiClient';
 import { createFormDataWithFiles } from '../../utils/fileUtils';
 import { AppError } from '../../utils/AppError';
-import { useAuth } from '../../providers/AuthProvider'; // Import useAuth
+import { useAuth } from '../../hooks/useAuth'; // Import useAuth
+import { useQuery } from '@tanstack/react-query';
+import { statsApi } from '../../utils/apiClient';
 
 const PdfConverter = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -24,10 +25,21 @@ const PdfConverter = () => {
   const [selectedOperation, setSelectedOperation] = useState(null);
   const [currentOperation, setCurrentOperation] = useState("convert"); // Default sub-operation
   const [recentFiles, setRecentFiles] = useState([]);
-  const [totalConversions, setTotalConversions] = useState(0); // New state for total conversions
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
   const { user } = useAuth(); // Get user from AuthProvider
+
+  // Fetch total conversions from server
+  const { data: statsData, refetch: refetchStats } = useQuery({
+    queryKey: ['totalConversions'],
+    queryFn: async () => {
+      const data = await statsApi.getTotal();
+      return data.total;
+    },
+    initialData: 0
+  });
+
+  const totalConversions = statsData;
 
   // Handle file download
   const handleDownload = () => {
@@ -47,12 +59,10 @@ const PdfConverter = () => {
     setTimeout(() => setPopupMessage(""), 2500);
   };
 
-  // Load recent files and total conversions from localStorage
+  // Load recent files from localStorage
   useEffect(() => {
     const loadedRecent = JSON.parse(localStorage.getItem('recentFiles') || '[]');
     setRecentFiles(loadedRecent);
-    const loadedTotalConversions = parseInt(localStorage.getItem('totalConversions') || '0', 10);
-    setTotalConversions(loadedTotalConversions);
   }, []);
 
   // Add file to recent conversions
@@ -69,7 +79,8 @@ const PdfConverter = () => {
       // Remove the base64 content before storing in localStorage to prevent QuotaExceededError
       const storedUpdated = updated.map(f => {
         const fileData = f.filename ? f : (f[0] || {});
-        const { base64, ...rest } = fileData;
+        const rest = { ...fileData };
+        delete rest.base64;
         if (f.filename) {
           return rest;
         }
@@ -93,11 +104,8 @@ const PdfConverter = () => {
       return updated;
     });
 
-    setTotalConversions(prev => {
-      const newTotal = prev + 1;
-      localStorage.setItem('totalConversions', newTotal.toString());
-      return newTotal;
-    });
+    // Refetch stats from server
+    refetchStats();
   };
 
   // Determine accepted file types based on the chosen high-level operation
@@ -188,7 +196,7 @@ const PdfConverter = () => {
       });
 
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const result = await apiCall(formData);
+      const result = await apiCall(formData, { responseType: 'blob' });
       const resultWithDetails = { ...result, originalName: file.name };
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
@@ -202,9 +210,6 @@ const PdfConverter = () => {
   };
 
   // Batch processing: start sequential processing of all uploaded files
-  const [batchProcessing, setBatchProcessing] = useState(false);
-  const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
-
   const startProcessingAll = async () => {
     if (uploadedFiles.length === 0) return showPopup('No files to process');
     setLoading(true);
@@ -214,7 +219,7 @@ const PdfConverter = () => {
       });
 
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const results = await apiCall(formData);
+      const results = await apiCall(formData, { responseType: 'blob' });
 
       const newConvertedFiles = results.map((result, index) => {
         const originalFile = uploadedFiles[index];
@@ -467,13 +472,12 @@ const PdfConverter = () => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
-                            if (!converted.base64) return;
-                            const link = document.createElement('a');
-                            link.href = `data:application/pdf;base64,${converted.base64}`;
-                            link.download = converted.filename;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.href = URL.createObjectURL(new Blob([converted.base64], { type: 'application/pdf' }));
+                            downloadBtn.download = converted.filename;
+                            document.body.appendChild(downloadBtn);
+                            downloadBtn.click();
+                            document.body.removeChild(downloadBtn);
                             showPopup(`${converted.filename} downloaded.`);
                           }}
                           className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
@@ -493,7 +497,7 @@ const PdfConverter = () => {
             <div className="mt-6">
               <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Preview:</h4>
               <PdfViewer
-                file={viewingFile ? `data:application/pdf;base64,${viewingFile.base64}` : URL.createObjectURL(uploadedFiles[0])}
+                file={viewingFile ? URL.createObjectURL(new Blob([viewingFile.base64], { type: 'application/pdf' })) : URL.createObjectURL(uploadedFiles[0])}
                 filename={viewingFile ? viewingFile.filename : uploadedFiles[0].name}
                 onFileUpdate={(newBlobUrl) => {
                   // This part is primarily for 'edit' operations
@@ -597,12 +601,12 @@ const PdfConverter = () => {
             const latestConverted = convertedFiles[convertedFiles.length - 1];
             if (latestConverted && (latestConverted.base64 || latestConverted[0]?.base64)) {
               const fileData = latestConverted.base64 ? latestConverted : latestConverted[0];
-              const link = document.createElement('a');
-              link.href = `data:application/pdf;base64,${fileData.base64}`;
-              link.download = fileData.filename || latestConverted.originalName || 'document.pdf';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+              const downloadLink = document.createElement('a');
+              downloadLink.href = `data:application/pdf;base64,${fileData.base64}`;
+              downloadLink.download = fileData.filename || latestConverted.originalName || 'document.pdf';
+              document.body.appendChild(downloadLink);
+              downloadLink.click();
+              document.body.removeChild(downloadLink);
               showPopup(`${fileData.filename || latestConverted.originalName} downloaded.`);
             } else {
               showPopup("No file available for download.");
