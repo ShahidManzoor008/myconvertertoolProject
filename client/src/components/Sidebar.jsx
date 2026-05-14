@@ -10,20 +10,20 @@ const Sidebar = ({ className, onLinkClick, isOpen, onToggle }) => {
   const sidebarVariants = {
     open: { 
       x: 0,
-      width: "16rem",
+      width: "20rem",
       transition: { 
         type: "spring",
-        stiffness: 400,
-        damping: 40
+        stiffness: 300,
+        damping: 30
       }
     },
     closed: { 
-      x: "calc(100% - 3rem)",
-      width: "3rem",
+      x: "calc(100% - 3.5rem)",
+      width: "3.5rem",
       transition: {
         type: "spring",
-        stiffness: 400,
-        damping: 40
+        stiffness: 300,
+        damping: 30
       }
     }
   };
@@ -33,56 +33,55 @@ const Sidebar = ({ className, onLinkClick, isOpen, onToggle }) => {
       variants={sidebarVariants}
       initial="closed"
       animate={isOpen ? "open" : "closed"}
-      className={`fixed top-20 right-0 h-[calc(100vh-5rem)] bg-white dark:bg-gray-800 shadow-lg overflow-hidden transition-colors duration-300 ${className}`}
+      className={`fixed top-24 right-4 h-[calc(100vh-8rem)] glass rounded-3xl overflow-hidden transition-colors duration-300 ${className} border border-white/20 dark:border-slate-800/20 shadow-2xl`}
     >
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className={`absolute top-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors ${isOpen ? 'right-2' : 'left-2'}`} // Conditional positioning
+        className="absolute top-4 left-3 p-1.5 glass rounded-xl hover:bg-blue-600 hover:text-white transition-all z-20"
         aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
       >
         {isOpen ? (
-          <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" /> // Close icon
+          <XMarkIcon className="w-5 h-5" />
         ) : (
-          <Bars3Icon className="w-6 h-6 text-gray-600 dark:text-gray-400" /> // Open icon
+          <Bars3Icon className="w-5 h-5" />
         )}
       </button>
 
-      <div className="p-4 overflow-y-auto h-full">
+      <div className="p-6 pt-16 overflow-y-auto h-full scrollbar-hide">
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
             >
-              <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4">
-                📂 Tools
-              </h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-sm font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+                  Quick Access
+                </h2>
+              </div>
+              
               <ul className="space-y-2">
                 {tools
                   .filter(tool => tool.path !== location.pathname)
                   .map((tool, index) => (
                     <motion.li
                       key={index}
-                      initial={{ x: 20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: index * 0.1 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
                     >
                       <Link
                         to={tool.path}
                         onClick={onLinkClick}
-                        className={`group flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300`}
-                        aria-label={`Go to ${tool.name} tool`}
+                        className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700/50"
                       >
-                        <span 
-                          className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-${tool.color}-500 text-white`} 
-                          aria-hidden="true"
-                        >
-                          {tool.icon}
-                        </span>
-                        <span className="text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <div className={`w-10 h-10 rounded-xl bg-${tool.color}-500/10 text-${tool.color}-600 dark:text-${tool.color}-400 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                          <span className="text-xl">{tool.icon}</span>
+                        </div>
+                        <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">
                           {tool.name}
                         </span>
                       </Link>

@@ -4,13 +4,26 @@ import PropTypes from "prop-types";
 
 const CategoryCard = ({ title, link, color }) => {
   return (
-    <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
+    <motion.div 
+      whileHover={{ y: -4 }} 
+      transition={{ type: "spring", stiffness: 300 }}
+    >
       <Link
         to={link}
-        className={`block p-6 bg-${color}-500 text-white rounded-md text-center shadow-lg transition-transform duration-300 transform hover:shadow-2xl`}
+        className="block p-8 glass-card border-none relative overflow-hidden group"
         aria-label={`View ${title} tools`}
       >
-        <h3 className="text-base sm:text-lg font-bold">{title}</h3>
+        <div className={`absolute inset-0 bg-gradient-to-br from-${color}-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+        
+        <div className="relative z-10">
+          <div className={`w-12 h-1 bg-${color}-500 mb-4 rounded-full transition-all group-hover:w-full`} />
+          <h3 className="text-xl font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {title}
+          </h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Explore {title.toLowerCase()} suite
+          </p>
+        </div>
       </Link>
     </motion.div>
   );

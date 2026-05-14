@@ -11,80 +11,66 @@ import SEO from '../utils/SEO.jsx';
 
 const Tools = () => {
   const seoData = {
-    title: 'Free Online Tools | Dev Tools, Text Tools, PDF Tools & More - MyConverterTool',
-    description: 'Access our collection of free online tools including PDF converters, JSON formatters, QR code generators, text tools, and more. Perfect for developers and digital professionals.',
-    keywords: 'online tools, developer tools, PDF tools, JSON formatter, QR code generator, text converter, base64 encoder, URL encoder, code beautifier, markdown converter',
+    title: 'Free Online Tools | Dev Tools, Text Tools, PDF Tools & More - ConverterPro',
+    description: 'Access our collection of free online tools including PDF converters, JSON formatters, QR code generators, and text utilities.',
+    keywords: 'online tools, developer tools, PDF tools, JSON formatter, QR code generator, text converter',
     canonicalUrl: '/tools',
     ogType: 'website',
-    ogTitle: 'Free Online Developer Tools & Utilities - MyConverterTool',
-    ogDescription: 'Powerful collection of free online tools for developers, writers, and digital professionals. Convert, format, encode, and transform your data easily.',
-    ogImage: '/assets/MyConverterTool.png',
-    structuredData: {
-      '@type': 'WebPage',
-      name: 'MyConverterTool Online Tools',
-      description: 'Collection of free online developer tools and utilities',
-      offers: {
-        '@type': 'Offer',
-        price: '0',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock'
-      }
-    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
-      <SEO 
-        {...seoData}
-      />
+    <div className="pb-20">
+      <SEO seoData={seoData} />
 
-      {/* 🔥 Improved Showcase Title */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold text-gray-800 dark:text-white uppercase tracking-wide">
-          🛠️ Tools Showcase
+      {/* Header */}
+      <section className="text-center py-16 md:py-24" data-aos="zoom-in">
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
+          Utility <span className="gradient-text">Showcase</span>
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
-          Explore powerful online tools for developers, writers, and more.
+        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          A curated collection of professional-grade tools designed to simplify your digital workflow.
         </p>
+      </section>
+
+      <div className="container mx-auto px-4 space-y-20">
+        {/* 📄 PDF Tools */}
+        <ToolSection title="PDF Management" subtitle="Manipulate, convert and secure your PDF documents.">
+          <ToolCard title="PDF Converter" link="/tools/pdf-converter" icon={<MdOutlinePictureAsPdf />} color="red" />
+        </ToolSection>
+
+        {/* 🛠 Dev Tools */}
+        <ToolSection title="Developer Utilities" subtitle="Essential tools for coding, formatting, and data transformation.">
+          <ToolCard title="JSON Formatter" link="/tools/json-formatter" icon={<SiJsonwebtokens />} color="indigo" />
+          <ToolCard title="Base64 Tool" link="/tools/base64-encoder" icon={<BiCodeBlock />} color="purple" />
+          <ToolCard title="URL Tool" link="/tools/url-encoder" icon={<FaCode />} color="yellow" />
+          <ToolCard title="Code Optimizer" link="/tools/minify-beautify" icon={<FaCompressAlt />} color="pink" />
+        </ToolSection>
+
+        {/* 📜 Text Tools */}
+        <ToolSection title="Text Processing" subtitle="Refine, convert and transform text-based content.">
+          <ToolCard title="Case Converter" link="/tools/text-case-converter" icon={<TbTransform />} color="green" />
+          <ToolCard title="Markdown to DOCX" link="/tools/markdown-to-docx" icon={<SiMarkdown />} color="blue" />
+        </ToolSection>
+
+        {/* 🌐 SEO Tools */}
+        <ToolSection title="Digital Marketing" subtitle="Optimize your online presence and reach.">
+          <ToolCard title="QR Generator" link="/tools/qr-code-generator" icon={<BsQrCode />} color="teal" />
+        </ToolSection>
       </div>
-
-      {/* 📄 PDF Tools */}
-      <ToolSection title="📄 PDF Tools">
-        <ToolCard title="PDF Converter" link="/tools/pdf-converter" icon={<MdOutlinePictureAsPdf />} color="red" />
-      </ToolSection>
-
-      {/* 🌐 SEO Tools */}
-      <ToolSection title="🌐 SEO Tools">
-        <ToolCard title="QR Code Generator" link="/tools/qr-code-generator" icon={<BsQrCode />} color="teal" />
-      </ToolSection>
-
-      {/* 🛠 Dev Tools */}
-      <ToolSection title="🛠 Dev Tools">
-        <ToolCard title="JSON Formatter" link="/tools/json-formatter" icon={<SiJsonwebtokens />} color="indigo" />
-        <ToolCard title="Base64 Encoder/Decoder" link="/tools/base64-encoder" icon={<BiCodeBlock />} color="purple" />
-        <ToolCard title="URL Encoder/Decoder" link="/tools/url-encoder" icon={<FaCode />} color="yellow" />
-        <ToolCard title="Minify & Beautify Code" link="/tools/minify-beautify" icon={<FaCompressAlt />} color="pink" />
-      </ToolSection>
-
-      {/* 📜 Text Tools */}
-      <ToolSection title="📜 Text Tools">
-        <ToolCard title="Text Case Converter" link="/tools/text-case-converter" icon={<TbTransform />} color="green" />
-        <ToolCard title="Markdown to DOCX" link="/tools/markdown-to-docx" icon={<SiMarkdown />} color="blue" />
-      </ToolSection>
-
-
     </div>
   );
 };
 
-// 🎯 Enhanced Tool Section Component
-const ToolSection = ({ title, children }) => {
+const ToolSection = ({ title, subtitle, children }) => {
   return (
-    <section className="mb-12">
-      {/* Left-Aligned Category Name */}
-      <h2 className="text-3xl font-bold mb-6 text-left text-gray-700 dark:text-gray-200">{title}</h2>
+    <section data-aos="fade-up">
+      <div className="mb-10 border-l-4 border-blue-600 pl-6">
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2 uppercase">
+          {title}
+        </h2>
+        {subtitle && <p className="text-slate-500 font-medium">{subtitle}</p>}
+      </div>
       
-      {/* Tool Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {children}
       </div>
@@ -94,6 +80,7 @@ const ToolSection = ({ title, children }) => {
 
 ToolSection.propTypes = {
   title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
   children: PropTypes.node.isRequired,
 };
 

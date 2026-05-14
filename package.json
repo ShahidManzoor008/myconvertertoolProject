@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "install:all": "npm run client:install && npm run server:install",

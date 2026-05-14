@@ -4,7 +4,7 @@ import { XMarkIcon, UserCircleIcon, ShieldCheckIcon } from "@heroicons/react/24/
 import PropTypes from "prop-types";
 import { tools } from "../data/tools.jsx";
 
-const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
+const MobileMenu = ({ onClose, user, onLogout, navigation, isOpen }) => {
   const location = useLocation();
 
   return (
@@ -12,139 +12,138 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
       initial={{ x: "100%" }}
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
-      transition={{ type: "spring", damping: 20, stiffness: 300 }}
-      className="fixed inset-y-0 right-0 w-80 bg-white dark:bg-gray-800 shadow-lg overflow-hidden z-50 md:hidden flex flex-col"
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-y-0 right-0 w-full sm:w-80 glass border-l border-white/20 dark:border-slate-800/20 shadow-2xl z-50 md:hidden flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-label="Mobile navigation menu"
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Menu</h2>
+      <div className="p-6 border-b border-white/10 dark:border-slate-800/10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg">
+            <span className="material-icons text-sm">architecture</span>
+          </div>
+          <span className="text-lg font-black tracking-tighter">MENU</span>
+        </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          className="p-2 glass rounded-xl hover:bg-red-500 hover:text-white transition-all"
           aria-label="Close menu"
         >
-          <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+          <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
 
       {/* Menu Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="p-6 space-y-8">
           {/* Navigation Links */}
-          <nav className="space-y-1">
+          <nav className="space-y-2">
+            <h2 className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 px-2">
+              Navigation
+            </h2>
             {user && user.isAdmin && (
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: navigation.length * 0.1 }}
+              <Link
+                to="/admin"
+                onClick={onClose}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20"
               >
-                <NavItem
-                  to="/admin"
-                  icon={<ShieldCheckIcon className='w-5 h-5' />}
-                  text="Admin Dashboard"
-                  activePath={location.pathname}
-                  onClick={onClose}
-                />
-              </motion.div>
+                <ShieldCheckIcon className="w-5 h-5" />
+                <span>Admin Dashboard</span>
+              </Link>
             )}
             {navigation.map((item) => (
-              <motion.div
+              <Link
                 key={item.name}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: navigation.indexOf(item) * 0.1 }}
+                to={item.href}
+                onClick={onClose}
+                className={`flex items-center gap-3 p-3 rounded-2xl font-bold transition-all ${
+                  location.pathname === item.href
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}
               >
-                <NavItem
-                  to={item.href}
-                  icon={item.icon}
-                  text={item.name}
-                  activePath={location.pathname}
-                  onClick={onClose}
-                />
-              </motion.div>
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.name}</span>
+              </Link>
             ))}
           </nav>
 
-          {/* Auth links for Mobile */}
-          {!user && (
-            <>
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: (navigation.length + 0) * 0.1 }}
-              >
-                <NavItem to="/register" text="Register" activePath={location.pathname} icon={<span>👤</span>} onClick={onClose} />
-              </motion.div>
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: (navigation.length + 1) * 0.1 }}
-              >
-                <NavItem to="/login" text="Login" activePath={location.pathname} icon={<span>🔑</span>} onClick={onClose} />
-              </motion.div>
-            </>
-          )}
-          {user && (
-            <>
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: (navigation.length + 0) * 0.1 }}
-              >
-                <NavItem to="/profile" text="Profile" activePath={location.pathname} icon={<UserCircleIcon className='w-5 h-5' />} onClick={onClose} />
-              </motion.div>
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: (navigation.length + 1) * 0.1 }}
-              >
+          {/* Account Actions */}
+          <div className="space-y-2">
+            <h2 className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 px-2">
+              Account
+            </h2>
+            {!user ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  to="/login"
+                  onClick={onClose}
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl glass hover:bg-blue-600 hover:text-white transition-all gap-2"
+                >
+                  <span className="text-xl">🔑</span>
+                  <span className="text-xs font-bold uppercase">Sign In</span>
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={onClose}
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/25 gap-2"
+                >
+                  <span className="text-xl">👤</span>
+                  <span className="text-xs font-bold uppercase">Sign Up</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link
+                  to="/profile"
+                  onClick={onClose}
+                  className="flex items-center gap-3 p-3 rounded-2xl glass hover:border-blue-500/50 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold">
+                    {user.name.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm">{user.name}</span>
+                    <span className="text-xs text-slate-500 uppercase font-medium">My Profile</span>
+                  </div>
+                </Link>
                 <button
                   onClick={() => { onLogout(); onClose(); }}
-                  className="w-full text-left px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 w-full p-3 rounded-2xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-all mt-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                  </svg>
+                  <span className="material-icons text-sm">logout</span>
                   Logout
                 </button>
-              </motion.div>
-            </>
-          )}
+              </div>
+            )}
+          </div>
 
-          {/* Tools Section */}
+          {/* Tools Grid */}
           <div className="pt-4">
-            <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-3">
-              📂 Available Tools
+            <h2 className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 px-2">
+              Popular Tools
             </h2>
-            <ul className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {tools
-                .filter(tool => tool.path !== location.pathname)
+                .slice(0, 4)
                 .map((tool, index) => (
-                  <motion.li
+                  <Link
                     key={index}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: index * 0.05 }}
+                    to={tool.path}
+                    onClick={onClose}
+                    className="flex flex-col items-center p-4 rounded-2xl glass hover:border-blue-500/50 transition-all text-center gap-2"
                   >
-                    <Link
-                      to={tool.path}
-                      onClick={onClose}
-                      className="flex flex-col items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      aria-label={`Go to ${tool.name} tool`}
-                    >
-                      <span className={`w-10 h-10 flex items-center justify-center rounded-lg bg-${tool.color}-500 text-white mb-2`}>
-                        {tool.icon}
-                      </span>
-                      <span className="text-sm text-center text-gray-700 dark:text-gray-300">
-                        {tool.name}
-                      </span>
-                    </Link>
-                  </motion.li>
+                    <span className={`w-10 h-10 flex items-center justify-center rounded-xl bg-${tool.color}-500/10 text-${tool.color}-600 dark:text-${tool.color}-400 text-xl`}>
+                      {tool.icon}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-slate-700 dark:text-slate-300">
+                      {tool.name}
+                    </span>
+                  </Link>
                 ))}
-            </ul>
+            </div>
           </div>
         </div>
       </div>

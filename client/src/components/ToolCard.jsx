@@ -2,32 +2,30 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 
-// Define a mapping for colors to Tailwind CSS classes
-const colorMap = {
-  red: 'bg-red-500 hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-800',
-  blue: 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800',
-  green: 'bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800',
-  yellow: 'bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-700 dark:hover:bg-yellow-800',
-  indigo: 'bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-700 dark:hover:bg-indigo-800',
-  purple: 'bg-purple-500 hover:bg-purple-600 dark:bg-purple-700 dark:hover:bg-purple-800',
-  pink: 'bg-pink-500 hover:bg-pink-600 dark:bg-pink-700 dark:hover:bg-pink-800',
-  teal: 'bg-teal-500 hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-800',
-  gray: 'bg-gray-400 hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700', // For "Coming Soon"
-};
-
 const ToolCard = ({ title, link, icon, color }) => {
-  const cardClasses = colorMap[color] || 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'; // Default gray if color not found
-  const textColor = 'text-white dark:text-gray-100'; // Ensure text is visible on colored backgrounds
-
   return (
     <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={`p-6 ${cardClasses} ${textColor} rounded-lg text-center shadow-md hover:shadow-2xl transition-transform transform hover:scale-105`}
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      className="group relative"
     >
-      <Link to={link} className="flex flex-col items-center" aria-label={`Go to ${title} tool`}>
-        <span className="text-4xl" aria-hidden="true">{icon}</span>
-        <h3 className="text-lg font-bold mt-2">{title}</h3>
+      <Link 
+        to={link} 
+        className="block p-6 glass-card border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 dark:hover:border-blue-400/50 overflow-hidden"
+      >
+        <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 blur-2xl transition-all group-hover:opacity-20 bg-${color}-500`} />
+        
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className={`p-4 rounded-2xl bg-${color}-500/10 text-${color}-600 dark:text-${color}-400 mb-4 transition-transform group-hover:scale-110`}>
+            <span className="text-4xl">{icon}</span>
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {title}
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Professional conversion tool
+          </p>
+        </div>
       </Link>
     </motion.div>
   );

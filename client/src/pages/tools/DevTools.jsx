@@ -1,72 +1,84 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "../../utils/SEO";
 import { SiJsonwebtokens } from "react-icons/si";
 import { BiCodeBlock } from "react-icons/bi";
 import { FaCode, FaCompressAlt } from "react-icons/fa";
+import { motion } from "framer-motion";
+import ToolCard from "../../components/ToolCard";
 
 const DevTools = () => {
   const tools = [
     { 
-      title: "JSON Formatter", 
-      link: "/tools/json-formatter", 
-      icon: <SiJsonwebtokens className="text-white text-4xl" />, 
-      color: "bg-blue-500" 
+      name: "JSON Formatter", 
+      path: "/tools/json-formatter", 
+      icon: <SiJsonwebtokens />, 
+      color: "blue" 
     },
     { 
-      title: "Base64 Encoder/Decoder", 
-      link: "/tools/base64-encoder", 
-      icon: <BiCodeBlock className="text-white text-4xl" />, 
-      color: "bg-purple-500" 
+      name: "Base64 Tool", 
+      path: "/tools/base64-encoder", 
+      icon: <BiCodeBlock />, 
+      color: "purple" 
     },
     { 
-      title: "URL Encoder/Decoder", 
-      link: "/tools/url-encoder", 
-      icon: <FaCode className="text-white text-4xl" />, 
-      color: "bg-yellow-500" 
+      name: "URL Tool", 
+      path: "/tools/url-encoder", 
+      icon: <FaCode />, 
+      color: "yellow" 
     },
     { 
-      title: "Minify & Beautify Code", 
-      link: "/tools/minify-beautify", 
-      icon: <FaCompressAlt className="text-white text-4xl" />, 
-      color: "bg-green-500" 
+      name: "Code Optimizer", 
+      path: "/tools/minify-beautify", 
+      icon: <FaCompressAlt />, 
+      color: "pink" 
     },
   ];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* ============================
-          🟢 SEO with react-helmet-async
-      ============================ */}
-      <Helmet>
-        <title>Free Developer Tools | JSON Formatter, Minify Code, Encoder</title>
-        <meta name="description" content="Use free online developer tools like JSON Formatter, Minifier, Base64 Encoder, and URL Encoder to format, minify, and optimize your code effortlessly." />
-        <meta name="keywords" content="free developer tools, JSON formatter, minify code online, Base64 encoder, URL encoder, beautify code, optimize JavaScript, format JSON online" />
-        <meta name="robots" content="index, follow" />
-        <meta name="author" content="My Converter Tool" />
-      </Helmet>
+    <div className="pb-20">
+      <SEO 
+        seoData={{
+          title: 'Developer Utilities Pro - Professional Code Tools',
+          description: 'Access a suite of professional developer tools including JSON formatting, minification, and secure encoding.',
+          keywords: 'developer tools, json formatter, code optimizer, b64, url encode',
+          canonicalUrl: '/tools/dev',
+          ogType: 'website',
+        }}
+      />
 
-      {/* ============================
-          🛠️ Developer Tools Showcase
-      ============================ */}
-      <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400 text-center">
-        Free Developer Tools 🛠
-      </h1>
-      <p className="text-center text-gray-600 dark:text-gray-300 mt-2">
-        Use free online tools for developers to format, minify, encode, and beautify your code effortlessly.
-      </p>
+      {/* Header */}
+      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
+          <span className="material-icons text-xs">terminal</span>
+          Engineering Suite
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
+          Developer <span className="gradient-text">Utilities</span>
+        </h1>
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
+          Professional-grade tools for code optimization, data formatting, and transformation.
+        </p>
+      </section>
 
-      {/* Colorful Cards with Icons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {tools.map((tool, index) => (
-          <Link 
-            key={index} 
-            to={tool.link} 
-            className={`flex items-center space-x-4 p-6 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-xl text-white ${tool.color}`}
-          >
-            <div>{tool.icon}</div>
-            <h3 className="text-lg font-bold">{tool.title}</h3>
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+          {tools.map((tool, index) => (
+            <ToolCard 
+              key={index} 
+              title={tool.name}
+              link={tool.path}
+              icon={tool.icon}
+              color={tool.color}
+            />
+          ))}
+        </div>
+        
+        <div className="mt-20 text-center">
+          <Link to="/tools" className="text-sm font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
+            <span className="material-icons text-sm">west</span>
+            Back to all categories
           </Link>
-        ))}
+        </div>
       </div>
     </div>
   );

@@ -1,17 +1,15 @@
-import { useState, useRef, useEffect } from "react";
-import { useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Popup from "../../components/Popup";
 import { js, css, html } from "js-beautify";
-import { Helmet } from "react-helmet-async";
-import { Copy, Download, Eye, EyeOff, Upload, Code, Check, Info, Moon, Sun, X } from "lucide-react"; // Added X icon for clear button
+import SEO from "../../utils/SEO";
+import { Copy, Download, Eye, EyeOff, Upload, Code, Check, Info, Sun, RotateCcw, Zap } from "lucide-react";
 import Prism from "prismjs";
-import "prismjs/themes/prism-tomorrow.css"; // Dark theme
-import "prismjs/themes/prism.css"; // Light theme
-// Import language components
+import "prismjs/themes/prism-tomorrow.css";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-css";
 import DOMPurify from "dompurify";
+import { statsApi } from "../../utils/apiClient";
 
 const MinifyBeautifyTool = () => {
   const [code, setCode] = useState("");
@@ -26,17 +24,14 @@ const MinifyBeautifyTool = () => {
   const [beforeSize, setBeforeSize] = useState(0);
   const [afterSize, setAfterSize] = useState(0);
   const [copyState, setCopyState] = useState("idle");
-  const [theme, setTheme] = useState("dark");
   const [highlightedInput, setHighlightedInput] = useState("");
   const [highlightedOutput, setHighlightedOutput] = useState("");
-  
 
   const iframeRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const codeEditorRef = useRef(null);
 
-  // Map our language values to Prism's language classes
   const prismLanguageMap = {
     "js": "language-javascript",
     "css": "language-css",
@@ -44,620 +39,260 @@ const MinifyBeautifyTool = () => {
   };
 
   useEffect(() => {
-    // Check system preference for theme
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-    } else {
-      setTheme('light');
-    }
-  }, []); // Run once on mount for theme detection
-
-  useEffect(() => {
-    // Set before size whenever code changes
     setBeforeSize(new Blob([code]).size);
-  }, [code]);
-
-  useEffect(() => {
-    // Highlight the input code when it changes
     highlightCode(code, language, setHighlightedInput);
   }, [code, language]);
 
-  const updatePreview = useCallback(() => {
-    if (iframeRef.current) {
-      let previewContent = result;
-      if (language === "css") {
-        previewContent = `
-          <style>${result}</style>
-          <div style="font-family: system-ui, sans-serif; padding: 20px;">
-            <h1 style="color: #333;">CSS Preview</h1>
-            <p>This preview shows how your CSS will look. The styling below is affected by your CSS.</p>
-            <div class="preview-element" style="padding: 20px; border: 1px solid #ddd; margin-top: 20px;">
-              <h2>Sample Heading</h2>
-              <p>Sample paragraph with <a href="#">link</a> and <strong>bold text</strong>.</p>
-              <button>Sample Button</button>
-            </div>
-          </div>
-        `;
-      } else if (language === "html") {
-        previewContent = result;
-      }
-      iframeRef.current.srcdoc = previewContent;
-    }
-  }, [iframeRef, result, language]);
-
   useEffect(() => {
-    // Update preview when result or language changes
+    highlightCode(result, language, setHighlightedOutput);
+    setAfterSize(new Blob([result]).size);
     if ((language === "html" || language === "css") && result) {
       updatePreview();
     }
-  }, [language, result, updatePreview]);
-
-    useEffect(() => {
-    // Highlight the output code when it changes
-    highlightCode(result, language, setHighlightedOutput);
-    
-    // Set after size whenever result changes
-    setAfterSize(new Blob([result]).size);
   }, [result, language]);
 
-  // Use Prism to highlight code
   const highlightCode = (codeToHighlight, lang, setterFunction) => {
     if (!codeToHighlight) {
       setterFunction("");
       return;
     }
-    
-    let grammar;
-    switch (lang) {
-      case "js":
-        grammar = Prism.languages.javascript;
-        break;
-      case "css":
-        grammar = Prism.languages.css;
-        break;
-      case "html":
-        grammar = Prism.languages.markup;
-        break;
-      default:
-        grammar = Prism.languages.javascript;
-    }
-    
+    const grammar = lang === "js" ? Prism.languages.javascript : lang === "css" ? Prism.languages.css : Prism.languages.markup;
     const highlighted = Prism.highlight(codeToHighlight, grammar, lang);
     setterFunction(highlighted);
   };
 
-  const showPopup = (message) => {
-    setPopupMessage(message);
-    setTimeout(() => setPopupMessage(""), 2000);
-  };
-
-  const getBeautifyOptions = () => {
-    const options = { 
-      indent_size: indentSize,
-      // Common options for all languages
-      preserve_newlines: true,
-      max_preserve_newlines: 2,
-      wrap_line_length: 0,
-    };
-
-    // Language-specific options
-    if (language === "js") {
-      options.brace_style = "collapse";
-      options.space_in_paren = false;
-      options.space_in_empty_paren = false;
-      options.preserve_newlines = preserveNewlines;
-    } else if (language === "html") {
-      options.indent_inner_html = true;
-      options.extra_liners = [];
-      options.unformatted = ['code', 'pre', 'em', 'strong', 'span'];
-    }
-    
-    return options;
-  };
-
-  const handleBeautify = () => {
-    if (!code.trim()) {
-      showPopup("Please enter some code first");
-      return;
-    }
-    
-    const options = getBeautifyOptions();
-    let formattedCode;
-    
-    try {
-      if (language === "js") formattedCode = js(code, options);
-      else if (language === "css") formattedCode = css(code, options);
-      else if (language === "html") formattedCode = html(code, options);
-      
-      setResult(formattedCode);
-      setAfterSize(new Blob([formattedCode]).size);
-      showPopup("Code beautified successfully!");
-    } catch (error) {
-      showPopup(`Error: ${error.message}`);
-    }
-  };
-
-  const handleMinify = () => {
-    if (!code.trim()) {
-      showPopup("Please enter some code first");
-      return;
-    }
-    
-    let minifiedCode;
-    
-    try {
-      if (language === "js") {
-        // Basic JS minification (removal of whitespace and comments)
-        minifiedCode = code
-          .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '') // Remove comments
-          .replace(/\s+/g, ' ') // Replace whitespace with a single space
-          .trim();
-      } else if (language === "css") {
-        // Basic CSS minification
-        minifiedCode = code
-          .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')
-          .replace(/\s+/g, ' ')
-          .replace(/\s*([:;,{}])\s*/g, '$1')
-          .replace(/;}/g, '}')
-          .trim();
-      } else if (language === "html") {
-        // Basic HTML minification
-        minifiedCode = code
-          .replace(/<!--[\s\S]*?-->/g, '')
-          .replace(/\s+/g, ' ')
-          .replace(/>\s+</g, '><')
-          .trim();
+  const updatePreview = useCallback(() => {
+    if (iframeRef.current) {
+      let previewContent = result;
+      if (language === "css") {
+        previewContent = `<style>${result}</style><div style="font-family: Inter, sans-serif; padding: 40px;">
+          <h1 style="font-weight: 900; letter-spacing: -0.05em; font-size: 3rem;">CSS Preview</h1>
+          <p style="color: #64748b;">This environment reflects your active styling.</p>
+          <div class="preview-box" style="margin-top: 30px; padding: 30px; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc;">
+            <h2 style="margin-bottom: 10px;">Sample Component</h2>
+            <button style="padding: 10px 20px; border-radius: 10px; cursor: pointer;">Action Button</button>
+          </div>
+        </div>`;
       }
-      
-      setResult(minifiedCode);
-      setAfterSize(new Blob([minifiedCode]).size);
-      showPopup("Code minified successfully!");
-    } catch (error) {
-      showPopup(`Error: ${error.message}`);
+      iframeRef.current.srcdoc = previewContent;
     }
+  }, [result, language]);
+
+  const handleBeautify = async () => {
+    if (!code.trim()) return;
+    try {
+      const options = { indent_size: indentSize, preserve_newlines: preserveNewlines, max_preserve_newlines: 2 };
+      let formatted;
+      if (language === "js") formatted = js(code, options);
+      else if (language === "css") formatted = css(code, options);
+      else formatted = html(code, options);
+      
+      setResult(formatted);
+      showPopup("Formatted successfully");
+      statsApi.increment({ toolName: `beautify-${language}`, fileSize: code.length }).catch(() => {});
+    } catch (e) {
+      showPopup("Formatting failed");
+    }
+  };
+
+  const handleMinify = async () => {
+    if (!code.trim()) return;
+    try {
+      let minified = code.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '').replace(/\s+/g, ' ').trim();
+      if (language === "css") minified = minified.replace(/\s*([:;,{}])\s*/g, '$1').replace(/;}/g, '}');
+      if (language === "html") minified = minified.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><');
+      
+      setResult(minified);
+      showPopup("Minified successfully");
+      statsApi.increment({ toolName: `minify-${language}`, fileSize: code.length }).catch(() => {});
+    } catch (e) {
+      showPopup("Minification failed");
+    }
+  };
+
+  const showPopup = (msg) => {
+    setPopupMessage(msg);
+    setTimeout(() => setPopupMessage(""), 2000);
   };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(result);
     setCopyState("copied");
-    showPopup("Copied to clipboard!");
-    
-    setTimeout(() => {
-      setCopyState("idle");
-    }, 2000);
+    setTimeout(() => setCopyState("idle"), 2000);
+    showPopup("Copied!");
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([result], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const filename = fileDetails ? fileDetails.name : `formatted_code.${language}`;
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url); // Clean up
-    
-    showPopup("File downloaded!");
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Extract file extension and set language
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    if (fileExt === 'js' || fileExt === 'jsx' || fileExt === 'json') {
-      setLanguage('js');
-    } else if (fileExt === 'css') {
-      setLanguage('css');
-    } else if (fileExt === 'html' || fileExt === 'htm') {
-      setLanguage('html');
-    }
-    
-    setFileDetails(file);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setCode(e.target.result);
-      setResult('');
-    };
-    reader.readAsText(file);
-  };
-
-  const triggerFileUpload = () => {
-    fileInputRef.current.click();
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
-  const calculateSavings = () => {
-    if (beforeSize === 0 || afterSize === 0) return 0;
-    return ((beforeSize - afterSize) / beforeSize * 100).toFixed(1);
-  };
-
-  // Handle textarea input and maintain cursor position
-  const handleTextareaChange = (e) => {
-    const newCode = e.target.value;
-    setCode(newCode);
-    
-    // The cursor position will be maintained automatically 
-    // by using the native textarea
-  };
-
-  // Sync scroll between textarea and highlighted code display
-  const handleScroll = (e) => {
-    if (codeEditorRef.current && textareaRef.current) {
-      codeEditorRef.current.scrollTop = e.target.scrollTop;
-      codeEditorRef.current.scrollLeft = e.target.scrollLeft;
-    }
-  };
-
-  // Generate line numbers for the output code
-  const generateLineNumbers = (code) => {
-    const lines = code.split('\n').length;
-    return Array.from({ length: lines }, (_, i) => i + 1).join('\n');
-  };
-
-  // Clear the input and result
   const handleClear = () => {
-    setCode("");
-    setResult("");
-    setFileDetails(null);
-    setBeforeSize(0);
-    setAfterSize(0);
-    setHighlightedInput("");
-    setHighlightedOutput("");
-    showPopup("Cleared!");
+    setCode(""); setResult(""); setFileDetails(null);
   };
 
   return (
-    <motion.div 
-  initial={{ opacity: 0, y: 20 }} 
-  animate={{ opacity: 1, y: 0 }} 
-  transition={{ duration: 0.5 }}
-  className={`p-6 max-w-6xl mx-auto ${theme === 'dark' ? 'dark' : ''}`}
->
-  <Helmet>
-    <title>Free Code Minifier & Beautifier - Minify JS, CSS, HTML</title>
-    <meta name="description" content="Use our Free Online Minifier & Beautifier to minify JavaScript, CSS, and HTML code. Reduce file size, improve performance, and beautify code for readability!" />
-    <meta name="keywords" content="JS minifier, CSS minifier, HTML beautifier, JavaScript beautifier, free code beautifier, minify code online, online code minifier, developer tools, free online tools" />
-    <meta property="og:title" content="Free Code Minifier & Beautifier - Minify JS, CSS, HTML" />
-    <meta property="og:description" content="Use our Free Online Minifier & Beautifier to minify JavaScript, CSS, and HTML code. Reduce file size, improve performance, and beautify code for readability!" />
-    <meta property="og:url" content="https://myconvertertool.com/tools/minify-beautify" />
-    <meta property="og:type" content="website" />
-  </Helmet>
+    <div className="pb-20">
+      <SEO 
+        seoData={{
+          title: 'Code Optimizer Pro - Minify & Beautify JS, CSS, HTML',
+          description: 'Professional grade code formatter and minifier. Reduce file sizes or beautify messy code instantly with real-time preview.',
+          keywords: 'js minifier, css beautifier, html formatter, code optimization, developer productivity',
+          canonicalUrl: '/tools/minify-beautify',
+          ogType: 'website',
+        }}
+      />
 
-  <div className="flex justify-between items-center mb-6">
-    <div>
-      <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">Minify & Beautify Code</h1>
-      <p className="text-gray-600 dark:text-gray-300 mt-1">Format or Minify your JavaScript, CSS, or HTML with Syntax Highlighting</p>
-    </div>
-    
-    <button 
-      onClick={toggleTheme}
-      className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center"
-    >
-      {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-    </button>
-  </div>
-
-  {/* Main Container */}
-  <div className="flex flex-col gap-6">
-    {/* Input Section */}
-    <div>
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex gap-2">
-          {["js", "css", "html"].map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setLanguage(lang)}
-              className={`px-4 py-2 rounded-md font-medium text-sm ${
-                language === lang 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              } transition`}
-            >
-              {lang.toUpperCase()}
-            </button>
-          ))}
+      {/* Header */}
+      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-widest border border-pink-500/20 mb-6">
+          <span className="material-icons text-xs">auto_awesome</span>
+          Developer Productivity
         </div>
-        
-        <div className="flex items-center">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            className="hidden" 
-            accept=".js,.jsx,.json,.css,.html,.htm"
-          />
-          <motion.button 
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.95 }} 
-            onClick={triggerFileUpload}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
+          Code <span className="gradient-text">Refinery</span>
+        </h1>
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
+          Compress, beautify, and refine your source code with industry-standard algorithms.
+        </p>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Editor Side */}
+        <div className="lg:col-span-7 space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+            className="glass-card p-1 overflow-hidden"
           >
-            <Upload size={16} />
-            Upload File
-          </motion.button>
-        </div>
-      </div>
-      
-      {fileDetails && (
-        <div className="mb-3 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-md text-sm flex items-center gap-2">
-          <Info size={16} />
-          <span>
-            File: <strong>{fileDetails.name}</strong> ({(fileDetails.size / 1024).toFixed(1)} KB)
-          </span>
-        </div>
-      )}
-      
-      {/* Code Editor with Syntax Highlighting */}
-      <div className="relative border rounded-md overflow-hidden border-gray-300 dark:border-gray-600 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-        <div 
-          ref={codeEditorRef}
-          className={`absolute top-0 left-0 right-0 bottom-0 font-mono text-sm p-4 whitespace-pre overflow-auto pointer-events-none ${
-            prismLanguageMap[language]
-          } ${
-            theme === 'dark' ? 'code-editor-dark' : 'code-editor-light'
-          }`}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedInput) || '<span style="opacity: 0.5;">Paste your code here...</span>' }}
-        />
-        <textarea 
-          ref={textareaRef}
-          className="w-full h-64 p-4 font-mono text-sm bg-transparent resize-none outline-none text-transparent caret-gray-900 dark:caret-white"
-          value={code} 
-          onChange={handleTextareaChange}
-          onScroll={handleScroll}
-          onFocus={() => {}}
-          onBlur={() => {}}
-          spellCheck="false"
-          placeholder={`Paste your ${language.toUpperCase()} code here...`}
-          style={{ overflow: "hidden" }} // Ensure textarea does not show its own scrollbar
-        />
-      </div>
-      
-      {/* Advanced Options Toggle */}
-      <div className="mt-4 mb-2">
-        <button 
-          onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-          className="text-blue-500 dark:text-blue-400 text-sm flex items-center gap-1"
-        >
-          <Code size={16} />
-          {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
-        </button>
-      </div>
-      
-      {/* Advanced Options Panel */}
-      {showAdvancedOptions && (
-        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md mb-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-700 dark:text-gray-300">
-              Indent Size:
-              <select 
-                value={indentSize} 
-                onChange={(e) => setIndentSize(Number(e.target.value))}
-                className="ml-2 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-              >
-                <option value={2}>2 spaces</option>
-                <option value={4}>4 spaces</option>
-                <option value={8}>8 spaces</option>
-              </select>
-            </label>
-            
-            {/* Add more options here based on language */}
-            {language === "js" && (
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                <input 
-                  type="checkbox" 
-                  id="preserve-newlines" 
-                  checked={preserveNewlines}
-                  onChange={(e) => setPreserveNewlines(e.target.checked)}
-                  className="mr-2"
-                />
-                <label htmlFor="preserve-newlines">Preserve line breaks</label>
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10 shadow-inner">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  {["js", "css", "html"].map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => setLanguage(lang)}
+                      className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                        language === lang 
+                          ? 'bg-white dark:bg-slate-700 text-pink-600 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-4">
+                  <input type="file" ref={fileInputRef} onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => { setCode(ev.target.result); setFileDetails(file); };
+                      reader.readAsText(file);
+                    }
+                  }} className="hidden" />
+                  <button onClick={() => fileInputRef.current.click()} className="text-[10px] font-black uppercase text-slate-400 hover:text-pink-600 transition-colors">Import</button>
+                  <button onClick={handleClear} className="text-[10px] font-black uppercase text-red-500 hover:underline">Flush</button>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-4">
-        <motion.button 
-          whileHover={{ scale: 1.02 }} 
-          whileTap={{ scale: 0.98 }} 
-          onClick={handleBeautify} 
-          className="w-full sm:w-1/2 bg-green-500 text-white py-3 rounded-md hover:bg-green-600 transition font-medium flex items-center justify-center gap-2"
-        >
-          <Code size={18} />
-          Beautify
-        </motion.button>
-        <motion.button 
-          whileHover={{ scale: 1.02 }} 
-          whileTap={{ scale: 0.98 }} 
-          onClick={handleMinify} 
-          className="w-full sm:w-1/2 bg-red-500 text-white py-3 rounded-md hover:bg-red-600 transition font-medium flex items-center justify-center gap-2"
-        >
-          <Code size={18} />
-          Minify
-        </motion.button>
-      </div>
 
-      {/* Clear Button */}
-      <div className="mt-4">
-        <motion.button 
-          whileHover={{ scale: 1.02 }} 
-          whileTap={{ scale: 0.98 }} 
-          onClick={handleClear} 
-          className="w-full bg-gray-500 text-white py-3 rounded-md hover:bg-gray-600 transition font-medium flex items-center justify-center gap-2"
-        >
-          <X size={18} />
-          Clear
-        </motion.button>
-      </div>
-    </div>
-    
-    {/* Output Section */}
-    <div>
-      {result ? (
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md shadow-md flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Output:</h2>
-            
-            {beforeSize > 0 && afterSize > 0 && (
-              <div className="flex items-center text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full">
-                <span>
-                                    Saved {calculateSavings()}% 
-                  ({(beforeSize / 1024).toFixed(1)}KB &rarr; {(afterSize / 1024).toFixed(1)}KB)
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* Code Output with Syntax Highlighting */}
-          <div className="flex-grow overflow-auto rounded-md bg-white dark:bg-gray-900 p-4" style={{ maxHeight: "calc(100vh - 400px)" }}>
-            <div className="flex">
-              {/* Line Numbers */}
-              <div className="text-right pr-4 text-gray-400 dark:text-gray-500 select-none">
-                <pre className="font-mono text-sm">
-                  {generateLineNumbers(result)}
-                </pre>
-              </div>
-              {/* Highlighted Code */}
-              <div className="flex-grow">
-                <pre 
-                  className={`font-mono text-sm whitespace-pre-wrap ${prismLanguageMap[language]} ${theme === 'dark' ? 'code-dark' : 'code-light'}`}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedOutput) }}
+              <div className="relative group rounded-3xl overflow-hidden bg-slate-900 shadow-2xl">
+                <textarea
+                  className="w-full h-[400px] p-8 font-mono text-xs leading-relaxed outline-none resize-none bg-transparent text-transparent caret-white z-10 relative"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder={`// Paste your ${language.toUpperCase()} here...`}
+                  spellCheck="false"
                 />
+                <div 
+                  className="absolute inset-0 p-8 font-mono text-xs leading-relaxed pointer-events-none whitespace-pre overflow-hidden"
+                  dangerouslySetInnerHTML={{ __html: highlightedInput || `<span class="opacity-30">Waiting for code...</span>` }}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <button onClick={handleBeautify} className="btn-primary flex-1 !bg-pink-600 shadow-pink-500/25 py-4">
+                  <Zap size={18} /> Beautify Code
+                </button>
+                <button onClick={handleMinify} className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all flex-1">
+                  Minify Bundle
+                </button>
               </div>
             </div>
-          </div>
-          
-          {/* Copy & Download Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <motion.button 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }} 
-              onClick={handleCopy} 
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md transition ${
-                copyState === 'copied' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
-              }`}
-            >
-              {copyState === 'copied' ? <Check size={18} /> : <Copy size={18} />}
-              {copyState === 'copied' ? 'Copied!' : 'Copy'}
-            </motion.button>
-            <motion.button 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }} 
-              onClick={handleDownload} 
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition"
-            >
-              <Download size={18} />
-              Download
-            </motion.button>
-          </div>
+          </motion.div>
         </div>
-      ) : (
-        <div className="h-full flex items-center justify-center p-8 bg-gray-100 dark:bg-gray-800 rounded-md">
-          <div className="text-center text-gray-500 dark:text-gray-400">
-            <Code size={48} className="mx-auto mb-4 opacity-40" />
-            <p className="text-lg font-medium">Your formatted code will appear here</p>
-            <p className="mt-2 text-sm">Paste your code and click &quot;Beautify&quot; or &quot;Minify&quot;</p>
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-  
-  {/* Live Preview for HTML & CSS */}
-  {(language === "html" || language === "css") && result && (
-    <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded-md shadow-md">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Live Preview:</h2>
-        <button 
-          onClick={() => setPreviewVisible(!previewVisible)}
-          className="text-blue-500 flex items-center gap-1 text-sm"
-        >
-          {previewVisible ? (
-            <>
-              <EyeOff size={16} />
-              Hide Preview
-            </>
-          ) : (
-            <>
-              <Eye size={16} />
-              Show Preview
-            </>
+
+        {/* Output Side */}
+        <div className="lg:col-span-5 space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+            className="glass-card p-1 overflow-hidden"
+          >
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Processed Output</h3>
+                <div className="flex gap-2">
+                  <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-pink-600 transition-all">
+                    {copyState === 'copied' ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                  <button onClick={() => {
+                    const blob = new Blob([result], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `optimized.${language}`;
+                    a.click();
+                  }} className="p-3 rounded-xl glass hover:text-pink-600 transition-all">
+                    <Download size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 rounded-3xl overflow-hidden bg-slate-900 p-6 mb-8 shadow-inner">
+                <pre className="text-[10px] font-mono leading-relaxed text-pink-400 overflow-auto h-full scrollbar-hide">
+                  {result || 'The optimized code will appear here...'}
+                </pre>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <StatBox label="Size Saved" value={`${beforeSize > 0 && afterSize > 0 ? (100 - (afterSize / beforeSize * 100)).toFixed(1) : 0}%`} color="text-green-500" />
+                <StatBox label="Lines" value={result ? result.split('\n').length : 0} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Preview Panel */}
+          {(language === 'html' || language === 'css') && result && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="glass-card p-1 overflow-hidden"
+            >
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Runtime Preview</h3>
+                  <button onClick={() => setPreviewVisible(!previewVisible)} className="text-pink-600 text-[10px] font-black uppercase">
+                    {previewVisible ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
+                {previewVisible && (
+                  <div className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white">
+                    <iframe ref={iframeRef} title="preview" className="w-full h-48 border-none" sandbox="allow-scripts" />
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
-        </button>
+        </div>
       </div>
-      
-      {previewVisible && (
-        <div className="mt-4 border rounded-md bg-white overflow-hidden">
-          <iframe 
-            ref={iframeRef} 
-            className="w-full h-64 border-0"
-            title="Code Preview"
-            sandbox="allow-scripts"
-          />
+
+      {popupMessage && (
+        <div className="fixed bottom-8 right-8 z-[100] px-6 py-4 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-3 animate-slide-up">
+          <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+          <span className="text-sm font-bold uppercase tracking-widest">{popupMessage}</span>
         </div>
       )}
     </div>
-  )}
-
-  {/* Add custom styles for syntax highlighting themes */}
-  <style>{`
-    /* Override Prism themes for better contrast */
-    .code-editor-light {
-      background-color: white !important;
-    }
-    
-    .code-editor-dark {
-      background-color: #1e1e1e !important;
-    }
-    
-    .code-light {
-      background-color: white !important;
-    }
-    
-    .code-dark {
-      background-color: #1e1e1e !important;
-    }
-    
-    /* Ensure proper text color in dark mode */
-    .dark .code-dark .token.punctuation,
-    .dark .code-dark .token.operator {
-      color: #d4d4d4 !important;
-    }
-    
-    /* Adjust the caret color based on theme */
-    .dark textarea.caret-white {
-      caret-color: white;
-    }
-
-    /* Smooth scrolling for textarea and code editor */
-    textarea, .code-editor-light, .code-editor-dark {
-      scroll-behavior: smooth;
-    }
-
-    /* Active typing indicator */
-    .active-typing {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-    }
-  `}</style>
-
-  {/* Popup Notification */}
-  {popupMessage && <Popup message={popupMessage} onClose={() => setPopupMessage("")} />}
-</motion.div>
   );
 };
+
+const StatBox = ({ label, value, color = "text-slate-900 dark:text-white" }) => (
+  <div className="p-4 rounded-2xl glass border-none">
+    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+    <p className={`text-lg font-black ${color}`}>{value}</p>
+  </div>
+);
 
 export default MinifyBeautifyTool;

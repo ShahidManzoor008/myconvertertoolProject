@@ -5,58 +5,62 @@ import PropTypes from 'prop-types';
 // ✅ Reusable Blog Card Component with Image, Excerpt & Read More Button
 const BlogCard = ({ post }) => {
   return (
-    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.3 }}>
+    <motion.div 
+      whileHover={{ y: -8 }} 
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+    >
       <Link
-        to={post.slug ? `/blog/${post.slug}` : '/blog'} // Fallback to /blog if slug is missing
-        className="block bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 group p-4 sm:p-6"
-        onClick={(e) => {
-          if (!post.slug) {
-            e.preventDefault(); // Prevent navigation if slug is missing
-            // Optionally, show a message to the user that the post is unavailable
-            console.warn(`Blog post "${post.title}" is missing a slug and cannot be viewed.`);
-          }
-        }}
+        to={post.slug ? `/blog/${post.slug}` : '/blog'}
+        className="block glass-card h-full flex flex-col group overflow-hidden border-none"
       >
         {post.coverImage && (
-          <div className="relative h-32 sm:h-48 overflow-hidden">
+          <div className="relative h-56 overflow-hidden">
             <img
               src={post.coverImage}
               alt={post.title}
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               loading="lazy"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+            <div className="absolute bottom-4 left-4">
+              <span className="px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-bold uppercase tracking-wider">
+                Article
+              </span>
+            </div>
           </div>
         )}
 
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <time className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="p-8 flex-1 flex flex-col">
+          <div className="flex items-center gap-3 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <time>
               {new Date(post.createdAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
+                month: 'long',
+                day: 'numeric'
               })}
             </time>
-            <span className="text-gray-500 dark:text-gray-400">•</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {post.readingTime} min read
-            </span>
+            <span>•</span>
+            <span>{post.readingTime} min read</span>
           </div>
 
-          <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {post.title}
           </h3>
           
-          <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm sm:text-base">
+          <p className="text-slate-600 dark:text-slate-400 mb-8 line-clamp-3 leading-relaxed">
             {post.excerpt}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-1">
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              By {post.author}
-            </span>
-            <span className="text-sm text-blue-600 dark:text-blue-400 font-medium group-hover:text-blue-800 dark:group-hover:text-blue-300 mt-1 sm:mt-0">
-              Read more →
+          <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
+                {post.author.charAt(0)}
+              </div>
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {post.author}
+              </span>
+            </div>
+            <span className="text-blue-600 dark:text-blue-400 p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <span className="material-icons text-sm">arrow_forward</span>
             </span>
           </div>
         </div>

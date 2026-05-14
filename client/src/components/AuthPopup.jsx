@@ -16,78 +16,78 @@ const AuthPopup = ({ isOpen, onClose, onLogin, onSkip }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[200]"
         onClick={loading ? undefined : onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-2xl max-w-md w-full mx-4"
+          className="glass-card p-1 max-w-md w-full mx-4 overflow-hidden"
           role="dialog"
-          aria-labelledby="auth-popup-title"
-          aria-describedby="auth-popup-description"
         >
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          {/* Content */}
-          <div className="text-center mb-6">
-            <h2 id="auth-popup-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Save Your Work
-            </h2>
-            <p id="auth-popup-description" className="text-gray-600 dark:text-gray-300">
-              Sign in to save your conversions and access them from anywhere.
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div 
-              className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg flex items-start"
-              role="alert"
-              aria-live="polite"
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-10 relative">
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-6 right-6 p-2 rounded-xl glass hover:bg-red-500 hover:text-white transition-all focus:outline-none"
+              aria-label="Close dialog"
             >
-              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
-              <p className="text-sm">{error}</p>
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Content */}
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
+                <span className="material-icons text-3xl">cloud_done</span>
+              </div>
+              <h2 id="auth-popup-title" className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2 uppercase">
+                Save Progress
+              </h2>
+              <p id="auth-popup-description" className="text-sm text-slate-500 font-medium tracking-tight">
+                Securely store your conversions and access your activity across all professional devices.
+              </p>
             </div>
-          )}
 
-          {/* Google Login Button */}
-          <div className="relative">
-            <GoogleSignIn 
-              redirectTo={null} 
-              onSuccess={onLogin} 
-              buttonText={loading ? 'Signing in...' : 'Continue with Google'} 
-              disabled={loading}
-              className={loading ? 'opacity-70 cursor-not-allowed' : ''}
-            />
-            {loading && (
-              <LoadingSpinner 
-                size="sm" 
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600" 
-              />
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-xs font-bold">
+                {error}
+              </div>
             )}
-          </div>
 
-          {/* Skip Button */}
-          <button
-            onClick={onSkip}
-            disabled={loading}
-            className={`w-full text-gray-500 dark:text-gray-400 text-sm font-medium transition-all duration-150
-              ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:text-gray-700 dark:hover:text-gray-200'}
-            `}
-            aria-busy={loading}
-          >
-            {loading ? 'Please wait...' : 'Continue without signing in'}
-          </button>
+            {/* Google Login Button */}
+            <div className="relative mb-6">
+              <GoogleSignIn 
+                redirectTo={null} 
+                onSuccess={onLogin} 
+                buttonText={loading ? 'Synchronizing...' : 'Continue with Google'} 
+                disabled={loading}
+                className={`w-full !rounded-xl !border-none !bg-slate-50 dark:!bg-slate-800 !shadow-none hover:!bg-slate-100 transition-colors ${loading ? 'opacity-70' : ''}`}
+              />
+              {loading && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <LoadingSpinner size="sm" />
+                </div>
+              )}
+            </div>
+
+            {/* Skip Button */}
+            <button
+              onClick={onSkip}
+              disabled={loading}
+              className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all disabled:opacity-50"
+            >
+              {loading ? 'Processing Workspace...' : 'Proceed as Guest'}
+            </button>
+
+            <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                By continuing, you agree to our <a href="/terms" className="text-blue-600 underline">Terms</a> & <a href="/privacy" className="text-blue-600 underline">Privacy</a>.
+              </p>
+            </div>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

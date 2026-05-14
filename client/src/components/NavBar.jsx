@@ -24,80 +24,85 @@ const NavBar = ({
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-white dark:bg-gray-800 shadow-md px-6 py-4 flex justify-between items-center z-50">
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl glass rounded-2xl px-6 py-3 flex justify-between items-center z-50 border border-white/20 dark:border-slate-800/20 shadow-2xl">
       {/* Logo */}
       <Link
         to="/"
-        className="text-lg md:text-2xl font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition duration-300"
+        className="flex items-center gap-2 group"
       >
-        My Converter Tools 🚀
+        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform duration-300">
+          <span className="material-icons">architecture</span>
+        </div>
+        <span className="hidden sm:block text-xl font-black tracking-tighter text-slate-900 dark:text-white">
+          CONVERTER<span className="text-blue-600">PRO</span>
+        </span>
       </Link>
 
       {/* Desktop Menu */}
-      <div className="hidden md:flex gap-6 items-center">
-        {/* Always show main links */}
+      <div className="hidden md:flex gap-2 items-center bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
         {navigation.filter(item => !['Profile', 'Register', 'Login'].includes(item.name)).map((item) => (
-          <NavItem key={item.name} to={item.href} icon={item.icon} text={item.name} activePath={location.pathname} />
+          <Link
+            key={item.name}
+            to={item.href}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              location.pathname === item.href 
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {item.name}
+          </Link>
         ))}
-        {/* Auth links */}
-        {!user && (
-          <>
-            <NavItem to="/register" text="Register" activePath={location.pathname} icon={<span>👤</span>} />
-            <NavItem to="/login" text="Login" activePath={location.pathname} icon={<span>🔑</span>} />
-          </>
-        )}
-        {user && (
-          <>
+      </div>
+
+      {/* Action Group */}
+      <div className="flex items-center gap-3">
+        {!user ? (
+          <div className="hidden sm:flex items-center gap-2">
+            <Link to="/login" className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
+              Sign In
+            </Link>
+            <Link to="/register" className="btn-primary py-2 px-5 text-sm">
+              Sign Up
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
             {user.isAdmin && (
-              <NavItem to="/admin" text="Admin" activePath={location.pathname} icon={<ShieldCheckIcon className='w-5 h-5' />} />
+              <Link to="/admin" className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400" title="Admin Panel">
+                <ShieldCheckIcon className="w-5 h-5" />
+              </Link>
             )}
-            <NavItem to="/profile" text="Profile" activePath={location.pathname} icon={<UserCircleIcon className='w-5 h-5' />} />
+            <Link to="/profile" className="flex items-center gap-2 p-1 pr-3 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500/50 transition-all">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                {user.name.charAt(0)}
+              </div>
+              <span className="text-xs font-bold hidden lg:block">{user.name}</span>
+            </Link>
             <button
               onClick={onLogout}
-              className="ml-4 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+              className="hidden lg:block text-xs font-bold text-red-500 hover:text-red-600"
             >
               Logout
             </button>
-          </>
+          </div>
         )}
-      </div>
 
-      {/* Dark Mode Toggle and Mobile Menu Button Group */}
-      <div className="flex items-center gap-4">
-        {/* Dark Mode Toggle */}
-        <motion.button
-          onClick={onDarkModeToggle}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          <motion.div
-            initial={false}
-            animate={{ rotate: darkMode ? 180 : 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {darkMode ? (
-              <SunIcon className="w-6 h-6 text-yellow-400" />
-            ) : (
-              <MoonIcon className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-            )}
-          </motion.div>
-        </motion.button>
+        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
 
-        {/* Mobile Menu Button */}
         <button
-          className="md:hidden z-50"
-          onClick={() => onMobileMenuToggle(!isMobileMenuOpen)}
-          aria-label={isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
-          aria-expanded={isMobileMenuOpen}
+          onClick={onDarkModeToggle}
+          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          aria-label="Toggle Theme"
         >
-          {isMobileMenuOpen ? (
-            <XMarkIcon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
-          ) : (
-            <Bars3Icon className="w-7 h-7 text-gray-700 dark:text-gray-100" />
-          )}
+          {darkMode ? <SunIcon className="w-5 h-5 text-yellow-500" /> : <MoonIcon className="w-5 h-5 text-slate-700" />}
+        </button>
+
+        <button
+          className="md:hidden p-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+          onClick={() => onMobileMenuToggle(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
         </button>
       </div>
 

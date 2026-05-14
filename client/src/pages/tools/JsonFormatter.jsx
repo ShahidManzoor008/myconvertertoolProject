@@ -457,12 +457,7 @@ const JsonFormatter = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className={`p-4 md:p-6 max-w-6xl mx-auto ${isDarkMode ? "dark" : ""}`}
-    >
+    <div className="pb-20">
       <SEO 
         seoData={{
           title: 'JSON Formatter & Validator | Format, Beautify, Analyze JSON Online - MyConverterTool',
@@ -470,424 +465,221 @@ const JsonFormatter = () => {
           keywords: 'JSON formatter, JSON beautifier, JSON validator, JSON analyzer, pretty print JSON, JSON error checker, minify JSON, format JSON online',
           canonicalUrl: '/tools/json-formatter',
           ogType: 'website',
-          ogTitle: 'JSON Formatter & Validator | Format, Beautify, Analyze JSON Online',
-          ogDescription: 'Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool. No sign-up required.',
-          ogImage: '/assets/MyConverterTool.png',
-          structuredData: {
-            '@type': 'WebApplication',
-            name: 'JSON Formatter & Validator',
-            description: 'Free online JSON formatter, validator, and analyzer. Format, beautify, minify, and validate your JSON with our powerful, user-friendly tool.',
-            applicationCategory: 'DeveloperApplication',
-            offers: {
-              '@type': 'Offer',
-              price: '0',
-              priceCurrency: 'USD'
-            },
-            operatingSystem: 'Web browser',
-            browserRequirements: 'Requires JavaScript. Compatible with most modern web browsers.'
-          }
         }}
       />
 
-      <header className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 text-center">
-          JSON Formatter & Validator
+      {/* Header */}
+      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
+          <span className="material-icons text-xs">settings_ethernet</span>
+          Developer Essential
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
+          JSON <span className="text-indigo-600">Architect</span>
         </h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mt-2">
-          Format, beautify, minify, and validate your JSON with our powerful tool
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
+          The most powerful way to format, validate, and analyze your JSON data with industrial precision.
         </p>
-      </header>
+      </section>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 md:p-6 mb-6 transition-colors duration-200">
-        {/* Main Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
-          <button
-            className={`py-2 px-4 mr-2 ${
-              activeTab === "format"
-                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium"
-                : "text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
-            }`}
-            onClick={() => setActiveTab("format")}
-          >
-            Format & Validate
-          </button>
-          <button
-            className={`py-2 px-4 mr-2 ${
-              activeTab === "analyze"
-                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium"
-                : "text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
-            }`}
-            onClick={() => setActiveTab("analyze")}
-          >
-            Analyze
-          </button>
-          <button
-            className={`py-2 px-4 ${
-              activeTab === "settings"
-                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-medium"
-                : "text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
-            }`}
-            onClick={() => setActiveTab("settings")}
-          >
-            Settings
-          </button>
-        </div>
+      <div className="max-w-6xl mx-auto px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-1 overflow-hidden"
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10">
+            {/* Tabs */}
+            <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-10 max-w-md mx-auto">
+              {["format", "analyze", "settings"].map((tab) => (
+                <button
+                  key={tab}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    activeTab === tab
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-        {/* Input Area */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label htmlFor="jsonInput" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Input JSON
-            </label>
-            <div className="flex items-center">
-              <label className="relative inline-flex items-center cursor-pointer mr-4">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileUpload}
-                  className="sr-only"
-                  id="jsonFileUpload"
+            {/* Input Workspace */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-end px-2">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">Source JSON</h3>
+                  <p className="text-xs text-slate-500 font-medium">Paste your code or upload a file</p>
+                </div>
+                <div className="flex gap-4">
+                  <input type="file" accept=".json" onChange={handleFileUpload} id="json-up" className="hidden" />
+                  <label htmlFor="json-up" className="text-xs font-bold text-indigo-600 cursor-pointer hover:underline">Upload File</label>
+                  <button onClick={handleLoadSample} className="text-xs font-bold text-slate-500 hover:text-indigo-600">Sample</button>
+                  <button onClick={handleClear} className="text-xs font-bold text-red-500 hover:underline">Clear</button>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <textarea
+                  className="w-full h-80 p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500/50 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none resize-none shadow-inner"
+                  placeholder='{ "key": "value" }'
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
                 />
-                <label
-                  htmlFor="jsonFileUpload"
-                  className="cursor-pointer text-sm bg-gray-100 dark:bg-gray-700 py-1 px-3 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Upload JSON
-                </label>
-              </label>
-              <button 
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                onClick={() => setShowHistory(!showHistory)}
-              >
-                {showHistory ? "Hide History" : "Recent Files"}
-              </button>
-            </div>
-          </div>
-          
-          {showHistory && recentUploads.length > 0 && (
-            <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-900 rounded text-sm">
-              <h3 className="font-medium mb-1 text-gray-700 dark:text-gray-300">Recent Files</h3>
-              <ul className="space-y-1">
-                {recentUploads.map((upload, index) => (
-                  <li key={index} className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">{upload.name} ({formatSize(upload.size)})</span>
-                    <span className="text-gray-500 dark:text-gray-500 text-xs">
-                      {new Date(upload.timestamp).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          <textarea
-            id="jsonInput"
-            className="w-full h-40 sm:h-60 p-3 border rounded-md font-mono text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
-            placeholder="Paste JSON here or upload a file..."
-            value={jsonInput}
-            onChange={(e) => setJsonInput(e.target.value)}
-          ></textarea>
-
-          {/* Input Stats & Tools */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 text-sm">
-            <div className="text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-              Characters: {jsonInput.length} | 
-              Lines: {jsonInput.split("\n").length}
-            </div>
-            
-            <div className="space-x-3">
-              <button 
-                onClick={fixJson}
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Fix JSON
-              </button>
-              <button 
-                onClick={handleLoadSample}
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Load Sample
-              </button>
-              <button 
-                onClick={handleClear}
-                className="text-red-600 dark:text-red-400 hover:underline"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        {activeTab === "format" && (
-          <div className="mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleFormatJson}
-                className="bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center"
-              >
-                <span className="mr-2">Format JSON</span>
-                <span className="text-xs bg-blue-500 dark:bg-blue-500 px-2 py-0.5 rounded">Space: {indentSize}</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleMinifyJson}
-                className="bg-green-600 dark:bg-green-700 text-white py-2 px-4 rounded-md hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
-              >
-                Minify JSON
-              </motion.button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "settings" && (
-          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Formatting Options</h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Indent Size
-              </label>
-              <div className="flex space-x-3">
-                {[2, 4, 6, 8].map((size) => (
-                  <button
-                    key={size}
-                    className={`px-3 py-1 rounded-md ${
-                      indentSize === size
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                    }`}
-                    onClick={() => setIndentSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Display Settings</h3>
-            
-            <div className="flex items-center mb-4">
-              <button
-                onClick={toggleDarkMode}
-                className="flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                {isDarkMode ? (
-                  <>
-                    <FaSun className="mr-2" />
-                    <span>Light Mode</span>
-                  </>
-                ) : (
-                  <>
-                    <FaMoon className="mr-2" />
-                    <span>Dark Mode</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-md mb-4 flex items-start">
-            <FaTimes className="flex-shrink-0 mt-1 mr-2" />
-            <div>
-              <p className="font-medium">JSON Error Detected</p>
-              <p className="text-sm">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Output and Analysis Sections */}
-        {formattedJson && (
-          <>
-            {activeTab === "format" && (
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-3 shadow-inner relative">
-                <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">Formatted Output</h2>
-                  <div className="flex space-x-2">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleCopy}
-                      className="flex items-center bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      <FaCopy className="mr-1" /> Copy
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleDownload}
-                      className="flex items-center bg-gray-700 text-white py-1 px-3 rounded-md hover:bg-gray-800 transition-colors text-sm"
-                    >
-                      <FaDownload className="mr-1" /> Download
-                    </motion.button>
-                  </div>
-                </div>
-                
-                <SyntaxHighlighter 
-                  language="json" 
-                  style={isDarkMode ? oneDark : docco} 
-                  className="rounded-md text-sm overflow-auto"
-                  showLineNumbers={true}
-                  wrapLines={true}
-                >
-                  {formattedJson}
-                </SyntaxHighlighter>
-                
-                {/* Export options */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="text-xs text-gray-600 dark:text-gray-400 self-center mr-1">Export as:</span>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => copyAsCode("javascript")}
-                    className="flex items-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
-                  >
-                    JavaScript
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => copyAsCode("python")}
-                    className="flex items-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
-                  >
-                    Python
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => copyAsCode("php")}
-                    className="flex items-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
-                  >
-                    PHP
-                  </motion.button>
+                <div className="absolute bottom-6 right-8 flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Chars: {jsonInput.length}</span>
+                  <span>Lines: {jsonInput.split('\n').length}</span>
                 </div>
               </div>
+
+              {/* Quick Actions */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                <button
+                  onClick={handleFormatJson}
+                  className="btn-primary w-full sm:w-auto px-10 py-4 !bg-indigo-600 shadow-indigo-500/25"
+                >
+                  <span className="material-icons text-sm">auto_fix_high</span>
+                  Format Code
+                </button>
+                <button
+                  onClick={handleMinifyJson}
+                  className="px-8 py-4 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all w-full sm:w-auto"
+                >
+                  Minify Output
+                </button>
+                <button
+                  onClick={fixJson}
+                  className="px-8 py-4 rounded-2xl font-bold border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all w-full sm:w-auto"
+                >
+                  Smart Fix
+                </button>
+                <div className="ml-auto flex gap-2">
+                  <button onClick={() => setIndentSize(2)} className={`w-8 h-8 rounded-lg text-[10px] font-black ${indentSize === 2 ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>2</button>
+                  <button onClick={() => setIndentSize(4)} className={`w-8 h-8 rounded-lg text-[10px] font-black ${indentSize === 4 ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>4</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="mt-8 p-6 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-start gap-4"
+              >
+                <FaTimes className="mt-1" />
+                <div>
+                  <p className="font-black text-xs uppercase tracking-widest mb-1">Parser Error</p>
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              </motion.div>
             )}
 
-            {activeTab === "analyze" && (
-              <div className="space-y-4">
-                {/* JSON Statistics */}
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-4">
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">JSON Statistics</h3>
-                  {jsonStats ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Formatted Size</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.readableSize}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Minified Size</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.readableMinifiedSize}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Compression Ratio</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {((jsonStats.minifiedSize / jsonStats.size) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Objects</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.objects}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Arrays</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.arrays}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Strings</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.strings}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Numbers</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.numbers}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Booleans</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.booleans}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-md shadow-sm">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Nulls</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {jsonStats.typeCounts.nulls}
-                        </p>
-                      </div>
+            {/* Dynamic Content Based on Tab */}
+            <AnimatePresence mode="wait">
+              {formattedJson && activeTab === "format" && (
+                <motion.div
+                  key="output" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="mt-12 pt-12 border-t border-slate-100 dark:border-slate-800"
+                >
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">Formatted Result</h3>
+                    <div className="flex gap-3">
+                      <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
+                        <FaCopy size={18} />
+                      </button>
+                      <button onClick={handleDownload} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
+                        <FaDownload size={18} />
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-gray-600 dark:text-gray-400">No JSON data to analyze.</p>
-                  )}
-                </div>
+                  </div>
 
-                {/* JSON Validation Results */}
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-4">
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Validation Results</h3>
-                  {validationResults ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Validation Score</p>
-                        <p className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                          {validationResults.score} / {validationResults.maxScore}
-                        </p>
+                  <div className="rounded-[2rem] overflow-hidden shadow-2xl">
+                    <SyntaxHighlighter 
+                      language="json" 
+                      style={isDarkMode ? oneDark : docco} 
+                      customStyle={{ padding: '2rem', margin: 0, fontSize: '13px', lineHeight: '1.6' }}
+                    >
+                      {formattedJson}
+                    </SyntaxHighlighter>
+                  </div>
+
+                  <div className="mt-8 flex flex-wrap gap-4 items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Copy As Code</span>
+                    <button onClick={() => copyAsCode("javascript")} className="px-4 py-2 rounded-lg glass text-xs font-bold hover:text-indigo-600 transition-all">JavaScript</button>
+                    <button onClick={() => copyAsCode("python")} className="px-4 py-2 rounded-lg glass text-xs font-bold hover:text-indigo-600 transition-all">Python</button>
+                    <button onClick={() => copyAsCode("php")} className="px-4 py-2 rounded-lg glass text-xs font-bold hover:text-indigo-600 transition-all">PHP</button>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === "analyze" && (
+                <motion.div
+                  key="analyze" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="mt-12 space-y-12"
+                >
+                  <section>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 px-2">Type Distribution</h3>
+                    {jsonStats ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard label="Objects" value={jsonStats.typeCounts.objects} color="indigo" />
+                        <StatCard label="Arrays" value={jsonStats.typeCounts.arrays} color="blue" />
+                        <StatCard label="Strings" value={jsonStats.typeCounts.strings} color="emerald" />
+                        <StatCard label="Numbers" value={jsonStats.typeCounts.numbers} color="amber" />
                       </div>
-                      <div className="space-y-2">
-                        {validationResults.validations.map((validation, index) => (
-                          <div
-                            key={index}
-                            className={`p-3 rounded-md ${
-                              validation.passed
-                                ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                                : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                            }`}
-                          >
-                            <div className="flex items-center">
-                              {validation.passed ? (
-                                <FaCheck className="mr-2 flex-shrink-0" />
-                              ) : (
-                                <FaTimes className="mr-2 flex-shrink-0" />
-                              )}
+                    ) : (
+                      <p className="text-center py-10 glass rounded-3xl text-slate-400 font-bold">No data to analyze. Format some JSON first.</p>
+                    )}
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 px-2">Validation Integrity</h3>
+                    {validationResults ? (
+                      <div className="space-y-4">
+                        {validationResults.validations.map((v, i) => (
+                          <div key={i} className="flex items-center justify-between p-6 rounded-3xl glass border-none">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                {v.passed ? <FaCheck /> : <FaTimes />}
+                              </div>
                               <div>
-                                <p className="font-medium">{validation.name}</p>
-                                <p className="text-sm">{validation.details}</p>
+                                <p className="font-bold text-slate-900 dark:text-white">{v.name}</p>
+                                <p className="text-xs text-slate-500 font-medium">{v.details}</p>
                               </div>
                             </div>
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${v.passed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                              {v.passed ? 'Passed' : 'Failed'}
+                            </span>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600 dark:text-gray-400">No validation results available.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                    ) : (
+                      <p className="text-center py-10 glass rounded-3xl text-slate-400 font-bold">Validation results will appear here.</p>
+                    )}
+                  </section>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Popup Notification */}
-      {popupMessage && <Popup message={popupMessage} onClose={() => setPopupMessage("")} />}
-    </motion.div>
-  );
-};
+      {popupMessage && (
+        <div className="fixed bottom-8 right-8 z-[100] px-6 py-4 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-3 animate-slide-up">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-sm font-bold uppercase tracking-widest">{popupMessage}</span>
+        </div>
+      )}
+    </div>
+    );
+    };
 
-export default JsonFormatter;
+    const StatCard = ({ label, value, color }) => (
+    <div className="p-6 rounded-[2rem] glass border-none text-center">
+    <p className={`text-2xl font-black mb-1 text-${color}-600`}>{value}</p>
+    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+    </div>
+    );
+
+    export default JsonFormatter;
