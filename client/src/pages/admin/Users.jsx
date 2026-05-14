@@ -7,27 +7,56 @@ import {
   UserCheck,
   UserX
 } from 'lucide-react';
+import { adminApi } from '../../utils/apiClient';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Fetch users from your API
-    setLoading(false);
-    setUsers([
-      {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user',
-        status: 'active',
-        joinedDate: '2023-09-15'
-      },
-      // Add more dummy data
-    ]);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.getUsers();
+      setUsers(data.users || []);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (user) => {
+    try {
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      await adminApi.updateUser(user._id, { status: newStatus });
+      setUsers(users.map(u => u._id === user._id ? { ...u, status: newStatus } : u));
+    } catch (err) {
+      alert(err.message || 'Failed to update user status');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await adminApi.deleteUser(id);
+      setUsers(users.filter(u => u._id !== id));
+    } catch (err) {
+      alert(err.message || 'Failed to delete user');
+    }
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(search.toLowerCase()) ||
+    user.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
 
   return (
     <div>
@@ -89,15 +118,15 @@ const Users = () => {
                     Loading...
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                     No users found
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
-                  <tr key={user.id}>
+                filteredUsers.map((user) => (
+                  <tr key={user._id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
@@ -130,7 +159,7 @@ const Users = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(user.joinedDate).toLocaleDateString()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
@@ -138,15 +167,24 @@ const Users = () => {
                           <Edit2 className="h-5 w-5" />
                         </button>
                         {user.status === 'active' ? (
-                          <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                          <button 
+                            onClick={() => handleToggleStatus(user)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          >
                             <UserX className="h-5 w-5" />
                           </button>
                         ) : (
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                          <button 
+                            onClick={() => handleToggleStatus(user)}
+                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                          >
                             <UserCheck className="h-5 w-5" />
                           </button>
                         )}
-                        <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                        <button 
+                          onClick={() => handleDelete(user._id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
                           <Trash2 className="h-5 w-5" />
                         </button>
                       </div>

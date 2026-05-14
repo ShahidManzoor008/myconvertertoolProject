@@ -17,7 +17,7 @@ const adminRoutes = (
     <Route path="posts">
       <Route index element={<BlogManagement />} />
       <Route path="new" element={<EditBlogPost />} />
-      <Route path=":id/edit" element={<EditBlogPost />} />
+      <Route path=":slug/edit" element={<EditBlogPost />} />
     </Route>
     <Route path="settings" element={<Settings />} />
     <Route path="users" element={<Users />} />

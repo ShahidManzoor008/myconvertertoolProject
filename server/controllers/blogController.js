@@ -63,7 +63,7 @@ export const createPost = async (req, res) => {
     let coverImage = null;
 
     if (req.file) {
-      const isValidImage = await validateUploadedFile(req.file.path, allowedImageMimeTypes);
+      const isValidImage = await validateUploadedFile(req.file.path, req.file.originalname, allowedImageMimeTypes);
       if (!isValidImage) {
         cleanupFiles(req.file.path);
         return res.status(400).json({ message: 'Invalid cover image file type.' });
@@ -108,7 +108,7 @@ export const updatePost = async (req, res) => {
     };
 
     if (req.file) {
-      const isValidImage = await validateUploadedFile(req.file.path, allowedImageMimeTypes);
+      const isValidImage = await validateUploadedFile(req.file.path, req.file.originalname, allowedImageMimeTypes);
       if (!isValidImage) {
         cleanupFiles(req.file.path);
         return res.status(400).json({ message: 'Invalid cover image file type.' });

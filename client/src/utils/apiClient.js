@@ -113,6 +113,70 @@ export const apiClient = {
   },
 
   /**
+   * Make a PUT request
+   * @param {string} endpoint - API endpoint
+   * @param {Object} data - Request body data
+   * @param {Object} options - Fetch options
+   * @returns {Promise<any>} Response data
+   */
+  async put(endpoint, data, options = {}) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          ...options.headers,
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+        ...options,
+      });
+
+      const responseData = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw createError(response, responseData);
+      }
+
+      return responseData;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new NetworkError('Network request failed', { endpoint, error: error.message });
+    }
+  },
+
+  /**
+   * Make a DELETE request
+   * @param {string} endpoint - API endpoint
+   * @param {Object} options - Fetch options
+   * @returns {Promise<any>} Response data
+   */
+  async delete(endpoint, options = {}) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          ...getAuthHeaders(),
+          ...options.headers,
+        },
+        credentials: 'include',
+        ...options,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw createError(response, data);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new NetworkError('Network request failed', { endpoint, error: error.message });
+    }
+  },
+
+  /**
    * Upload file(s) using FormData
    * @param {string} endpoint - API endpoint
    * @param {FormData} formData - Form data with files
@@ -217,3 +281,11 @@ export const statsApi = {
   getTotal: () => apiClient.get(API_ENDPOINTS.stats.total),
   increment: (data) => apiClient.post(API_ENDPOINTS.stats.increment, data),
 };
+
+export const adminApi = {
+  getStats: () => apiClient.get(API_ENDPOINTS.admin.stats),
+  getUsers: (page = 1, limit = 20) => 
+    apiClient.get(`${API_ENDPOINTS.admin.users}?page=${page}&limit=${limit}`),
+  updateUser: (id, userData) => apiClient.put(`${API_ENDPOINTS.admin.users}/${id}`, userData),
+  deleteUser: (id) => apiClient.delete(`${API_ENDPOINTS.admin.users}/${id}`),
+  };

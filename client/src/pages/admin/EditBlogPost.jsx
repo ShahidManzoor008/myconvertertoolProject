@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/useAuth';
+import { apiClient } from '../../utils/apiClient';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const EditBlogPost = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -20,12 +20,7 @@ const EditBlogPost = () => {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/blog/posts/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
+        const data = await apiClient.get(API_ENDPOINTS.blog.post(slug));
         setFormData({
           ...data,
           coverImage: null
@@ -38,10 +33,10 @@ const EditBlogPost = () => {
       }
     };
 
-    if (id) {
+    if (slug) {
       fetchPost();
     }
-  }, [id, token]);
+  }, [slug]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,20 +51,10 @@ const EditBlogPost = () => {
         }
       });
 
-      const url = id ? `/api/blog/posts/${id}` : '/api/blog/posts';
-      const method = id ? 'PUT' : 'POST';
+      const url = slug ? API_ENDPOINTS.blog.post(slug) : API_ENDPOINTS.blog.posts;
+      const method = slug ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save post');
-      }
+      await apiClient.upload(url, formDataToSend, { method });
 
       navigate('/admin/posts');
     } catch (err) {
@@ -93,7 +78,7 @@ const EditBlogPost = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <h1 className="text-2xl font-bold">{id ? 'Edit Blog Post' : 'Create New Blog Post'}</h1>
+      <h1 className="text-2xl font-bold">{slug ? 'Edit Blog Post' : 'Create New Blog Post'}</h1>
       
       <div className="space-y-4">
         <div>

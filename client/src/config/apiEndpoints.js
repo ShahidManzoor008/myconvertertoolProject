@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   },
   admin: {
     users: `${API_BASE_URL}/api/admin/users`,
+    stats: `${API_BASE_URL}/api/admin/stats`,
   },
   stats: {
     total: `${API_BASE_URL}/api/stats/total`,

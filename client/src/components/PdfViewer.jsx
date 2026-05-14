@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, createRef } from 'react';
-import { Document, Page } from 'react-pdf';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import LoadingSpinner from './common/LoadingSpinner'; // Import LoadingSpinner
@@ -173,21 +173,40 @@ const PdfViewer = ({ file, filename, onFileUpdate }) => {
     document.body.removeChild(link);
   }, [file, filename]);
 
-  const handleSearch = useCallback((text) => {
-    if (!text) {
+  const handleSearch = useCallback(async (text) => {
+    if (!text || !file) {
       setSearchResults([]);
       setCurrentSearchResult(0);
       return;
     }
-    // Implement PDF text search logic here
-    // This would typically involve using pdf.js to search through the document
-    // For now, we'll just simulate some results
-    setSearchResults([
-      { page: 1, text: text },
-      { page: 2, text: text }
-    ]);
-    setCurrentSearchResult(1);
-  }, []);
+
+    setLoading(true);
+    try {
+      const loadingTask = pdfjs.getDocument(file);
+      const pdf = await loadingTask.promise;
+      const results = [];
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        
+        if (pageText.toLowerCase().includes(text.toLowerCase())) {
+          results.push({ page: i, text: text });
+        }
+      }
+
+      setSearchResults(results);
+      setCurrentSearchResult(results.length > 0 ? 1 : 0);
+      if (results.length > 0) {
+        scrollToPage(results[0].page);
+      }
+    } catch (err) {
+      console.error('Search Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [file]);
 
   const handleAnnotation = useCallback((annotationData) => {
     setAnnotations(prev => [...prev, { ...annotationData, page: pageNumber }]);

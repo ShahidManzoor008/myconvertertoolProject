@@ -6,6 +6,7 @@ import { routerConfig } from "./config/router.config";
 import adminRoutes from './routes/adminRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 import { setupDefaultInterceptors } from './utils/interceptors';
+import LoadingSpinner from './components/LoadingSpinner';
 
 const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
@@ -35,19 +36,10 @@ function App() {
 
   return (
     <HelmetProvider>
-      <Helmet>
-        <title>my converter tool - Free Developer & Productivity Tools</title>
-        <meta name="description" content="A collection of free online tools for developers, text processing, and productivity." />
-        <meta name="keywords" content="developer tools,free online tools,free pfd tools, free coding tools, SEO tools, text tools" />
-        <meta property="og:title" content="SMS Coding Online - Free Developer & Productivity Tools" />
-        <meta property="og:description" content="A collection of free online tools for developers, text processing, and productivity." />
-        <meta property="og:url" content="https://myconvertertool.com/" />
-        <meta property="og:type" content="website" />
-      </Helmet>
       <ErrorBoundary>
         <Router {...routerConfig}>
           <Layout>
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<LoadingSpinner message="Loading page..." />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/register" element={<Register />} />

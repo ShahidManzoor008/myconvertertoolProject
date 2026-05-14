@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { blogApi, apiClient } from '../../utils/apiClient';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const BlogManagement = () => {
   const [posts, setPosts] = useState([]);
@@ -16,13 +18,7 @@ const BlogManagement = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/blog/posts?limit=50'); // Get more posts for admin view
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch blog posts');
-      }
-
+      const data = await blogApi.getPosts(1, 100); // Get more posts for admin view
       setPosts(data.posts);
     } catch (err) {
       setError(err.message);
@@ -31,39 +27,27 @@ const BlogManagement = () => {
     }
   };
 
-  const handleDelete = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+  const handleDelete = async (post) => {
+    if (!window.confirm(`Are you sure you want to delete "${post.title}"?`)) return;
 
     try {
-      const response = await fetch(`/api/blog/posts/${postId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete post');
-      }
-
-      // Remove post from state
-      setPosts(posts.filter(post => post._id !== postId));
+      await apiClient.delete(`${API_ENDPOINTS.blog.posts}/${post.slug}`);
+      setPosts(posts.filter(p => p._id !== post._id));
     } catch (err) {
       console.error('Error deleting post:', err);
-      alert('Failed to delete post');
+      alert('Failed to delete post: ' + err.message);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedPosts.length} posts?`)) return;
+    const postsToDelete = posts.filter(post => selectedPosts.includes(post._id));
+    if (!window.confirm(`Are you sure you want to delete ${postsToDelete.length} posts?`)) return;
 
     try {
-      await Promise.all(selectedPosts.map(postId => 
-        fetch(`/api/blog/posts/${postId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        })
+      await Promise.all(postsToDelete.map(post => 
+        apiClient.delete(`${API_ENDPOINTS.blog.posts}/${post.slug}`)
       ));
 
-      // Remove deleted posts from state
       setPosts(posts.filter(post => !selectedPosts.includes(post._id)));
       setSelectedPosts([]);
     } catch (err) {
@@ -219,13 +203,13 @@ const BlogManagement = () => {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <Link
-                        to={`/admin/posts/${post._id}/edit`}
+                        to={`/admin/posts/${post.slug}/edit`}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:bg-blue-900/30"
                       >
                         <span className="material-icons">edit</span>
                       </Link>
                       <button
-                        onClick={() => handleDelete(post._id)}
+                        onClick={() => handleDelete(post)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg dark:text-red-400 dark:hover:bg-red-900/30"
                       >
                         <span className="material-icons">delete</span>

@@ -77,7 +77,7 @@ export const batchConvert = async (req, res) => {
 
     // Validate signatures for all uploaded files
     for (const f of files) {
-      const ok = await validateUploadedFile(f.path, allowedConversionMimeTypes);
+      const ok = await validateUploadedFile(f.path, f.originalname, allowedConversionMimeTypes);
       if (!ok) {
         cleanupFiles(req.files.map(file => file.path));
         return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });

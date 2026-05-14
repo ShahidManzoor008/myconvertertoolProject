@@ -5,6 +5,7 @@ import { Helmet } from "react-helmet-async";
 import Sidebar from "./Sidebar";
 import ScrollToTop from "./ScrollToTop";
 import NavBar from "./NavBar";
+import SEO from "../utils/SEO";
 import { navigation } from "../data/navigation.jsx";
 import PropTypes from "prop-types";
 import { useAuth } from "../hooks/useAuth"; // Changed from default to named import
@@ -36,15 +37,11 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition duration-300">
-      <Helmet>
-        <title>My Converter Tool - Free Online Tools for Developers & Creators</title>
-        <meta name="description" content="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!" />
-        <meta name="keywords" content="free online tools, developer tools, JSON Formatter, PDF Converter, QR Code Generator, Base64 Encoder" />
-        <meta property="og:title" content="My Converter Tool - Free Online Tools for Developers & Creators" />
-        <meta property="og:description" content="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!" />
-        <meta property="og:image" content="https://myconvertertool.com/assets/og-image.jpg" />
-        <meta property="og:url" content="https://myconvertertool.com/" />
-      </Helmet>
+      <SEO 
+        title="My Converter Tool - Free Online Tools for Developers & Creators"
+        description="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!"
+        keywords="free online tools, developer tools, JSON Formatter, PDF Converter, QR Code Generator, Base64 Encoder"
+      />
 
       {/* Navbar */}
       <NavBar

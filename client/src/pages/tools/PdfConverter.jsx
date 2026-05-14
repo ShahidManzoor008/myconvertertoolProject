@@ -1,33 +1,52 @@
 import { useState, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
-import { Upload, X, Eye } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from '../../utils/SEO';
 import PdfOperations from '../../components/PdfOperations';
 import FileHistory from '../../components/FileHistory';
 import PdfViewer from '../../components/PdfViewer';
-import ConversionProgressBar from '../../components/common/ConversionProgressBar'; // Import ConversionProgressBar
+import ConversionProgressBar from '../../components/common/ConversionProgressBar';
+import OperationSelection from '../../components/OperationSelection';
+import UploadedFilesList from '../../components/UploadedFilesList';
+import ConvertedFilesList from '../../components/ConvertedFilesList';
 import { pdfApi } from '../../utils/apiClient';
-import { createFormDataWithFiles } from '../../utils/fileUtils';
 import { AppError } from '../../utils/AppError';
-import { useAuth } from '../../hooks/useAuth'; // Import useAuth
+import { useAuth } from '../../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '../../utils/apiClient';
+import { useFileUpload } from '../../hooks/useFileUpload';
+import { useFileProcessing } from '../../hooks/useFileProcessing';
+import { downloadFile } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("");
-  const [convertedFiles, setConvertedFiles] = useState([]); // For storing converted files
-  const [viewingFile, setViewingFile] = useState(null); // For storing the file to be viewed
-  // selectedOperation controls the high-level card choice (null = show action cards)
   const [selectedOperation, setSelectedOperation] = useState(null);
-  const [currentOperation, setCurrentOperation] = useState("convert"); // Default sub-operation
+  const [currentOperation, setCurrentOperation] = useState("convert");
   const [recentFiles, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
-  const { user } = useAuth(); // Get user from AuthProvider
+  const [viewingFile, setViewingFile] = useState(null);
+  const { user } = useAuth();
+
+  // Use custom hooks
+  const {
+    uploadedFiles,
+    popupMessage,
+    getRootProps,
+    getInputProps,
+    handleClearSelection,
+    removeFile,
+    showPopup,
+  } = useFileUpload(selectedOperation);
+
+  const {
+    loading,
+    convertedFiles,
+    canProcessSingle,
+    processFile,
+    startProcessingAll,
+    clearConvertedFiles,
+  } = useFileProcessing(showPopup, addToRecent);
 
   // Fetch total conversions from server
   const { data: statsData, refetch: refetchStats } = useQuery({
@@ -43,27 +62,12 @@ const PdfConverter = () => {
 
   // Handle file download
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = downloadData.url;
-    link.download = downloadData.filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setShowAuthPopup(false);
-    setDownloadData(null);
+    if (downloadData) {
+      downloadFile(downloadData, downloadData.filename, showPopup);
+      setShowAuthPopup(false);
+      setDownloadData(null);
+    }
   };
-
-  // Show a popup message for 2.5 seconds
-  const showPopup = (message) => {
-    setPopupMessage(message);
-    setTimeout(() => setPopupMessage(""), 2500);
-  };
-
-  // Load recent files from localStorage
-  useEffect(() => {
-    const loadedRecent = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-    setRecentFiles(loadedRecent);
-  }, []);
 
   // Add file to recent conversions
   const addToRecent = (file) => {
@@ -75,7 +79,7 @@ const PdfConverter = () => {
 
     setRecentFiles(prev => {
       const updated = [newFile, ...prev.slice(0, 4)]; // Keep only last 5 files
-      
+
       // Remove the base64 content before storing in localStorage to prevent QuotaExceededError
       const storedUpdated = updated.map(f => {
         const fileData = f.filename ? f : (f[0] || {});
@@ -100,7 +104,7 @@ const PdfConverter = () => {
           }
         }
       }
-      
+
       return updated;
     });
 
@@ -108,133 +112,50 @@ const PdfConverter = () => {
     refetchStats();
   };
 
-  // Determine accepted file types based on the chosen high-level operation
-  const getAcceptForOperation = (op) => {
-    switch (op) {
-      case 'convert':
-        return {
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ['.docx'],
-          "application/msword": ['.doc'],
-          "application/vnd.ms-excel": ['.xlsx', '.xls'],
-          "application/vnd.ms-powerpoint": ['.ppt', '.pptx'],
-          "text/markdown": ['.md', '.MD'],
-          "text/plain": ['.txt'],
-          'image/jpeg': ['.jpg', '.jpeg'],
-          'image/png': ['.png'],
-        };
-      case 'edit':
-        // Operations that operate on existing PDFs only
-        return {
-          'application/pdf': ['.pdf'],
-        };
-      default:
-        // Default to convert types if no operation is selected or an unknown one
-        return getAcceptForOperation('convert');
-    }
+  // Load recent files from localStorage
+  useEffect(() => {
+    const loadedRecent = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+    setRecentFiles(loadedRecent);
+  }, []);
+
+  // Handle operation selection
+  const handleSelectOperation = (operation) => {
+    setSelectedOperation(operation);
+    setCurrentOperation(operation === 'edit' ? 'edit' : 'convert');
   };
 
-  // Configure dropzone for file uploads (hidden until an operation is selected)
-  const { getRootProps, getInputProps } = useDropzone({
-    multiple: true,
-    accept: getAcceptForOperation(selectedOperation || 'convert'),
-    onDrop: (acceptedFiles, rejectedFiles) => {
-      if (rejectedFiles.length > 0) {
-        showPopup(`Invalid file types: ${rejectedFiles.map((f) => f.name).join(", ")}`);
-      }
-
-      const allowedMimeTypes = getAcceptForOperation(selectedOperation || 'convert');
-      const allowedExtensions = Object.values(allowedMimeTypes).flat().map(ext => ext.substring(1)); // Remove the dot
-
-      // Filter valid files based on the allowed extensions for the current operation
-      const filteredFiles = acceptedFiles.filter((file) => {
-        const ext = file.name.split(".").pop().toLowerCase();
-        return allowedExtensions.includes(ext);
-      });
-
-      if (filteredFiles.length === 0) {
-        showPopup("No valid files selected!");
-        return;
-      }
-
-      setUploadedFiles(filteredFiles);
-      showPopup(`${filteredFiles.length} valid file(s) selected`);
-    },
-  });
-
-  // Clear selected files
-  const handleClearSelection = () => {
-    setUploadedFiles([]);
-    // setConvertedFiles([]); // Removed: Converted files should persist for download/preview
-    showPopup("Selection cleared");
+  // Handle file preview
+  const handlePreviewFile = (file) => {
+    setViewingFile(file);
   };
 
-  // Helper: determine file extension
-  const getFileExt = (file) => (file?.name || '').split('.').pop().toLowerCase();
-
-  // Determine if a single file can be processed for the selected operation
-  const canProcessSingle = (file, operation) => {
-    if (!file) return false;
-    const ext = getFileExt(file);
-    switch (operation) {
-      case 'convert': {
-        const acceptedTypes = getAcceptForOperation('convert');
-        const allowedExtensions = Object.values(acceptedTypes).flat().map(e => e.substring(1));
-        return allowedExtensions.includes(ext);
-      }
-      case 'edit':
-        return ext === 'pdf';
-      default:
-        return false;
-    }
+  // Handle file download from converted files list
+  const handleDownloadFile = (file) => {
+    const filename = file.filename || file.originalName || 'document.pdf';
+    downloadFile(file, filename, showPopup);
   };
 
-  // Process a single file (used by BatchQueue and batch processor)
-  const processFile = async (file) => {
+  // Handle single file processing with auth check
+  const handleProcessSingleFile = async () => {
     try {
-      const formData = createFormDataWithFiles(file, {
-        operation: currentOperation,
-      });
-
-      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const result = await apiCall(formData, { responseType: 'blob' });
-      const resultWithDetails = { ...result, originalName: file.name };
-      setConvertedFiles(prev => [...prev, resultWithDetails]);
-      addToRecent(resultWithDetails);
-      handleClearSelection(); // Clear dropzone after successful conversion
-      return resultWithDetails;
-    } catch (err) {
-      if (err instanceof AppError && err.status === 401) setShowAuthPopup(true);
-      showPopup(`${currentOperation} operation failed: ${err.message}`);
-      throw err;
-    }
-  };
-
-  // Batch processing: start sequential processing of all uploaded files
-  const startProcessingAll = async () => {
-    if (uploadedFiles.length === 0) return showPopup('No files to process');
-    setLoading(true);
-    try {
-      const formData = createFormDataWithFiles(uploadedFiles, {
-        operation: currentOperation,
-      });
-
-      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const results = await apiCall(formData, { responseType: 'blob' });
-
-      const newConvertedFiles = results.map((result, index) => {
-        const originalFile = uploadedFiles[index];
-        return { ...result, originalName: originalFile ? originalFile.name : `file_${index}` };
-      });
-
-      setConvertedFiles(prev => [...prev, ...newConvertedFiles]);
-      newConvertedFiles.forEach(file => addToRecent(file));
+      await processFile(uploadedFiles[0], selectedOperation, currentOperation);
       handleClearSelection();
-      showPopup('Batch processing complete');
     } catch (err) {
-      if (err instanceof AppError && err.status === 401) setShowAuthPopup(true);
-      showPopup(`${currentOperation} operation failed: ${err.message}`);
-    } finally {
-      setLoading(false);
+      if (err instanceof AppError && err.status === 401) {
+        setShowAuthPopup(true);
+      }
+    }
+  };
+
+  // Handle batch processing with auth check
+  const handleBatchProcessing = async () => {
+    try {
+      await startProcessingAll(uploadedFiles, selectedOperation, currentOperation);
+      handleClearSelection();
+    } catch (err) {
+      if (err instanceof AppError && err.status === 401) {
+        setShowAuthPopup(true);
+      }
     }
   };
 
@@ -284,26 +205,7 @@ const PdfConverter = () => {
       <div className="grid grid-cols-1 gap-6">
         {/* Operation selection cards - show when no operation selected */}
         {!selectedOperation && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { key: 'convert', title: 'Convert to PDF', desc: 'Convert DOCX, XLSX, Images, Markdown to PDF' },
-              { key: 'edit', title: 'Edit PDF', desc: 'Split, rotate, delete pages from a PDF' },
-            ].map(card => (
-              <motion.div
-                key={card.key}
-                className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition"
-                whileHover={{ scale: 1.02 }}
-                onClick={() => {
-                  setSelectedOperation(card.key);
-                  setCurrentOperation(card.key === 'edit' ? 'edit' : card.key);
-                }}
-              >
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{card.title}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{card.desc}</p>
-                <div className="mt-4 text-xs text-blue-500">Click to select</div>
-              </motion.div>
-            ))}
-          </div>
+          <OperationSelection onSelectOperation={handleSelectOperation} />
         )}
         {/* Left Column - Upload and Convert (shown after selecting an operation) */}
         {selectedOperation && (
@@ -314,8 +216,8 @@ const PdfConverter = () => {
                 className="text-sm text-red-500 hover:underline"
                 onClick={() => {
                   setSelectedOperation(null);
-                  setUploadedFiles([]);
-                  setConvertedFiles([]);
+                  handleClearSelection();
+                  clearConvertedFiles();
                   setViewingFile(null);
                 }}
               >
@@ -341,28 +243,10 @@ const PdfConverter = () => {
           </motion.div>
 
           {/* Display uploaded file names */}
-          {uploadedFiles.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Uploaded Files:</h4>
-              <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
-                {uploadedFiles.map((file, index) => (
-                  <li key={index} className="flex items-center justify-between py-1">
-                    <span className="truncate">{file.name}</span>
-                    <button
-                      onClick={() => {
-                        const newFiles = uploadedFiles.filter((_, i) => i !== index);
-                        setUploadedFiles(newFiles);
-                        showPopup(`${file.name} removed.`);
-                      }}
-                      className="text-red-500 hover:text-red-700 ml-2"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <UploadedFilesList
+            files={uploadedFiles}
+            onRemoveFile={removeFile}
+          />
 
           {/* PDF Operations: hide when user is doing an initial 'convert' until a PDF is produced */}
           {!(selectedOperation === 'convert' && convertedFiles.length === 0) && (
@@ -400,11 +284,7 @@ const PdfConverter = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={async () => {
-                  setLoading(true);
-                  await processFile(uploadedFiles[0]);
-                  setLoading(false);
-                }}
+                onClick={handleProcessSingleFile}
                 disabled={loading || uploadedFiles.length === 0}
                 className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -417,7 +297,7 @@ const PdfConverter = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={startProcessingAll}
+                onClick={handleBatchProcessing}
                 disabled={loading || uploadedFiles.length === 0}
                 className="flex items-center justify-center w-full sm:w-auto gap-2 py-2.5 px-4 rounded-lg text-white font-medium bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -449,48 +329,11 @@ const PdfConverter = () => {
           )}
 
           {/* Display Converted Files and Download Button */}
-          {convertedFiles.length > 0 && (
-            <div className="mt-6">
-              <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Converted Files:</h4>
-              <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
-                {convertedFiles.map((file, index) => {
-                  const converted = file.filename ? file : (file[0] || {});
-                  return (
-                    <li key={index} className="flex items-center justify-between py-1">
-                      <span className="truncate">{converted.filename || file.originalName}</span>
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setViewingFile(converted)}
-                          disabled={viewingFile && viewingFile.filename === converted.filename}
-                          className="ml-2 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            const downloadBtn = document.createElement('a');
-                            downloadBtn.href = URL.createObjectURL(new Blob([converted.base64], { type: 'application/pdf' }));
-                            downloadBtn.download = converted.filename;
-                            document.body.appendChild(downloadBtn);
-                            downloadBtn.click();
-                            document.body.removeChild(downloadBtn);
-                            showPopup(`${converted.filename} downloaded.`);
-                          }}
-                          className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-                        >
-                          Download
-                        </motion.button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+          <ConvertedFilesList
+            files={convertedFiles}
+            onPreview={handlePreviewFile}
+            onDownload={handleDownloadFile}
+          />
 
           {/* PDF Viewer for Edit operation and Converted PDF */}
           {( (selectedOperation === 'edit' && uploadedFiles.length > 0 && uploadedFiles[0].type === 'application/pdf') || viewingFile) ? (

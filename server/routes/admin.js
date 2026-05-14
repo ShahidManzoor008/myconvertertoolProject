@@ -1,7 +1,11 @@
-const express = require('express');
+import express from 'express';
+import { adminAuth } from '../middleware/auth.js';
+import User from '../models/User.js';
+import Blog from '../models/Blog.js';
+import Conversion from '../models/Conversion.js';
+import { body, validationResult } from 'express-validator';
+
 const router = express.Router();
-const { adminAuth } = require('../middleware/auth');
-const User = require('../models/User');
 
 // Get dashboard stats
 router.get('/stats', adminAuth, async (req, res) => {
@@ -9,6 +13,8 @@ router.get('/stats', adminAuth, async (req, res) => {
     const stats = {
       users: await User.countDocuments(),
       activeUsers: await User.countDocuments({ status: 'active' }),
+      posts: await Blog.countDocuments(),
+      conversions: await Conversion.countDocuments(),
       // Add more stats as needed
     };
     res.json(stats);
@@ -34,8 +40,7 @@ router.get('/users', adminAuth, async (req, res) => {
   }
 });
 
-const { body, validationResult } = require('express-validator');
-// Simple audit logger (can be replaced with file/db logger)
+// Simple audit logger
 function auditLog(action, details, adminId) {
   const log = {
     timestamp: new Date().toISOString(),
@@ -65,23 +70,22 @@ router.put(
       const { name, email, role, status } = req.body;
       const userId = req.params.id;
 
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       // Prevent self-role-change
       if (userId === req.user.id && role && role !== req.user.role) {
         return res.status(400).json({ error: 'Cannot modify own role' });
       }
 
       // Check if trying to modify another admin
-      const targetUser = await User.findById(userId);
       if (targetUser.role === 'admin' && req.user.id !== userId) {
         return res.status(403).json({ error: 'Cannot modify other admin users' });
       }
 
-      // Validate role
-      if (role && !['user', 'admin'].includes(role)) {
-        return res.status(400).json({ error: 'Invalid role' });
-      }
-
-      const user = await User.findByIdAndUpdate(
+      const updatedUser = await User.findByIdAndUpdate(
         userId,
         { name, email, role, status },
         { new: true }
@@ -93,7 +97,7 @@ router.put(
       }
       auditLog('user_update', { userId, updatedFields: { name, email, role, status } }, req.user.id);
 
-      res.json(user);
+      res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -103,12 +107,16 @@ router.put(
 // Delete user
 router.delete('/users/:id', adminAuth, async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    auditLog('user_delete', { userId: req.params.id }, req.user.id);
+    const userId = req.params.id;
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+    await User.findByIdAndDelete(userId);
+    auditLog('user_delete', { userId }, req.user.id);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-module.exports = router;
+export default router;

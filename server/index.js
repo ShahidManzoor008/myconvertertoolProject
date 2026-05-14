@@ -28,6 +28,7 @@ import { setupMiddleware } from './middleware/index.js';
 import dashboardRouter from './routes/dashboard.js';
 import notificationsRouter from './routes/notifications.js';
 import statsRouter from './routes/stats.js';
+import adminRouter from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,6 +81,7 @@ app.use('/api/convert', fileConversionRouter);
 app.use('/api/dashboard', auth, dashboardRouter);
 app.use('/api/notifications', auth, notificationsRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/admin', adminRouter);
 
 // Serve uploaded blog images
 app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images')));

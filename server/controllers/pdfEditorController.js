@@ -7,8 +7,8 @@ const allowedPdfMimeTypes = [
 ];
 
 // Helper function to load PDF and handle errors
-const loadPdf = async (filePath) => {
-  const ok = await validateUploadedFile(filePath, allowedPdfMimeTypes);
+const loadPdf = async (filePath, originalName) => {
+  const ok = await validateUploadedFile(filePath, originalName, allowedPdfMimeTypes);
   if (!ok) {
     cleanupFiles(filePath);
     throw new Error('Invalid or unsupported PDF file.');
@@ -30,7 +30,7 @@ export const addPage = async (req, res) => {
     return res.status(400).json({ error: "No PDF file uploaded." });
   }
   try {
-    const pdfDoc = await loadPdf(req.file.path);
+    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
     pdfDoc.addPage();
     await saveAndSendPdf(res, pdfDoc, req.file.originalname);
   } catch (error) {
@@ -51,7 +51,7 @@ export const deletePage = async (req, res) => {
       return res.status(400).json({ error: "Page index is required and must be non-negative." });
     }
 
-    const pdfDoc = await loadPdf(req.file.path);
+    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
     if (pdfDoc.getPages().length <= 1) {
       return res.status(400).json({ error: "Cannot delete the last page of the PDF." });
     }
@@ -75,7 +75,7 @@ export const addText = async (req, res) => {
       return res.status(400).json({ error: "Text, page index, x, y, size, and color are required." });
     }
 
-    const pdfDoc = await loadPdf(req.file.path);
+    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
     const pages = pdfDoc.getPages();
     const targetPage = pages[pageIndex];
 
@@ -130,7 +130,7 @@ export const editPdf = async (req, res) => {
   }
 
   try {
-    const pdfDoc = await loadPdf(req.file.path);
+    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
 
     const { edits } = req.body; // Expecting an array of edit operations
 
@@ -149,8 +149,15 @@ export const editPdf = async (req, res) => {
             color: edit.color ? rgb(edit.color.r, edit.color.g, edit.color.b) : rgb(0, 0, 0),
           });
         } else if (edit.type === 'removeText') {
-          // Placeholder: removeTextFromPdf(page, edit.x, edit.y, edit.width, edit.height);
-          console.warn("removeText operation is not yet implemented with pdf-lib.");
+          // Redaction: Draw an opaque rectangle over the area
+          page.drawRectangle({
+            x: edit.x || 0,
+            y: edit.y || 0,
+            width: edit.width || 100,
+            height: edit.height || 20,
+            color: rgb(1, 1, 1), // White for "removal", or black for redaction
+            opacity: 1,
+          });
         }
       }
     }

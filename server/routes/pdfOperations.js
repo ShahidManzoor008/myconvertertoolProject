@@ -5,8 +5,30 @@ import * as pdfOperations from '../controllers/pdfOperations.js';
 import { upload } from '../middleware/upload.js';
 import { createZipArchive } from '../utils/archiveUtils.js';
 import { logConversion } from '../utils/statsUtils.js';
+import { validateUploadedFile, cleanupFiles } from '../utils/fileUtils.js';
 
 const router = express.Router();
+const allowedPdfExtensions = ['pdf'];
+
+// Middleware to validate PDF files
+const validatePdf = async (req, res, next) => {
+  const files = req.files || (req.file ? [req.file] : []);
+  if (files.length === 0) return next();
+
+  try {
+    for (const file of files) {
+      const ok = await validateUploadedFile(file.path, file.originalname, allowedPdfExtensions);
+      if (!ok) {
+        cleanupFiles(files);
+        return res.status(400).json({ error: `Invalid PDF file: ${file.originalname}` });
+      }
+    }
+    next();
+  } catch (error) {
+    cleanupFiles(files);
+    res.status(500).json({ error: 'File validation failed' });
+  }
+};
 
 // Helper function to send file response
 async function sendFileResponse(res, pdfBuffer, originalFilename, toolName, userId) {
@@ -28,7 +50,7 @@ async function sendFileResponse(res, pdfBuffer, originalFilename, toolName, user
 }
 
 // Merge PDFs
-router.post('/merge', upload.array('files'), async (req, res) => {
+router.post('/merge', upload.array('files'), validatePdf, async (req, res) => {
   try {
     if (!req.files || req.files.length < 2) {
       return res.status(400).json({ error: 'At least two files are required for merge' });
@@ -45,7 +67,7 @@ router.post('/merge', upload.array('files'), async (req, res) => {
 });
 
 // Split PDF
-router.post('/split', upload.single('file'), async (req, res) => {
+router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     let ranges;
@@ -86,7 +108,7 @@ router.post('/split', upload.single('file'), async (req, res) => {
 });
 
 // Rotate PDF pages
-router.post('/rotate', upload.single('file'), async (req, res) => {
+router.post('/rotate', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     let rotations;
@@ -106,7 +128,7 @@ router.post('/rotate', upload.single('file'), async (req, res) => {
 });
 
 // Reorder PDF pages
-router.post('/reorder', upload.single('file'), async (req, res) => {
+router.post('/reorder', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     let order;
@@ -126,7 +148,7 @@ router.post('/reorder', upload.single('file'), async (req, res) => {
 });
 
 // Extract images from PDF
-router.post('/extract-images', upload.single('file'), async (req, res) => {
+router.post('/extract-images', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const images = await pdfOperations.extractImages(req.file);
@@ -153,7 +175,7 @@ router.post('/extract-images', upload.single('file'), async (req, res) => {
 });
 
 // Add watermark
-router.post('/watermark', upload.single('file'), async (req, res) => {
+router.post('/watermark', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const { watermarkText, options } = req.body;
@@ -173,7 +195,7 @@ router.post('/watermark', upload.single('file'), async (req, res) => {
 });
 
 // Protect PDF
-router.post('/protect', upload.single('file'), async (req, res) => {
+router.post('/protect', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const { password } = req.body;
@@ -188,7 +210,7 @@ router.post('/protect', upload.single('file'), async (req, res) => {
 });
 
 // Compress PDF
-router.post('/compress', upload.single('file'), async (req, res) => {
+router.post('/compress', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const compressedPdf = await pdfOperations.compressPDF(req.file);

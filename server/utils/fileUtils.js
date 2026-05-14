@@ -14,15 +14,20 @@ export const cleanupFiles = (files) => {
 };
 
 // Helper: Validate uploaded file by inspecting magic numbers
-export const validateUploadedFile = async (filePath, originalName) => {
+export const validateUploadedFile = async (filePath, originalName, allowedExtensions = null) => {
   try {
     const fileTypeModule = await import('file-type');
     const type = await fileTypeModule.fileTypeFromFile(filePath);
 
-    // For file types that file-type may not recognize (like plain text), we can add a fallback.
+    const ext = path.extname(originalName).toLowerCase().substring(1);
+
+    // Fallback for file types that file-type may not recognize (like plain text/markdown)
     if (!type) {
-      const ext = path.extname(originalName).toLowerCase().substring(1);
       if (['md', 'txt'].includes(ext)) {
+        if (allowedExtensions && !allowedExtensions.includes(ext)) {
+          console.warn(`❌ Fallback extension ${ext} not in allowed list`);
+          return false;
+        }
         console.log(`✅ Allowed fallback for extension: ${ext}`);
         return true;
       }
@@ -30,14 +35,23 @@ export const validateUploadedFile = async (filePath, originalName) => {
       return false;
     }
 
-    const allowed = new Set([
+    const defaultAllowed = new Set([
       'pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'odp', 'ods', 'odt', 'xls',
-      'jpeg', 'png', 'jpg', 'md', 'txt'
+      'jpeg', 'png', 'jpg', 'md', 'txt', 'webp', 'gif', 'bmp'
     ]);
 
-    // fileType.ext gives the detected extension (without dot)
-    if (!allowed.has(type.ext)) {
-      console.error(`❌ Uploaded file ${originalName} has disallowed signature: ${type.ext}`);
+    const detectedExt = type.ext;
+
+    // If custom allowed list provided, check against it
+    if (allowedExtensions) {
+      // Normalize allowedExtensions (handle mime types or extensions)
+      const normalizedAllowed = allowedExtensions.map(e => e.includes('/') ? e.split('/')[1] : e.replace('.', ''));
+      if (!normalizedAllowed.includes(detectedExt)) {
+        console.error(`❌ Uploaded file ${originalName} has disallowed signature: ${detectedExt}`);
+        return false;
+      }
+    } else if (!defaultAllowed.has(detectedExt)) {
+      console.error(`❌ Uploaded file ${originalName} has disallowed signature: ${detectedExt}`);
       return false;
     }
 
