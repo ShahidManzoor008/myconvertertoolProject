@@ -39,7 +39,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
       const result = await apiCall(formData, { responseType: 'blob' });
       const resultWithDetails = {
-        file: result,
+        blob: result,
         originalName: file.name,
         filename: file.name.replace(/\.[^.]+$/, '') + '.pdf',
         mimeType: result.type || 'application/pdf',
@@ -69,12 +69,13 @@ export const useFileProcessing = (showPopup, addToRecent) => {
 
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
       const results = await apiCall(formData, { responseType: 'blob' });
+      const resultList = Array.isArray(results) ? results : [results];
 
-      const newConvertedFiles = results.map((result, index) => {
-        const originalFile = files[index];
+      const newConvertedFiles = resultList.map((result, index) => {
+        const originalFile = files[index] || files[0];
         const originalName = originalFile ? originalFile.name : `file_${index}`;
         return {
-          file: result,
+          blob: result,
           originalName,
           filename: originalName.replace(/\.[^.]+$/, '') + '.pdf',
           mimeType: result.type || 'application/pdf',
@@ -100,6 +101,10 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     setConvertedFiles([]);
   }, []);
 
+  const removeConvertedFile = useCallback((indexToRemove) => {
+    setConvertedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  }, []);
+
   return {
     loading,
     convertedFiles,
@@ -107,6 +112,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     processFile,
     startProcessingAll,
     clearConvertedFiles,
+    removeConvertedFile,
     setLoading,
   };
 };

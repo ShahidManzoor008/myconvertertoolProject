@@ -82,6 +82,7 @@ const PdfConverter = () => {
     processFile,
     startProcessingAll,
     clearConvertedFiles,
+    removeConvertedFile,
   } = useFileProcessing(showPopup, addToRecent);
 
   // Fetch total conversions from server
@@ -125,7 +126,7 @@ const PdfConverter = () => {
       URL.revokeObjectURL(previewUrl);
     }
 
-    const fileBlob = file.file instanceof Blob ? file.file : (file instanceof Blob ? file : null);
+    const fileBlob = file.blob instanceof Blob ? file.blob : (file.file instanceof Blob ? file.file : (file instanceof Blob ? file : null));
     let resolvedUrl = file.url || '';
     let needsCleanup = false;
 
@@ -169,20 +170,12 @@ const PdfConverter = () => {
   // Handle file download from converted files list
   const handleDownloadFile = (file) => {
     const filename = file.filename || file.originalName || file.name || 'document.pdf';
-    downloadFile(file.file || file, filename, showPopup);
+    downloadFile(file, filename, showPopup);
   };
 
   // Handle removal of converted file
-  const handleRemoveConvertedFile = () => {
-    // This requires exposing setConvertedFiles from the hook or state
-    // For now, I will modify the hook or handle it locally if possible.
-    // Let's assume for now I will manage convertedFiles locally here for simplicity if needed.
-    // Actually, I should update the hook to support removal.
-    // For now, I'll assume we can filter the state if I expose it.
-    // Given the hook structure, let's just update the local state if needed.
-    // Actually, let's just expose a clear/remove method from useFileProcessing.
-    // For now, let's keep it simple:
-    clearConvertedFiles(); // Temporary fix until hook update
+  const handleRemoveConvertedFile = (index) => {
+    removeConvertedFile(index);
   };
 
   // Handle single file processing with auth check
@@ -242,27 +235,27 @@ const PdfConverter = () => {
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 leading-tight">
           PDF <span className="text-red-600">Converter</span> Pro
         </h1>
-        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-          The ultimate utility for converting, merging, and perfecting your PDF documents with industry-standard precision.
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          Convert files to PDF or switch to PDF editing without leaving the page. Downloads, preview, and editor actions stay separated so the workspace stays focused.
         </p>
       </section>
 
       <div className="max-w-5xl mx-auto px-4">
         <div className="mb-6 flex justify-center">
-          <div className="inline-flex rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg">
+          <div className="inline-flex rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleModeChange('convert')}
-              className={`px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'convert' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+              className={`flex-1 sm:flex-none px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'convert' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
             >
-              Convert to PDF
+              Convert
             </button>
             <button
               type="button"
               onClick={() => handleModeChange('edit')}
-              className={`px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'edit' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+              className={`flex-1 sm:flex-none px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'edit' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
             >
-              Edit PDF
+              Edit
             </button>
           </div>
         </div>
@@ -273,27 +266,26 @@ const PdfConverter = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-1 sm:p-2"
           >
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10 shadow-inner">
-              <div className="flex items-center justify-between mb-10 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 sm:p-10 shadow-inner">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg">
                     <span className="material-icons text-sm">settings</span>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Operation</p>
-                    <h3 className="font-bold text-slate-900 dark:text-white capitalize">{selectedOperation}</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Mode</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white capitalize">{selectedOperation === 'convert' ? 'Convert to PDF' : 'Edit PDF'}</h3>
                   </div>
                 </div>
                 <button
-                  className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                   onClick={() => {
-                    setSelectedOperation(null);
                     handleClearSelection();
                     clearConvertedFiles();
                     handleClosePreview();
                   }}
                 >
-                  Change Mode
+                  Clear
                 </button>
               </div>
 
@@ -336,15 +328,21 @@ const PdfConverter = () => {
 
               {/* Action Buttons */}
               <div className="mt-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Step</p>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Upload a file, then convert or edit from here.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {uploadedFiles.length === 1 && canProcessSingle(uploadedFiles[0], selectedOperation) && (
                     <button
                       onClick={handleProcessSingleFile}
                       disabled={loading || uploadedFiles.length === 0}
-                      className="btn-primary w-full sm:w-auto !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-12 py-5 text-lg font-black"
+                      className="btn-primary w-full !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-6 py-5 text-base sm:text-lg font-black"
                     >
                       <Upload className="w-5 h-5" />
-                      {loading ? 'Processing...' : (selectedOperation === 'convert' ? 'Convert to PDF' : 'Save Changes')}
+                      {loading ? 'Processing...' : (selectedOperation === 'convert' ? 'Convert' : 'Save Changes')}
                     </button>
                   )}
 
@@ -352,17 +350,17 @@ const PdfConverter = () => {
                     <button
                       onClick={handleBatchProcessing}
                       disabled={loading || uploadedFiles.length === 0}
-                      className="btn-primary w-full sm:w-auto !bg-slate-900 dark:!bg-white dark:!text-slate-900 px-12 py-5 text-lg font-black"
+                      className="btn-primary w-full !bg-slate-900 dark:!bg-white dark:!text-slate-900 px-6 py-5 text-base sm:text-lg font-black"
                     >
                       <Upload className="w-5 h-5" />
-                      {loading ? 'Processing...' : 'Run Batch Task'}
+                      {loading ? 'Processing...' : 'Batch'}
                     </button>
                   )}
 
                   {uploadedFiles.length > 0 && (
                     <button
                       onClick={handleClearSelection}
-                      className="w-full sm:w-auto px-10 py-5 rounded-2xl border border-slate-200 dark:border-slate-800 font-black text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all text-base"
+                      className="w-full px-6 py-5 rounded-2xl border border-slate-200 dark:border-slate-800 font-black text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all text-base"
                     >
                       Reset
                     </button>
@@ -378,12 +376,22 @@ const PdfConverter = () => {
               )}
 
               {/* Converted Files */}
-              <ConvertedFilesList
-                files={convertedFiles}
-                onPreview={handlePreviewFile}
-                onDownload={handleDownloadFile}
-                onRemove={handleRemoveConvertedFile}
-              />
+              {convertedFiles.length > 0 && (
+                <div className="mt-10">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Converted Files</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">View, download, or remove individual results.</p>
+                    </div>
+                  </div>
+                  <ConvertedFilesList
+                    files={convertedFiles}
+                    onPreview={handlePreviewFile}
+                    onDownload={handleDownloadFile}
+                    onRemove={handleRemoveConvertedFile}
+                  />
+                </div>
+              )}
 
               {previewFile && previewUrl && (
                 <motion.div

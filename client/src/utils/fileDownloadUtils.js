@@ -5,12 +5,14 @@ export const downloadFile = (fileData, filename, showPopup) => {
     const link = document.createElement('a');
 
     // Handle different file data formats
-    if (fileData.base64) {
+    const blob = fileData?.blob || fileData?.file || (fileData instanceof Blob ? fileData : null);
+
+    if (fileData?.base64) {
       link.href = `data:application/pdf;base64,${fileData.base64}`;
-    } else if (fileData.url) {
+    } else if (fileData?.url) {
       link.href = fileData.url;
-    } else if (fileData instanceof Blob) {
-      link.href = URL.createObjectURL(fileData);
+    } else if (blob) {
+      link.href = URL.createObjectURL(blob);
     } else {
       throw new Error('Invalid file data format');
     }
