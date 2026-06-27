@@ -4,8 +4,8 @@ import PropTypes from 'prop-types';
 import LoadingSpinner from './common/LoadingSpinner';
 import { X } from 'lucide-react';
 
-// Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+// Use the public worker copy so Nginx serves it with a JavaScript MIME type.
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 const PdfViewer = ({ file, filename, onClose }) => {
   const [numPages, setNumPages] = useState(null);
