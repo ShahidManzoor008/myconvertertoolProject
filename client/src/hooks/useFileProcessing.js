@@ -55,8 +55,9 @@ export const useFileProcessing = (showPopup, addToRecent) => {
         operation: currentOperation,
       });
 
-      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const result = await apiCall(formData, { responseType: 'blob' });
+      const isConvertMode = selectedOperation === 'convert';
+      const apiCall = isConvertMode ? pdfApi.convert : pdfApi.edit;
+      const result = await apiCall(formData, isConvertMode ? {} : { responseType: 'blob' });
       const resultWithDetails = createConvertedFile(result, file.name);
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
@@ -80,8 +81,9 @@ export const useFileProcessing = (showPopup, addToRecent) => {
         operation: currentOperation,
       });
 
-      const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
-      const results = await apiCall(formData, { responseType: 'blob' });
+      const isConvertMode = selectedOperation === 'convert';
+      const apiCall = isConvertMode ? pdfApi.convert : pdfApi.edit;
+      const results = await apiCall(formData, isConvertMode ? {} : { responseType: 'blob' });
       const resultList = Array.isArray(results) ? results : [results];
 
       const newConvertedFiles = resultList.map((result, index) => {
