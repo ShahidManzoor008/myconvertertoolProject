@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '../../utils/apiClient';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileProcessing } from '../../hooks/useFileProcessing';
-import { downloadFile } from '../../utils/fileDownloadUtils';
+import { downloadFile, getFileBlob } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
   const [selectedOperation, setSelectedOperation] = useState("convert");
@@ -40,6 +40,7 @@ const PdfConverter = () => {
         const fileData = f?.file ? f : (f?.[0] || f || {});
         const rest = { ...fileData };
         delete rest.base64;
+        delete rest.blob;
         delete rest.file;
         delete rest.url;
         return rest;
@@ -126,23 +127,35 @@ const PdfConverter = () => {
       URL.revokeObjectURL(previewUrl);
     }
 
-    const fileBlob = file.blob instanceof Blob ? file.blob : (file.file instanceof Blob ? file.file : (file instanceof Blob ? file : null));
+    const fileBlob = getFileBlob(file);
     let resolvedUrl = file.url || '';
     let needsCleanup = false;
 
     if (!resolvedUrl && file.base64) {
-      const byteCharacters = atob(file.base64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      try {
+        const byteCharacters = atob(file.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        resolvedUrl = URL.createObjectURL(blob);
+        needsCleanup = true;
+      } catch (error) {
+        console.error('Failed to prepare PDF preview:', error);
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      resolvedUrl = URL.createObjectURL(blob);
-      needsCleanup = true;
     } else if (fileBlob) {
       resolvedUrl = URL.createObjectURL(fileBlob);
       needsCleanup = true;
+    }
+
+    if (!resolvedUrl) {
+      setPreviewFile(null);
+      setPreviewUrl('');
+      setPreviewNeedsCleanup(false);
+      showPopup('Preview is not available for this file.');
+      return;
     }
 
     setPreviewFile(file);
@@ -169,12 +182,16 @@ const PdfConverter = () => {
 
   // Handle file download from converted files list
   const handleDownloadFile = (file) => {
-    const filename = file.filename || file.originalName || file.name || 'document.pdf';
+    const filename = file?.filename || file?.originalName || file?.name || 'document.pdf';
     downloadFile(file, filename, showPopup);
   };
 
   // Handle removal of converted file
   const handleRemoveConvertedFile = (index) => {
+    const removedFile = convertedFiles[index];
+    if (previewFile && (previewFile === removedFile || previewFile.id === removedFile?.id)) {
+      handleClosePreview();
+    }
     removeConvertedFile(index);
   };
 

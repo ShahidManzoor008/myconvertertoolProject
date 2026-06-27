@@ -260,8 +260,8 @@ export const blogApi = {
 };
 
 export const pdfApi = {
-  convert: (formData) => apiClient.upload(API_ENDPOINTS.pdf.converter, formData),
-  edit: (formData) => apiClient.upload(API_ENDPOINTS.pdf.editor, formData),
+  convert: (formData, options = {}) => apiClient.upload(API_ENDPOINTS.pdf.converter, formData, options),
+  edit: (formData, options = {}) => apiClient.upload(API_ENDPOINTS.pdf.editor, formData, options),
   download: (fileId) => apiClient.download(`${API_ENDPOINTS.pdf.operations}/${fileId}`),
 };
 

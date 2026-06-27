@@ -1,29 +1,46 @@
 // Utility functions for file operations
 
+export const getFileBlob = (fileData) => {
+  if (fileData instanceof Blob) return fileData;
+  if (fileData?.blob instanceof Blob) return fileData.blob;
+  if (fileData?.file instanceof Blob) return fileData.file;
+  return null;
+};
+
 export const downloadFile = (fileData, filename, showPopup) => {
   try {
     const link = document.createElement('a');
-
-    // Handle different file data formats
-    const blob = fileData?.blob || fileData?.file || (fileData instanceof Blob ? fileData : null);
+    const blob = getFileBlob(fileData);
+    const downloadName = filename || fileData?.filename || fileData?.originalName || fileData?.name || 'document.pdf';
 
     if (fileData?.base64) {
       link.href = `data:application/pdf;base64,${fileData.base64}`;
     } else if (fileData?.url) {
       link.href = fileData.url;
     } else if (blob) {
-      link.href = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+
+      if (showPopup) {
+        showPopup(`${downloadName} downloaded.`);
+      }
+      return;
     } else {
       throw new Error('Invalid file data format');
     }
 
-    link.download = filename || 'document.pdf';
+    link.download = downloadName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     if (showPopup) {
-      showPopup(`${filename || 'document.pdf'} downloaded.`);
+      showPopup(`${downloadName} downloaded.`);
     }
   } catch (error) {
     console.error('Download failed:', error);

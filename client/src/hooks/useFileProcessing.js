@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { pdfApi } from '../utils/apiClient';
 import { createFormDataWithFiles } from '../utils/fileUtils';
 import { AppError } from '../utils/AppError';
+import { getFileBlob } from '../utils/fileDownloadUtils';
 
 export const useFileProcessing = (showPopup, addToRecent) => {
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,24 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     }
   }, [getFileExt]);
 
+  const createConvertedFile = useCallback((result, originalName, index = 0) => {
+    const blob = getFileBlob(result);
+
+    if (!blob && !result?.base64 && !result?.url) {
+      throw new Error('The server did not return a downloadable PDF file.');
+    }
+
+    return {
+      ...(result && typeof result === 'object' && !(result instanceof Blob) ? result : {}),
+      id: `${Date.now()}-${index}-${originalName}`,
+      blob,
+      originalName,
+      filename: (result?.filename || originalName).replace(/\.[^.]+$/, '') + '.pdf',
+      mimeType: blob?.type || result?.mimeType || 'application/pdf',
+      size: blob?.size || result?.size || 0,
+    };
+  }, []);
+
   // Process a single file
   const processFile = useCallback(async (file, selectedOperation, currentOperation) => {
     try {
@@ -38,13 +57,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
 
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
       const result = await apiCall(formData, { responseType: 'blob' });
-      const resultWithDetails = {
-        blob: result,
-        originalName: file.name,
-        filename: file.name.replace(/\.[^.]+$/, '') + '.pdf',
-        mimeType: result.type || 'application/pdf',
-        size: result.size,
-      };
+      const resultWithDetails = createConvertedFile(result, file.name);
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
       return resultWithDetails;
@@ -55,7 +68,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
       showPopup(`${currentOperation} operation failed: ${err.message}`);
       throw err;
     }
-  }, [showPopup, addToRecent]);
+  }, [showPopup, addToRecent, createConvertedFile]);
 
   // Batch processing: start sequential processing of all uploaded files
   const startProcessingAll = useCallback(async (files, selectedOperation, currentOperation) => {
@@ -74,13 +87,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
       const newConvertedFiles = resultList.map((result, index) => {
         const originalFile = files[index] || files[0];
         const originalName = originalFile ? originalFile.name : `file_${index}`;
-        return {
-          blob: result,
-          originalName,
-          filename: originalName.replace(/\.[^.]+$/, '') + '.pdf',
-          mimeType: result.type || 'application/pdf',
-          size: result.size,
-        };
+        return createConvertedFile(result, originalName, index);
       });
 
       setConvertedFiles(prev => [...prev, ...newConvertedFiles]);
@@ -94,7 +101,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     } finally {
       setLoading(false);
     }
-  }, [showPopup, addToRecent]);
+  }, [showPopup, addToRecent, createConvertedFile]);
 
   // Clear converted files
   const clearConvertedFiles = useCallback(() => {
