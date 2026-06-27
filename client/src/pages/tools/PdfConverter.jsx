@@ -23,7 +23,9 @@ const PdfConverter = () => {
   const [, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
-  const [, setViewingFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewNeedsCleanup, setPreviewNeedsCleanup] = useState(false);
 
   // Add file to recent conversions
   const addToRecent = (file) => {
@@ -117,19 +119,51 @@ const PdfConverter = () => {
 
   // Handle file preview
   const handlePreviewFile = (file) => {
-    // Ensure we have a valid URL for previewing
-    if (!file.url && file.base64) {
-       const byteCharacters = atob(file.base64);
-       const byteNumbers = new Array(byteCharacters.length);
-       for (let i = 0; i < byteCharacters.length; i++) {
-         byteNumbers[i] = byteCharacters.charCodeAt(i);
-       }
-       const byteArray = new Uint8Array(byteNumbers);
-       const blob = new Blob([byteArray], {type: 'application/pdf'});
-       file.url = URL.createObjectURL(blob);
+    if (!file) return;
+
+    if (previewNeedsCleanup && previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
-    setViewingFile(file);
+
+    let resolvedUrl = file.url || '';
+    let needsCleanup = false;
+
+    if (!resolvedUrl && file.base64) {
+      const byteCharacters = atob(file.base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      resolvedUrl = URL.createObjectURL(blob);
+      needsCleanup = true;
+    } else if (file instanceof Blob) {
+      resolvedUrl = URL.createObjectURL(file);
+      needsCleanup = true;
+    }
+
+    setPreviewFile(file);
+    setPreviewUrl(resolvedUrl);
+    setPreviewNeedsCleanup(needsCleanup);
   };
+
+  const handleClosePreview = () => {
+    if (previewNeedsCleanup && previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewFile(null);
+    setPreviewUrl('');
+    setPreviewNeedsCleanup(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewNeedsCleanup && previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewNeedsCleanup, previewUrl]);
 
   // Handle file download from converted files list
   const handleDownloadFile = (file) => {
@@ -244,7 +278,7 @@ const PdfConverter = () => {
                     setSelectedOperation(null);
                     handleClearSelection();
                     clearConvertedFiles();
-                    setViewingFile(null);
+                    handleClosePreview();
                   }}
                 >
                   Change Mode
@@ -288,18 +322,6 @@ const PdfConverter = () => {
                 </div>
               )}
               
-              {/* PDF Viewer for Edit */}
-              {selectedOperation === 'edit' && uploadedFiles.length > 0 && uploadedFiles[0].type === 'application/pdf' && (
-                <div className="mt-10 mb-10 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
-                  <PdfViewer
-                    file={URL.createObjectURL(uploadedFiles[0])}
-                    filename={uploadedFiles[0].name}
-                    onClose={() => {
-                        // Reset uploaded files or just close viewer
-                    }}
-                  />
-                </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
@@ -349,6 +371,23 @@ const PdfConverter = () => {
                 onDownload={handleDownloadFile}
                 onRemove={handleRemoveConvertedFile}
               />
+
+              {previewFile && previewUrl && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm px-4 py-6 sm:px-6 sm:py-10 overflow-y-auto"
+                >
+                  <div className="max-w-5xl mx-auto">
+                    <PdfViewer
+                      file={previewUrl}
+                      filename={previewFile.filename || previewFile.originalName || 'document.pdf'}
+                      onClose={handleClosePreview}
+                    />
+                  </div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}
