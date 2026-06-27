@@ -31,20 +31,21 @@ export const useFileProcessing = (showPopup, addToRecent) => {
   }, [getFileExt]);
 
   const createConvertedFile = useCallback((result, originalName, index = 0) => {
-    const blob = getFileBlob(result);
+    const fileResult = Array.isArray(result) ? result[0] : result;
+    const blob = getFileBlob(fileResult);
 
-    if (!blob && !result?.base64 && !result?.url) {
+    if (!blob && !fileResult?.base64 && !fileResult?.url) {
       throw new Error('The server did not return a downloadable PDF file.');
     }
 
     return {
-      ...(result && typeof result === 'object' && !(result instanceof Blob) ? result : {}),
+      ...(fileResult && typeof fileResult === 'object' && !(fileResult instanceof Blob) ? fileResult : {}),
       id: `${Date.now()}-${index}-${originalName}`,
       blob,
       originalName,
-      filename: (result?.filename || originalName).replace(/\.[^.]+$/, '') + '.pdf',
-      mimeType: blob?.type || result?.mimeType || 'application/pdf',
-      size: blob?.size || result?.size || 0,
+      filename: (fileResult?.filename || originalName).replace(/\.[^.]+$/, '') + '.pdf',
+      mimeType: blob?.type || fileResult?.mimeType || 'application/pdf',
+      size: blob?.size || fileResult?.size || 0,
     };
   }, []);
 
