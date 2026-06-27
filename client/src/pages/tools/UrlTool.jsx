@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ClipboardCopy, Download, RefreshCw, Trash, HelpCircle, Info } from "lucide-react";
 import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
 
 const UrlTool = () => {
@@ -315,6 +316,10 @@ const UrlTool = () => {
             )}
           </div>
         </motion.div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/url-encoder" category="Dev Tools" />
       </div>
 
       {popupMessage && (

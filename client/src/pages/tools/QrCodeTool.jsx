@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
 import Popup from "../../components/Popup";
-import SEO from '../../utils/SEO';
+import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
 import { 
   Download, 
@@ -511,6 +512,10 @@ const QrCodeTool = () => {
             </motion.div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/qr-code-generator" category="SEO Tools" />
       </div>
 
       {/* Preview Modal */}

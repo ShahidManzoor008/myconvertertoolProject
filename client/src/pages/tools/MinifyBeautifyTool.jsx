@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Popup from "../../components/Popup";
 import { js, css, html } from "js-beautify";
 import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import { Copy, Download, Eye, EyeOff, Upload, Code, Check, Info, Sun, RotateCcw, Zap } from "lucide-react";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
@@ -276,6 +277,10 @@ const MinifyBeautifyTool = () => {
             </motion.div>
           )}
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/minify-beautify" category="Dev Tools" />
       </div>
 
       {popupMessage && (

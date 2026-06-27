@@ -48,10 +48,14 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       output: {
-        manualChunks: {
-          pdfjs: ['pdfjs-dist'],
-          // Use the ESM worker path (.mjs) so Rollup can resolve it at build time
-          'pdf-worker': ['pdfjs-dist/build/pdf.worker.min.mjs']
+        manualChunks(id) {
+          if (id.includes('pdfjs-dist/build/pdf.worker.min.mjs')) return 'pdf-worker';
+          if (id.includes('pdfjs-dist') || id.includes('react-pdf') || id.includes('pdf-lib')) return 'pdf-tools';
+          if (id.includes('react-syntax-highlighter') || id.includes('prismjs') || id.includes('js-beautify')) return 'code-tools';
+          if (id.includes('qrcode.react')) return 'qr-tools';
+          if (id.includes('framer-motion')) return 'motion';
+          if (id.includes('@heroicons') || id.includes('lucide-react') || id.includes('react-icons')) return 'icons';
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'react-vendor';
         }
       }
     }

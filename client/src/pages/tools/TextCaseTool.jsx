@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Popup from "../../components/Popup";
 import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import { ClipboardCopy, Download, RotateCcw, Type } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";
 
@@ -170,6 +171,10 @@ const TextCaseTool = () => {
             </AnimatePresence>
           </div>
         </motion.div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/text-case-converter" category="Text Tools" />
       </div>
 
       {popupMessage && (

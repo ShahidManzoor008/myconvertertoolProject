@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import SEO from '../../utils/SEO';
+import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import Popup from "../../components/Popup";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
-// 'atomOneDark' is not exported from the prism styles in this package version.
-// Use 'oneDark' (or 'atomDark') which are the actual exported names.
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FaCopy, FaDownload, FaSun, FaMoon, FaCheck, FaTimes } from "react-icons/fa";
 
 const JsonFormatter = () => {
@@ -595,14 +591,10 @@ const JsonFormatter = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[2rem] overflow-hidden shadow-2xl">
-                    <SyntaxHighlighter 
-                      language="json" 
-                      style={isDarkMode ? oneDark : docco} 
-                      customStyle={{ padding: '2rem', margin: 0, fontSize: '13px', lineHeight: '1.6' }}
-                    >
+                  <div className="rounded-[2rem] overflow-hidden shadow-2xl bg-slate-950 dark:bg-slate-950">
+                    <pre className="max-h-[36rem] overflow-auto p-8 text-[13px] leading-relaxed text-emerald-300 font-mono whitespace-pre">
                       {formattedJson}
-                    </SyntaxHighlighter>
+                    </pre>
                   </div>
 
                   <div className="mt-8 flex flex-wrap gap-4 items-center">
@@ -663,6 +655,10 @@ const JsonFormatter = () => {
             </AnimatePresence>
           </div>
         </motion.div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/json-formatter" category="Dev Tools" />
       </div>
 
       {popupMessage && (

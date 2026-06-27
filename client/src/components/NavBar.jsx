@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   XMarkIcon,
   ShieldCheckIcon,
@@ -8,7 +7,6 @@ import {
   Bars3Icon
 } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
-import MobileMenu from "./MobileMenu";
 
 const NavBar = ({ 
   darkMode, 
@@ -99,49 +97,11 @@ const NavBar = ({
         <button
           className="md:hidden p-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900"
           onClick={() => onMobileMenuToggle(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         >
           {isMobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
         </button>
       </div>
-
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-              onClick={() => onMobileMenuToggle(false)}
-              aria-hidden="true"
-            />
-            
-            {/* Menu Component */}
-            <MobileMenu
-              user={user}
-              onClose={() => onMobileMenuToggle(false)}
-              onLogout={onLogout}
-              navigation={navigation}
-            />
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Backdrop for Mobile Menu */}
-      {isMobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={() => onMobileMenuToggle(false)}
-          aria-hidden="true"
-        />
-      )}
     </nav>
   );
 };

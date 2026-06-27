@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, FileText, Download, FileCode, CheckCircle2 } from 'lucide-react';
 import SEO from '../../utils/SEO';
+import ToolSupportSection from '../../components/ToolSupportSection';
 import { mdToDocxApi } from '../../utils/apiClient';
 import { AppError } from '../../utils/AppError';
 import ConversionProgressBar from '../../components/common/ConversionProgressBar';
@@ -203,6 +204,10 @@ const MarkdownToDocx = () => {
             )}
           </div>
         </motion.div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/markdown-to-docx" category="Text Tools" />
       </div>
 
       <AnimatePresence>

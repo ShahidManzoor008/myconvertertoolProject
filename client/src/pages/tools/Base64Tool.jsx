@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Popup from "../../components/Popup";
 import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import { Helmet } from "react-helmet-async";
 import { Copy, Download, RotateCcw, Upload, FileText, HelpCircle } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";
@@ -377,6 +378,10 @@ const Base64Tool = () => {
             </AnimatePresence>
           </div>
         </motion.div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/base64-encoder" category="Dev Tools" />
       </div>
 
       {popupMessage && (

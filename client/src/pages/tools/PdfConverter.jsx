@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
-import SEO from '../../utils/SEO';
+import SEO from "../../utils/SEO";
+import ToolSupportSection from "../../components/ToolSupportSection";
 import PdfOperations from '../../components/PdfOperations';
 import PdfViewer from '../../components/PdfViewer';
 import ConversionProgressBar from '../../components/common/ConversionProgressBar';
@@ -351,6 +352,10 @@ const PdfConverter = () => {
             </div>
           </motion.div>
         )}
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4">
+        <ToolSupportSection currentPath="/tools/pdf-converter" category="PDF Tools" />
       </div>
       
       {/* Popups */}
