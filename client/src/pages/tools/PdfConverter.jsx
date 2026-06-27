@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from '../../utils/SEO';
 import PdfOperations from '../../components/PdfOperations';
-import FileHistory from '../../components/FileHistory';
 import PdfViewer from '../../components/PdfViewer';
 import ConversionProgressBar from '../../components/common/ConversionProgressBar';
 import OperationSelection from '../../components/OperationSelection';
 import UploadedFilesList from '../../components/UploadedFilesList';
 import ConvertedFilesList from '../../components/ConvertedFilesList';
 import { AppError } from '../../utils/AppError';
-import { useAuth } from '../../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '../../utils/apiClient';
 import { useFileUpload } from '../../hooks/useFileUpload';
@@ -21,11 +19,10 @@ import { downloadFile } from '../../utils/fileDownloadUtils';
 const PdfConverter = () => {
   const [selectedOperation, setSelectedOperation] = useState(null);
   const [currentOperation, setCurrentOperation] = useState("convert");
-  const [recentFiles, setRecentFiles] = useState([]);
+  const [, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);
-  const [viewingFile, setViewingFile] = useState(null);
-  const { user } = useAuth();
+  const [, setViewingFile] = useState(null);
 
   // Add file to recent conversions
   const addToRecent = (file) => {
@@ -87,7 +84,7 @@ const PdfConverter = () => {
   } = useFileProcessing(showPopup, addToRecent);
 
   // Fetch total conversions from server
-  const { data: statsData, refetch: refetchStats } = useQuery({
+  const { refetch: refetchStats } = useQuery({
     queryKey: ['totalConversions'],
     queryFn: async () => {
       const data = await statsApi.getTotal();
@@ -95,8 +92,6 @@ const PdfConverter = () => {
     },
     initialData: 0
   });
-
-  const totalConversions = statsData;
 
   // Handle file download
   const handleDownload = () => {
@@ -142,7 +137,7 @@ const PdfConverter = () => {
   };
 
   // Handle removal of converted file
-  const handleRemoveConvertedFile = (index) => {
+  const handleRemoveConvertedFile = () => {
     // This requires exposing setConvertedFiles from the hook or state
     // For now, I will modify the hook or handle it locally if possible.
     // Let's assume for now I will manage convertedFiles locally here for simplicity if needed.
@@ -187,6 +182,7 @@ const PdfConverter = () => {
         title={'Free PDF Converter | Convert Word, Excel, Images to PDF Online - MyConverterTool'}
         description={'Use our free PDF converter to convert Word to PDF, Excel to PDF, images to PDF, and more. Merge, split, compress PDFs online instantly.'}
         keywords={'pdf converter, word to pdf, excel to pdf, image to pdf, merge pdf, split pdf, compress pdf, online pdf tools'}
+        canonicalUrl={'/tools/pdf-converter'}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'WebApplication',

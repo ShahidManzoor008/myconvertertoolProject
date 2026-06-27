@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, AlertCircle } from "lucide-react";
+import { X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useAuth } from '../hooks/useAuth';
 import GoogleSignIn from './GoogleSignIn';
@@ -84,7 +84,7 @@ const AuthPopup = ({ isOpen, onClose, onLogin, onSkip }) => {
 
             <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 text-center">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                By continuing, you agree to our <a href="/terms" className="text-blue-600 underline">Terms</a> & <a href="/privacy" className="text-blue-600 underline">Privacy</a>.
+                By continuing, you agree to our <a href="/terms" className="text-blue-600 underline">Terms</a> & <a href="/privacy-policy" className="text-blue-600 underline">Privacy</a>.
               </p>
             </div>
           </div>

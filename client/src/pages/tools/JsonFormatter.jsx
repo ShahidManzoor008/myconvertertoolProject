@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import SEO from '../../utils/SEO';
 import Popup from "../../components/Popup";
 import SyntaxHighlighter from "react-syntax-highlighter";

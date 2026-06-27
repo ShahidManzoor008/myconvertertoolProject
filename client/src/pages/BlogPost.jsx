@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from "react-router-dom";
 import SEO from '../utils/SEO.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { blogApi } from '../utils/apiClient';
 import MarkdownIt from 'markdown-it'; // Import markdown-it
 import DOMPurify from 'dompurify'; // Import dompurify
 
@@ -40,14 +41,59 @@ md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
 };
 
 const BlogPost = () => {
-  // ... fetch and error logic stays same
+  const { slug } = useParams();
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        setLoading(true);
+        const data = await blogApi.getPost(slug);
+        setPost(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching blog post:', err);
+        setError('Failed to load blog post. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [slug]);
+
+  if (loading) {
+    return <LoadingSpinner message="Loading article..." />;
+  }
+
+  if (error || !post) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 px-4">
+        <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500">
+          <span className="material-icons text-4xl">error_outline</span>
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Post Not Found</h2>
+        <p className="text-slate-600 dark:text-slate-400 text-center max-w-md">
+          The article you are looking for might have been moved or deleted.
+        </p>
+        <Link 
+          to="/blog"
+          className="px-8 py-3 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+        >
+          Back to Blog
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <article className="pb-24">
       <SEO
-        title={`${post.title} - ConverterPro`}
+        title={`${post.title} - MyConverterTool`}
         description={post.excerpt}
-        keywords={`${post.title.toLowerCase()}, blog, tutorial, converterpro`}
+        keywords={`${post.title.toLowerCase()}, blog, tutorial, myconvertertool`}
         canonicalUrl={`/blog/${post.slug}`}
         ogImage={post.coverImage || '/assets/MyConverterTool.png'}
       />

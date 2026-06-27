@@ -63,6 +63,7 @@ const SEO = (props) => {
       {finalOgTitle ? <meta name="twitter:title" content={finalOgTitle} /> : null}
       {finalOgDescription ? <meta name="twitter:description" content={finalOgDescription} /> : null}
       {finalOgImage ? <meta name="twitter:image" content={finalOgImage} /> : null}
+      {finalCanonicalAbsolute ? <link rel="canonical" href={finalCanonicalAbsolute} /> : null}
       {finalJsonLd ? (
         <script type="application/ld+json">{JSON.stringify(finalJsonLd)}</script>
       ) : null}

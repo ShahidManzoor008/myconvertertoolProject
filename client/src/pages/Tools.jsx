@@ -11,7 +11,7 @@ import SEO from '../utils/SEO.jsx';
 
 const Tools = () => {
   const seoData = {
-    title: 'Free Online Tools | Dev Tools, Text Tools, PDF Tools & More - ConverterPro',
+    title: 'Free Online Tools | Dev Tools, Text Tools, PDF Tools & More - MyConverterTool',
     description: 'Access our collection of free online tools including PDF converters, JSON formatters, QR code generators, and text utilities.',
     keywords: 'online tools, developer tools, PDF tools, JSON formatter, QR code generator, text converter',
     canonicalUrl: '/tools',

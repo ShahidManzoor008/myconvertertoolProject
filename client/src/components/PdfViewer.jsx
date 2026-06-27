@@ -1,20 +1,17 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import LoadingSpinner from './common/LoadingSpinner';
 import { X } from 'lucide-react';
 
 // Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 const PdfViewer = ({ file, filename, onClose }) => {
   const [numPages, setNumPages] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
-    setLoading(false);
   };
 
   return (

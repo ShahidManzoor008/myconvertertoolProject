@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import GoogleSignIn from './GoogleSignIn';
+import LoadingSpinner from './LoadingSpinner';
 
 const RegisterForm = ({ onSuccess }) => {
   const [form, setForm] = useState({ name: '', email: '', password: '' });

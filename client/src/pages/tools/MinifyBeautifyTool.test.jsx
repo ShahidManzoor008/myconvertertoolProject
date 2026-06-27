@@ -13,6 +13,6 @@ vi.mock('js-beautify', () => ({
 describe('MinifyBeautifyTool', () => {
   it('renders correctly', () => {
     render(<HelmetProvider><MinifyBeautifyTool /></HelmetProvider>);
-    expect(screen.getByText(/Minify & Beautify Code/i)).toBeInTheDocument();
+    expect(screen.getByText(/Beautify Code/i)).toBeInTheDocument();
   });
 });

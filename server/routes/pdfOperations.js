@@ -203,7 +203,9 @@ router.post('/protect', upload.single('file'), validatePdf, async (req, res) => 
     await sendFileResponse(res, protectedPdf, 'protected.pdf', 'pdf-protect', req.user?._id);
   } catch (error) {
     console.error('Protect PDF error:', error);
-    res.status(500).json({ error: 'Failed to protect PDF' });
+    const status = error.statusCode || 500;
+    const message = status === 501 ? error.message : 'Failed to protect PDF';
+    res.status(status).json({ error: message });
   } finally {
     if (req.file) await fs.unlink(req.file.path);
   }

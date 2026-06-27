@@ -58,7 +58,7 @@ const Profile = () => {
 
   return (
     <div className="pb-24">
-      <SEO title="My Profile - ConverterPro Account" />
+      <SEO title="My Profile - MyConverterTool Account" />
       
       {/* Header */}
       <section className="text-center py-12 md:py-16" data-aos="fade-down">

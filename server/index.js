@@ -86,10 +86,23 @@ app.use('/api/admin', adminRouter);
 // Serve uploaded blog images
 app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images')));
 
+// Serve static files from the React app
+const clientBuildPath = path.join(__dirname, '../client/dist');
+app.use(express.static(clientBuildPath));
+
 // ============================
 // Import error handlers
 import { errorHandler, handleUncaughtErrors } from './utils/errorHandler.js';
 import AppError from './utils/AppError.js';
+
+// The catch-all handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*any', (req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
 
 // Handle undefined routes
 app.use((req, res, next) => {

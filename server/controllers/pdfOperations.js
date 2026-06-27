@@ -125,25 +125,12 @@ async function addWatermark(file, watermarkText, options = {}) {
 
 // Protect PDF with password
 async function protectPDF(file, password) {
-  if (!file || !password) {
-    throw new Error('Protect PDF requires a file and a password.');
-  }
-  const pdf = await loadPDF(file.path);
-  pdf.encrypt({
-    userPassword: password,
-    ownerPassword: password,
-    permissions: {
-      printing: 'highResolution',
-      modifying: false,
-      copying: false,
-      annotating: false,
-      fillingForms: true,
-      contentAccessibility: true,
-      documentAssembly: false,
-    },
-  });
-  
-  return await pdf.save();
+  // pdf-lib does not support encryption directly.
+  // This would require an external tool like qpdf or a specialized library like muhammara.
+  // Returning 501 for now to acknowledge it's not implemented.
+  const error = new Error('PDF protection (encryption) is not currently supported.');
+  error.statusCode = 501;
+  throw error;
 }
 
 // Compress PDF (basic implementation - for demonstration)

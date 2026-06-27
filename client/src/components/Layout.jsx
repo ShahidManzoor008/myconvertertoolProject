@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Helmet } from "react-helmet-async";
+import { AnimatePresence } from "framer-motion";
 import Sidebar from "./Sidebar";
 import ScrollToTop from "./ScrollToTop";
 import NavBar from "./NavBar";
@@ -41,7 +40,7 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <SEO 
-        title="My Converter Tool - Free Online Tools for Developers & Creators"
+        title="MyConverterTool - Free Online Tools for Developers & Creators"
         description="Access free developer & productivity tools like JSON Formatter, PDF Converter, Base64 Encoder, and more. No sign-up required!"
         keywords="free online tools, developer tools, JSON Formatter, PDF Converter, QR Code Generator, Base64 Encoder"
       />
@@ -94,15 +93,18 @@ const Layout = ({ children }) => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">C</div>
-            <span className="font-black tracking-tighter">CONVERTERPRO</span>
+            <span className="font-black tracking-tighter">MyConverterTool</span>
           </div>
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} My Converter Tools. All rights reserved.
+            © {new Date().getFullYear()} MyConverterTool. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link to="/about" className="text-sm font-bold hover:text-blue-600 transition-colors">About</Link>
             <Link to="/tools" className="text-sm font-bold hover:text-blue-600 transition-colors">Tools</Link>
             <Link to="/blog" className="text-sm font-bold hover:text-blue-600 transition-colors">Blog</Link>
+            <Link to="/contact" className="text-sm font-bold hover:text-blue-600 transition-colors">Contact</Link>
+            <Link to="/privacy-policy" className="text-sm font-bold hover:text-blue-600 transition-colors">Privacy</Link>
+            <Link to="/terms" className="text-sm font-bold hover:text-blue-600 transition-colors">Terms</Link>
           </div>
         </div>
       </footer>

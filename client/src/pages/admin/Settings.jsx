@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    siteName: 'My Converter Tool',
+    siteName: 'MyConverterTool',
     contactEmail: 'admin@myconvertertool.com',
     maintenanceMode: false,
     allowRegistration: true

@@ -39,10 +39,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': '/src',
-      // Ensure tooling (Vitest/Vite) resolves React to the client's node_modules
-      react: path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
-      'react/jsx-runtime': path.resolve(__dirname, './node_modules/react/jsx-runtime.js')
     },
     // Dedupe React to avoid multiple copies being loaded by the optimizer
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
@@ -100,11 +96,7 @@ export default defineConfig({
       },
     },
     alias: {
-      'react/jsx-runtime': path.resolve(__dirname, './node_modules/react/jsx-runtime.js'),
-      // Ensure tests resolve React to the client's node_modules
-      react: path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
-      'react-dom/client': path.resolve(__dirname, './node_modules/react-dom/client.js')
+      '@': path.resolve(__dirname, './src'),
     },
   },
 })

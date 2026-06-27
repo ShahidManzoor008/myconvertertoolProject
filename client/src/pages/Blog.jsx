@@ -1,18 +1,43 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import SEO from '../utils/SEO.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import BlogCard from '../components/BlogCard.jsx';
+import { blogApi } from '../utils/apiClient';
 
 const Blog = () => {
-  // ... fetch logic stays same
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await blogApi.getPosts();
+        setPosts(data.posts || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching blog posts:', err);
+        setError('Failed to load blog posts. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (loading) {
+    return <LoadingSpinner message="Loading insights..." />;
+  }
 
   return (
     <div className="pb-24">
       <SEO
-        title="Insights & Guides - ConverterPro Blog"
-        description="Stay ahead with the latest tutorials, technology insights, and productivity guides from the ConverterPro team."
+        title="Insights & Guides - MyConverterTool Blog"
+        description="Stay ahead with the latest tutorials, technology insights, and productivity guides from the MyConverterTool team."
         keywords="blog, articles, guides, file conversion, productivity, technology"
+        canonicalUrl="/blog"
       />
       
       {/* Header */}

@@ -164,6 +164,8 @@ export const convertFileToPDF = async (filePath, fileType) => {
     return await convertImagesToPDF([filePath]);
   } else if (supportedTextTypes.includes(fileType)) {
     return await convertTextToPDF(filePath);
+  } else if (fileType === 'pdf') {
+    return fs.readFileSync(filePath);
   } else if (supportedLibreOfficeTypes.includes(fileType)) {
     const pdfPath = await convertToPDF(filePath);
     const pdfBuffer = fs.readFileSync(pdfPath);

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Helmet, HelmetProvider } from "react-helmet-async";
+import { HelmetProvider } from "react-helmet-async";
 import { lazy, Suspense, useEffect } from 'react';
 import Layout from "./components/Layout";
 import { routerConfig } from "./config/router.config";
@@ -7,6 +7,7 @@ import adminRoutes from './routes/adminRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 import { setupDefaultInterceptors } from './utils/interceptors';
 import LoadingSpinner from './components/LoadingSpinner';
+import AdSenseScript from './components/AdSenseScript';
 
 const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
@@ -27,6 +28,10 @@ const MarkdownToDocx = lazy(() => import('./pages/tools/MarkdownToDocx'));
 const Register = lazy(() => import('./pages/Register'));
 const Login = lazy(() => import('./pages/Login'));
 const Profile = lazy(() => import('./pages/Profile'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Contact = lazy(() => import('./pages/Contact'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
   // Set up API interceptors
@@ -38,6 +43,7 @@ function App() {
     <HelmetProvider>
       <ErrorBoundary>
         <Router {...routerConfig}>
+          <AdSenseScript />
           <Layout>
             <Suspense fallback={<LoadingSpinner message="Loading page..." />}>
               <Routes>
@@ -47,6 +53,9 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/tools" element={<Tools />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/tools/dev" element={<DevTools />} />
@@ -64,6 +73,7 @@ function App() {
                 <Route path="/tools/pdf-editor" element={<Navigate replace to="/tools/pdf-converter" />} />
                 {/* Admin Routes */}
                 {adminRoutes}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </Layout>

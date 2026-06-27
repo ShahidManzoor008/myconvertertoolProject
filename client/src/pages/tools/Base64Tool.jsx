@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Popup from "../../components/Popup";
+import SEO from "../../utils/SEO";
 import { Helmet } from "react-helmet-async";
 import { Copy, Download, RotateCcw, Upload, FileText, HelpCircle } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";

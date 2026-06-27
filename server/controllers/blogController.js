@@ -13,6 +13,7 @@ const allowedImageMimeTypes = [
 
 // Get all blog posts
 export const getAllPosts = async (req, res) => {
+  console.log('Fetching all blog posts...');
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

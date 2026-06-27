@@ -1,13 +1,21 @@
 import sgMail from '@sendgrid/mail';
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn('SENDGRID_API_KEY not set – SendGrid notifications disabled');
+}
 
 export const sendNotification = async (to, subject, text) => {
   const msg = {
     to,
-    from: process.env.FROM_EMAIL,
+    from: process.env.SENDGRID_FROM_EMAIL || 'no-reply@example.com',
     subject,
     text,
   };
-  await sgMail.send(msg);
+  try {
+    await sgMail.send(msg);
+  } catch (err) {
+    console.error('SendGrid send error', err);
+  }
 };

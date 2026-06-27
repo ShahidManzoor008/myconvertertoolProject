@@ -1,11 +1,12 @@
+import PropTypes from 'prop-types';
 import SEO from '../utils/SEO.jsx';
 import { motion } from 'framer-motion';
 
 const About = () => {
   const seoData = {
     title: 'About MyConverterTool - Pro Online Developer Utilities',
-    description: 'Discover the mission behind ConverterPro. We build professional-grade, free online tools to empower developers and creators worldwide.',
-    keywords: 'about converterpro, mission, vision, free developer tools, productivity suite',
+    description: 'Discover the mission behind MyConverterTool. We build professional-grade, free online tools to empower developers and creators worldwide.',
+    keywords: 'about myconvertertool, mission, vision, free developer tools, productivity suite',
     canonicalUrl: '/about',
     ogType: 'website',
   };
@@ -30,7 +31,7 @@ const About = () => {
             Built for <span className="text-blue-200">Builders</span>
           </motion.h1>
           <p className="text-xl text-blue-100 max-w-2xl mx-auto font-medium">
-            Empowering the world's creators with professional-grade tools that just work. No friction, no cost.
+            Empowering the world&apos;s creators with professional-grade tools that just work. No friction, no cost.
           </p>
         </div>
       </section>
@@ -43,7 +44,7 @@ const About = () => {
             </h2>
             <div className="space-y-6 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>
-                ConverterPro was born out of a simple observation: the web is full of tools, but very few are both professional and truly accessible. Most "free" tools are cluttered with ads, have hidden limits, or require unnecessary registrations.
+                MyConverterTool was born out of a simple observation: the web is full of tools, but very few are both professional and truly accessible. Most &quot;free&quot; tools are cluttered with ads, have hidden limits, or require unnecessary registrations.
               </p>
               <p>
                 We decided to change that. Our mission is to provide a clean, secure, and blazing-fast suite of utilities that developers and professionals can rely on every single day.
@@ -104,5 +105,16 @@ const ValueItem = ({ icon, title, desc }) => (
     <p className="text-slate-500 leading-relaxed">{desc}</p>
   </div>
 );
+
+StatCard.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+};
+
+ValueItem.propTypes = {
+  icon: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  desc: PropTypes.string.isRequired,
+};
 
 export default About;

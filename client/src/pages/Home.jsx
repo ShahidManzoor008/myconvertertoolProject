@@ -24,6 +24,8 @@ const popularToolNames = [
 
 const popularTools = tools.filter(tool => popularToolNames.includes(tool.name));
 
+import { blogApi } from '../utils/apiClient';
+
 const Home = () => {
   const [latestPosts, setLatestPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,15 +37,10 @@ const Home = () => {
     const fetchLatestPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/blog/posts?limit=3`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to fetch latest blog posts');
-        }
-
-        setLatestPosts(data.posts);
+        const data = await blogApi.getPosts(1, 3);
+        setLatestPosts(data.posts || []);
       } catch (err) {
+        console.error('Error fetching latest posts:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -157,9 +154,10 @@ const Home = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {latestPosts.map((post) => (
+              {latestPosts && latestPosts.map((post) => (
                 <BlogCard key={post._id} post={post} />
               ))}
+
             </div>
           )}
 

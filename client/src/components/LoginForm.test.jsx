@@ -3,6 +3,17 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import { vi } from 'vitest';
 
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }) => <div {...props}>{children}</div>,
+    h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
+    p: ({ children, ...props }) => <p {...props}>{children}</p>,
+    form: ({ children, ...props }) => <form {...props}>{children}</form>,
+  },
+  AnimatePresence: ({ children }) => <>{children}</>,
+}));
+
 // Mock the useAuth hook
 const mockLogin = vi.fn();
 vi.mock('../hooks/useAuth', () => ({
@@ -31,9 +42,9 @@ describe('LoginForm', () => {
       </Router>
     );
 
-    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in to dashboard/i })).toBeInTheDocument();
   });
 
   test('allows typing in email and password fields', () => {
@@ -43,8 +54,8 @@ describe('LoginForm', () => {
       </Router>
     );
 
-    const emailInput = screen.getByPlaceholderText(/email/i);
-    const passwordInput = screen.getByPlaceholderText(/password/i);
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
@@ -68,9 +79,9 @@ describe('LoginForm', () => {
       </Router>
     );
 
-    const emailInput = screen.getByPlaceholderText(/email/i);
-    const passwordInput = screen.getByPlaceholderText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in to dashboard/i });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
   fireEvent.change(passwordInput, { target: { value: 'Password123' } });
@@ -99,9 +110,9 @@ describe('LoginForm', () => {
       </Router>
     );
 
-    const emailInput = screen.getByPlaceholderText(/email/i);
-    const passwordInput = screen.getByPlaceholderText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in to dashboard/i });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
   fireEvent.change(passwordInput, { target: { value: 'Wrongpass1' } });

@@ -2,14 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   XMarkIcon,
-  UserCircleIcon,
   ShieldCheckIcon,
   SunIcon,
   MoonIcon,
   Bars3Icon
 } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
-import { NavItem } from "./NavItem";
 import MobileMenu from "./MobileMenu";
 
 const NavBar = ({ 
@@ -34,7 +32,7 @@ const NavBar = ({
           <span className="material-icons">architecture</span>
         </div>
         <span className="hidden sm:block text-xl font-black tracking-tighter text-slate-900 dark:text-white">
-          CONVERTER<span className="text-blue-600">PRO</span>
+          MyConverter<span className="text-blue-600">Tool</span>
         </span>
       </Link>
 
