@@ -9,8 +9,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.m
 
 const PdfViewer = ({ file, filename, onClose }) => {
   const [numPages, setNumPages] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   const onDocumentLoadSuccess = ({ numPages }) => {
+    setLoadError('');
     setNumPages(numPages);
   };
 
@@ -31,6 +33,7 @@ const PdfViewer = ({ file, filename, onClose }) => {
           <Document
             file={file}
             onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={(error) => setLoadError(error?.message || 'Failed to load PDF')}
             loading={<LoadingSpinner message="Loading PDF..." />}
           >
             {Array.from(new Array(numPages), (el, index) => (
@@ -40,6 +43,11 @@ const PdfViewer = ({ file, filename, onClose }) => {
             ))}
           </Document>
         </div>
+        {loadError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300">
+            {loadError}
+          </div>
+        )}
       </div>
     </div>
   );

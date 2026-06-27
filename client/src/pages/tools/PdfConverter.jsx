@@ -7,7 +7,6 @@ import ToolSupportSection from "../../components/ToolSupportSection";
 import PdfOperations from '../../components/PdfOperations';
 import PdfViewer from '../../components/PdfViewer';
 import ConversionProgressBar from '../../components/common/ConversionProgressBar';
-import OperationSelection from '../../components/OperationSelection';
 import UploadedFilesList from '../../components/UploadedFilesList';
 import ConvertedFilesList from '../../components/ConvertedFilesList';
 import { AppError } from '../../utils/AppError';
@@ -18,7 +17,7 @@ import { useFileProcessing } from '../../hooks/useFileProcessing';
 import { downloadFile } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
-  const [selectedOperation, setSelectedOperation] = useState(null);
+  const [selectedOperation, setSelectedOperation] = useState("convert");
   const [currentOperation, setCurrentOperation] = useState("convert");
   const [, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
@@ -37,14 +36,13 @@ const PdfConverter = () => {
 
     setRecentFiles(prev => {
       const updated = [newFile, ...prev.slice(0, 4)]; // Keep only last 5 files
-      const storedUpdated = updated.map(f => {
-        const fileData = f.filename ? f : (f[0] || {});
+      const storedUpdated = updated.map((f) => {
+        const fileData = f?.file ? f : (f?.[0] || f || {});
         const rest = { ...fileData };
         delete rest.base64;
-        if (f.filename) {
-          return rest;
-        }
-        return { ...f, 0: rest };
+        delete rest.file;
+        delete rest.url;
+        return rest;
       });
 
       try {
@@ -111,10 +109,12 @@ const PdfConverter = () => {
     setRecentFiles(loadedRecent);
   }, []);
 
-  // Handle operation selection
-  const handleSelectOperation = (operation) => {
+  const handleModeChange = (operation) => {
     setSelectedOperation(operation);
     setCurrentOperation(operation === 'edit' ? 'edit' : 'convert');
+    handleClearSelection();
+    clearConvertedFiles();
+    handleClosePreview();
   };
 
   // Handle file preview
@@ -125,6 +125,7 @@ const PdfConverter = () => {
       URL.revokeObjectURL(previewUrl);
     }
 
+    const fileBlob = file.file instanceof Blob ? file.file : (file instanceof Blob ? file : null);
     let resolvedUrl = file.url || '';
     let needsCleanup = false;
 
@@ -138,8 +139,8 @@ const PdfConverter = () => {
       const blob = new Blob([byteArray], { type: 'application/pdf' });
       resolvedUrl = URL.createObjectURL(blob);
       needsCleanup = true;
-    } else if (file instanceof Blob) {
-      resolvedUrl = URL.createObjectURL(file);
+    } else if (fileBlob) {
+      resolvedUrl = URL.createObjectURL(fileBlob);
       needsCleanup = true;
     }
 
@@ -167,8 +168,8 @@ const PdfConverter = () => {
 
   // Handle file download from converted files list
   const handleDownloadFile = (file) => {
-    const filename = file.filename || file.originalName || 'document.pdf';
-    downloadFile(file, filename, showPopup);
+    const filename = file.filename || file.originalName || file.name || 'document.pdf';
+    downloadFile(file.file || file, filename, showPopup);
   };
 
   // Handle removal of converted file
@@ -247,16 +248,27 @@ const PdfConverter = () => {
       </section>
 
       <div className="max-w-5xl mx-auto px-4">
-        {/* Operation selection cards */}
-        {!selectedOperation && (
-          <div data-aos="zoom-in">
-            <OperationSelection onSelectOperation={handleSelectOperation} />
+        <div className="mb-6 flex justify-center">
+          <div className="inline-flex rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg">
+            <button
+              type="button"
+              onClick={() => handleModeChange('convert')}
+              className={`px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'convert' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+            >
+              Convert to PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange('edit')}
+              className={`px-5 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${selectedOperation === 'edit' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+            >
+              Edit PDF
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Workspace */}
-        {selectedOperation && (
-          <motion.div 
+        <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card p-1 sm:p-2"
@@ -312,7 +324,7 @@ const PdfConverter = () => {
               />
 
               {/* PDF Operations */}
-              {!(selectedOperation === 'convert' && convertedFiles.length === 0) && (
+              {selectedOperation === 'edit' && (
                 <div className="mb-10 p-6 glass rounded-2xl border-none">
                   <PdfOperations
                     onOperation={setCurrentOperation}
@@ -321,40 +333,41 @@ const PdfConverter = () => {
                   />
                 </div>
               )}
-              
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
-                {uploadedFiles.length === 1 && canProcessSingle(uploadedFiles[0], selectedOperation) && (
-                  <button
-                    onClick={handleProcessSingleFile}
-                    disabled={loading || uploadedFiles.length === 0}
-                    className="btn-primary w-full sm:w-auto !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-10 py-4"
-                  >
-                    <Upload className="w-5 h-5" />
-                    {loading ? 'Processing...' : (selectedOperation === 'convert' ? 'Convert to PDF' : 'Save Changes')}
-                  </button>
-                )}
+              <div className="mt-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
+                  {uploadedFiles.length === 1 && canProcessSingle(uploadedFiles[0], selectedOperation) && (
+                    <button
+                      onClick={handleProcessSingleFile}
+                      disabled={loading || uploadedFiles.length === 0}
+                      className="btn-primary w-full sm:w-auto !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-12 py-5 text-lg font-black"
+                    >
+                      <Upload className="w-5 h-5" />
+                      {loading ? 'Processing...' : (selectedOperation === 'convert' ? 'Convert to PDF' : 'Save Changes')}
+                    </button>
+                  )}
 
-                {uploadedFiles.length > 1 && (
-                  <button
-                    onClick={handleBatchProcessing}
-                    disabled={loading || uploadedFiles.length === 0}
-                    className="btn-primary w-full sm:w-auto !bg-slate-900 dark:!bg-white dark:!text-slate-900 px-10 py-4"
-                  >
-                    <Upload className="w-5 h-5" />
-                    {loading ? 'Processing...' : 'Run Batch Task'}
-                  </button>
-                )}
+                  {uploadedFiles.length > 1 && (
+                    <button
+                      onClick={handleBatchProcessing}
+                      disabled={loading || uploadedFiles.length === 0}
+                      className="btn-primary w-full sm:w-auto !bg-slate-900 dark:!bg-white dark:!text-slate-900 px-12 py-5 text-lg font-black"
+                    >
+                      <Upload className="w-5 h-5" />
+                      {loading ? 'Processing...' : 'Run Batch Task'}
+                    </button>
+                  )}
 
-                {uploadedFiles.length > 0 && (
-                  <button
-                    onClick={handleClearSelection}
-                    className="px-8 py-4 rounded-xl font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                  >
-                    Reset
-                  </button>
-                )}
+                  {uploadedFiles.length > 0 && (
+                    <button
+                      onClick={handleClearSelection}
+                      className="w-full sm:w-auto px-10 py-5 rounded-2xl border border-slate-200 dark:border-slate-800 font-black text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all text-base"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Loading Indicator */}
@@ -382,7 +395,7 @@ const PdfConverter = () => {
                   <div className="max-w-5xl mx-auto">
                     <PdfViewer
                       file={previewUrl}
-                      filename={previewFile.filename || previewFile.originalName || 'document.pdf'}
+                      filename={previewFile.filename || previewFile.originalName || previewFile.name || 'document.pdf'}
                       onClose={handleClosePreview}
                     />
                   </div>
@@ -390,7 +403,6 @@ const PdfConverter = () => {
               )}
             </div>
           </motion.div>
-        )}
       </div>
 
       <div className="max-w-6xl mx-auto px-4">

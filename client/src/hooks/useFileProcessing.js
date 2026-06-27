@@ -38,7 +38,13 @@ export const useFileProcessing = (showPopup, addToRecent) => {
 
       const apiCall = (selectedOperation === 'convert') ? pdfApi.convert : pdfApi.edit;
       const result = await apiCall(formData, { responseType: 'blob' });
-      const resultWithDetails = { ...result, originalName: file.name };
+      const resultWithDetails = {
+        file: result,
+        originalName: file.name,
+        filename: file.name.replace(/\.[^.]+$/, '') + '.pdf',
+        mimeType: result.type || 'application/pdf',
+        size: result.size,
+      };
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
       return resultWithDetails;
@@ -66,7 +72,14 @@ export const useFileProcessing = (showPopup, addToRecent) => {
 
       const newConvertedFiles = results.map((result, index) => {
         const originalFile = files[index];
-        return { ...result, originalName: originalFile ? originalFile.name : `file_${index}` };
+        const originalName = originalFile ? originalFile.name : `file_${index}`;
+        return {
+          file: result,
+          originalName,
+          filename: originalName.replace(/\.[^.]+$/, '') + '.pdf',
+          mimeType: result.type || 'application/pdf',
+          size: result.size,
+        };
       });
 
       setConvertedFiles(prev => [...prev, ...newConvertedFiles]);

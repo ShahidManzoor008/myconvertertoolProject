@@ -89,22 +89,24 @@ const Layout = ({ children }) => {
       </div>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-12 text-center mt-20">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">C</div>
-            <span className="font-black tracking-tighter">MyConverterTool</span>
-          </div>
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} MyConverterTool. All rights reserved.
-          </p>
-          <div className="flex gap-6">
-            <Link to="/about" className="text-sm font-bold hover:text-blue-600 transition-colors">About</Link>
-            <Link to="/tools" className="text-sm font-bold hover:text-blue-600 transition-colors">Tools</Link>
-            <Link to="/blog" className="text-sm font-bold hover:text-blue-600 transition-colors">Blog</Link>
-            <Link to="/contact" className="text-sm font-bold hover:text-blue-600 transition-colors">Contact</Link>
-            <Link to="/privacy-policy" className="text-sm font-bold hover:text-blue-600 transition-colors">Privacy</Link>
-            <Link to="/terms" className="text-sm font-bold hover:text-blue-600 transition-colors">Terms</Link>
+      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+          <div className="grid gap-8 md:grid-cols-[auto_1fr_auto] md:items-center">
+            <div className="flex items-center gap-2 justify-center md:justify-start">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">C</div>
+              <span className="font-black tracking-tighter">MyConverterTool</span>
+            </div>
+            <p className="text-slate-500 text-sm text-center md:text-left">
+              © {new Date().getFullYear()} MyConverterTool. All rights reserved.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 justify-items-center md:justify-items-end">
+              <Link to="/about" className="text-sm font-bold hover:text-blue-600 transition-colors">About</Link>
+              <Link to="/tools" className="text-sm font-bold hover:text-blue-600 transition-colors">Tools</Link>
+              <Link to="/blog" className="text-sm font-bold hover:text-blue-600 transition-colors">Blog</Link>
+              <Link to="/contact" className="text-sm font-bold hover:text-blue-600 transition-colors">Contact</Link>
+              <Link to="/privacy-policy" className="text-sm font-bold hover:text-blue-600 transition-colors">Privacy</Link>
+              <Link to="/terms" className="text-sm font-bold hover:text-blue-600 transition-colors">Terms</Link>
+            </div>
           </div>
         </div>
       </footer>
