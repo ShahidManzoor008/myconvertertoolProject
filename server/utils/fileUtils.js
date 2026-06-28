@@ -1,15 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 
-// Helper function: Cleanup Uploaded Files
+// Helper function: Cleanup Uploaded Files (non-blocking)
 export const cleanupFiles = (files) => {
   const filesToClean = Array.isArray(files) ? files : [files];
   filesToClean.forEach((file) => {
     const filePath = typeof file === 'string' ? file : file.path;
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`🗑️ Deleted temp file: ${filePath}`);
-    }
+    // Fire-and-forget async unlink; errors are logged but don't block the response.
+    fs.promises.unlink(filePath).catch((err) => {
+      if (err.code !== 'ENOENT') {
+        console.warn(`🗑️ Failed to delete temp file ${filePath}: ${err.message}`);
+      }
+    });
   });
 };
 

@@ -18,8 +18,18 @@ const BlogManagement = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const data = await blogApi.getPosts(1, 100); // Get more posts for admin view
-      setPosts(data.posts);
+      // Walk through every page with cursor pagination until exhaustion,
+      // collecting all posts for the admin table view.
+      const allPosts = [];
+      let cursor = undefined;
+      let hasMore = true;
+      while (hasMore) {
+        const data = await blogApi.getPosts({ cursor, limit: 50 });
+        allPosts.push(...(data.posts || []));
+        cursor = data.nextCursor;
+        hasMore = Boolean(data.hasNextPage);
+      }
+      setPosts(allPosts);
     } catch (err) {
       setError(err.message);
     } finally {

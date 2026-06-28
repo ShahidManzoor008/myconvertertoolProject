@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+import { memo } from "react";
 
 const colorClasses = {
   blue: {
@@ -58,4 +59,4 @@ CategoryCard.propTypes = {
   description: PropTypes.string,
 };
 
-export default CategoryCard;
+export default memo(CategoryCard);

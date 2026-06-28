@@ -31,5 +31,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "turbo": "^2.9.12"
+  },
+  "overrides": {
+    "pdfjs-dist": "^5.4.149"
   }
 }

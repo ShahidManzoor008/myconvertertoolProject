@@ -253,8 +253,25 @@ export const authApi = {
 };
 
 export const blogApi = {
-  getPosts: (page = 1, limit = 9) => 
-    apiClient.get(`${API_ENDPOINTS.blog.posts}?page=${page}&limit=${limit}`),
+  /**
+   * Fetch blog posts using cursor-based pagination (preferred for performance).
+   * Falls back to offset pagination when `page` is provided instead of `cursor`.
+   * @param {Object} options
+   * @param {string} [options.cursor] - _id of the last post from the previous page
+   * @param {number} [options.page] - page number (offset mode)
+   * @param {number} [options.limit=9] - items per page (max 50)
+   * @returns {Promise<{posts: Array, nextCursor: string|null, hasNextPage: boolean, currentPage?: number, totalPages?: number, total?: number}>}
+   */
+  getPosts: ({ cursor, page, limit = 9 } = {}) => {
+    const params = new URLSearchParams();
+    if (cursor) {
+      params.set('cursor', cursor);
+    } else if (page) {
+      params.set('page', page);
+    }
+    params.set('limit', String(Math.min(limit, 50)));
+    return apiClient.get(`${API_ENDPOINTS.blog.posts}?${params.toString()}`);
+  },
   getPost: (slug) => apiClient.get(API_ENDPOINTS.blog.post(slug)),
   uploadImage: (formData) => apiClient.upload(API_ENDPOINTS.blog.images, formData),
 };

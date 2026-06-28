@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { memo } from 'react';
 
 // ✅ Reusable Blog Card Component with Image, Excerpt & Read More Button
 const BlogCard = ({ post }) => {
@@ -81,4 +82,4 @@ BlogCard.propTypes = {
   }).isRequired,
 };
 
-export default BlogCard;
+export default memo(BlogCard);

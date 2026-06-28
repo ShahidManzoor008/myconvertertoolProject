@@ -1,15 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import PropTypes from 'prop-types';
 import LoadingSpinner from './common/LoadingSpinner';
 import { X } from 'lucide-react';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Use the public worker copy so Nginx serves it with a JavaScript MIME type.
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+// Pin the worker to the exact same build bundled with pdfjs-dist so the
+// API and worker versions always match (avoids "API version X does not
+// match Worker version Y" errors caused by duplicate installs).
+//
+// `react-pdf` overwrites `workerSrc` on its internal pdfjs instance at
+// import-time. We re-apply our URL on every mount (after all imports have
+// run) using the same `pdfjs` reference exported by react-pdf, so both
+// instances point at the same worker and the same package version.
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const PdfViewer = ({ file, filename, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [loadError, setLoadError] = useState('');
+
+  // Defensive re-pin: if react-pdf (or anything else) overrode workerSrc
+  // after our module-level assignment, snap it back to our bundled worker
+  // before any <Document> is rendered.
+  useEffect(() => {
+    if (pdfjs.GlobalWorkerOptions.workerSrc !== pdfWorkerUrl) {
+      pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    }
+  }, []);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setLoadError('');

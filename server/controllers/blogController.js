@@ -12,26 +12,53 @@ const allowedImageMimeTypes = [
 ];
 
 // Get all blog posts
+// Supports both offset pagination (?page=&limit=) and cursor pagination (?cursor=&limit=)
+// Cursor pagination is preferred for large datasets (O(1) vs O(N) cost).
 export const getAllPosts = async (req, res) => {
   console.log('Fetching all blog posts...');
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const cursor = req.query.cursor; // expects the _id of the last item from the previous page
 
-    const posts = await Blog.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .select('title excerpt author coverImage readingTime createdAt slug');
+    let query = Blog.find().sort({ createdAt: -1, _id: -1 }).limit(limit + 1);
 
-    const total = await Blog.countDocuments();
+    if (cursor) {
+      // Cursor-based pagination: items older than the cursor's _id
+      query = query.where('_id').lt(cursor);
+    }
+
+    // Apply projection and lean for faster plain-object serialization
+    query = query
+      .select('title excerpt author coverImage readingTime createdAt slug')
+      .lean();
+
+    const docs = await query;
+
+    // Determine if there's a next page and extract the cursor
+    const hasNextPage = docs.length > limit;
+    const posts = hasNextPage ? docs.slice(0, limit) : docs;
+    const nextCursor = hasNextPage ? posts[posts.length - 1]._id.toString() : null;
+
+    // Only run count when offset pagination is used (cursor pagination omits it for speed)
+    let total = null;
+    let currentPage = null;
+    let totalPages = null;
+    if (!cursor) {
+      const page = parseInt(req.query.page) || 1;
+      [total] = await Promise.all([
+        Blog.estimatedDocumentCount()
+      ]);
+      currentPage = page;
+      totalPages = Math.ceil(total / limit);
+    }
 
     res.json({
       posts,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      total
+      currentPage,
+      totalPages,
+      total,
+      nextCursor,
+      hasNextPage
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

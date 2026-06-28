@@ -83,12 +83,19 @@ app.use('/api/notifications', auth, notificationsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/admin', adminRouter);
 
-// Serve uploaded blog images
-app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images')));
+// Serve uploaded blog images with long-term caching (immutable filenames)
+app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images'), {
+  maxAge: '30d',
+  immutable: true,
+}));
 
-// Serve static files from the React app
+// Serve static files from the React app with hashed asset caching
 const clientBuildPath = path.join(__dirname, '../client/dist');
-app.use(express.static(clientBuildPath));
+app.use(express.static(clientBuildPath, {
+  maxAge: '1y',
+  immutable: true,
+  index: false,
+}));
 
 // ============================
 // Import error handlers

@@ -1,20 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SEO from '../utils/SEO.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import BlogCard from '../components/BlogCard.jsx';
 import { blogApi } from '../utils/apiClient';
 
+const PAGE_SIZE = 9;
+
 const Blog = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const data = await blogApi.getPosts();
+        const data = await blogApi.getPosts({ limit: PAGE_SIZE });
         setPosts(data.posts || []);
+        setNextCursor(data.nextCursor || null);
+        setHasNextPage(Boolean(data.hasNextPage));
         setError(null);
       } catch (err) {
         console.error('Error fetching blog posts:', err);
@@ -26,6 +33,22 @@ const Blog = () => {
 
     fetchPosts();
   }, []);
+
+  const handleLoadMore = useCallback(async () => {
+    if (!hasNextPage || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const data = await blogApi.getPosts({ cursor: nextCursor, limit: PAGE_SIZE });
+      setPosts((prev) => [...prev, ...(data.posts || [])]);
+      setNextCursor(data.nextCursor || null);
+      setHasNextPage(Boolean(data.hasNextPage));
+    } catch (err) {
+      console.error('Error loading more posts:', err);
+      setError('Failed to load more posts. Please try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasNextPage, loadingMore, nextCursor]);
 
   if (loading) {
     return <LoadingSpinner message="Loading insights..." />;
@@ -39,7 +62,7 @@ const Blog = () => {
         keywords="blog, articles, guides, file conversion, productivity, technology"
         canonicalUrl="/blog"
       />
-      
+
       {/* Header */}
       <section className="text-center py-16 md:py-24" data-aos="fade-down">
         <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-blue-600/10 text-blue-600 text-xs font-black uppercase tracking-widest border border-blue-600/20">
@@ -58,11 +81,26 @@ const Blog = () => {
           Error: {error}
         </div>
       ) : (
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" data-aos="fade-up">
-          {posts.map((post) => (
-            <BlogCard key={post.slug} post={post} />
-          ))}
-        </div>
+        <>
+          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" data-aos="fade-up">
+            {posts.map((post) => (
+              <BlogCard key={post.slug} post={post} />
+            ))}
+          </div>
+
+          {hasNextPage && (
+            <div className="container mx-auto px-4 mt-16 text-center">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-8 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingMore ? 'Loading…' : 'Load more articles'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

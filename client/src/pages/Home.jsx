@@ -58,7 +58,7 @@ const Home = () => {
     const fetchLatestPosts = async () => {
       try {
         setLoading(true);
-        const data = await blogApi.getPosts(1, 3);
+        const data = await blogApi.getPosts({ limit: 3 });
         setLatestPosts(data.posts || []);
       } catch (err) {
         console.error("Error fetching latest posts:", err);
