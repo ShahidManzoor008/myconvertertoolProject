@@ -1,7 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import fs from 'fs/promises';
 import path from 'path';
-import * as pdfExtractImage from 'pdf-extract-image';
 import { createZipArchive } from '../utils/archiveUtils.js';
 import { logConversion } from '../utils/statsUtils.js';
 
@@ -39,8 +38,13 @@ async function splitPDF(file, ranges) {
     if (!Array.isArray(range) || range.length !== 2 || !range.every(Number.isInteger)) {
       throw new Error('Each range must be an array of two integers.');
     }
+    const [start, end] = range;
+    if (start < 0 || end < start || end >= pdf.getPageCount()) {
+      throw new Error(`Invalid page range ${start + 1}-${end + 1}.`);
+    }
     const newPdf = await PDFDocument.create();
-    const pages = await newPdf.copyPages(pdf, range);
+    const pageIndices = Array.from({ length: end - start + 1 }, (_, index) => start + index);
+    const pages = await newPdf.copyPages(pdf, pageIndices);
     pages.forEach(page => newPdf.addPage(page));
     results.push(await newPdf.save());
   }
@@ -87,6 +91,7 @@ async function extractImages(file) {
   if (!file) {
     throw new Error('Extract images requires a file.');
   }
+  const pdfExtractImage = await import('pdf-extract-image');
   const images = await pdfExtractImage.extractImagesFromPdf(file.path);
   const imagePaths = [];
   for (let i = 0; i < images.length; i++) {
@@ -116,7 +121,7 @@ async function addWatermark(file, watermarkText, options = {}) {
       size: options.fontSize || 50,
       opacity: options.opacity || 0.3,
       color: rgb(0.5, 0.5, 0.5),
-      rotate: options.rotate || 45,
+      rotate: degrees(options.rotate || 45),
     });
   });
   

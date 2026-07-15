@@ -92,9 +92,20 @@ app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog
 // Serve static files from the React app with hashed asset caching
 const clientBuildPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientBuildPath, {
-  maxAge: '1y',
-  immutable: true,
   index: false,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+      return;
+    }
+
+    if (filePath.includes(`assets`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      return;
+    }
+
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  },
 }));
 
 // ============================
@@ -108,6 +119,7 @@ app.get('*any', (req, res, next) => {
   if (req.url.startsWith('/api')) {
     return next();
   }
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 

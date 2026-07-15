@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MinifyBeautifyTool from './MinifyBeautifyTool';
 import { HelmetProvider } from 'react-helmet-async';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock dependencies
 vi.mock('js-beautify', () => ({
@@ -12,7 +13,13 @@ vi.mock('js-beautify', () => ({
 
 describe('MinifyBeautifyTool', () => {
   it('renders correctly', () => {
-    render(<HelmetProvider><MinifyBeautifyTool /></HelmetProvider>);
-    expect(screen.getByText(/Beautify Code/i)).toBeInTheDocument();
+    render(
+      <MemoryRouter>
+        <HelmetProvider>
+          <MinifyBeautifyTool />
+        </HelmetProvider>
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('button', { name: /Beautify Code/i })).toBeInTheDocument();
   });
 });

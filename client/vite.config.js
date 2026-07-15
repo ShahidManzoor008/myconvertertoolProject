@@ -46,6 +46,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    modulePreload: {
+      resolveDependencies: (_filename, deps) => deps.filter((dep) => !/(motion|pdf-tools|pdf-worker|pdf.worker|code-tools)/.test(dep)),
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -85,6 +88,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['node_modules', 'dist', 'coverage', '.turbo'],
     setupFiles: './src/setupTests.js',
     // Ensure Vitest bundles these deps so a single React instance is used
     server: {

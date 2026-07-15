@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import PropTypes from 'prop-types';
 import LoadingSpinner from './common/LoadingSpinner';
-import { X } from 'lucide-react';
+import { X, ZoomIn, ZoomOut } from 'lucide-react';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Pin the worker to the exact same build bundled with pdfjs-dist so the
@@ -15,9 +15,12 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 // instances point at the same worker and the same package version.
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-const PdfViewer = ({ file, filename, onClose }) => {
+const PdfViewer = ({ file, filename, onClose, onLoadSuccess }) => {
   const [numPages, setNumPages] = useState(null);
   const [loadError, setLoadError] = useState('');
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const viewportRef = useRef(null);
 
   // Defensive re-pin: if react-pdf (or anything else) overrode workerSrc
   // after our module-level assignment, snap it back to our bundled worker
@@ -28,34 +31,90 @@ const PdfViewer = ({ file, filename, onClose }) => {
     }
   }, []);
 
-  const onDocumentLoadSuccess = ({ numPages }) => {
+  useEffect(() => {
+    if (!viewportRef.current) return undefined;
+
+    const updateWidth = () => {
+      setContainerWidth(viewportRef.current?.clientWidth || 0);
+    };
+    updateWidth();
+
+    const resizeObserver = new ResizeObserver(updateWidth);
+    resizeObserver.observe(viewportRef.current);
+    window.addEventListener('orientationchange', updateWidth);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('orientationchange', updateWidth);
+    };
+  }, []);
+
+  const pageWidth = useMemo(() => {
+    if (!containerWidth) return undefined;
+    const horizontalPadding = window.innerWidth < 640 ? 16 : 32;
+    return Math.max(240, Math.min(920, containerWidth - horizontalPadding) * zoom);
+  }, [containerWidth, zoom]);
+
+  const handleDocumentLoadSuccess = (document) => {
     setLoadError('');
-    setNumPages(numPages);
+    setNumPages(document.numPages);
+    onLoadSuccess?.(document);
   };
 
   return (
-    <div className="pdf-viewer-container glass rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 relative">
-      <button 
-        onClick={onClose}
-        className="absolute top-6 right-6 p-2 rounded-xl glass hover:bg-red-500 hover:text-white transition-all z-10"
-      >
-        <X size={20} />
-      </button>
+    <div className="pdf-viewer-container glass rounded-2xl sm:rounded-3xl p-3 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 relative w-full">
       <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-center pr-12">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Preview: {filename}</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 pr-10 sm:pr-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">PDF Preview</p>
+            <h3 className="truncate text-sm font-black text-slate-900 dark:text-white">{filename}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setZoom((value) => Math.max(0.65, Number((value - 0.1).toFixed(2))))}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-red-500 hover:text-red-600 dark:border-slate-800 dark:text-slate-300"
+              title="Zoom out"
+            >
+              <ZoomOut size={18} />
+            </button>
+            <span className="min-w-14 text-center text-xs font-black text-slate-500">{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              onClick={() => setZoom((value) => Math.min(1.6, Number((value + 0.1).toFixed(2))))}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-red-500 hover:text-red-600 dark:border-slate-800 dark:text-slate-300"
+              title="Zoom in"
+            >
+              <ZoomIn size={18} />
+            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-red-500 hover:bg-red-500 hover:text-white dark:border-slate-800 dark:text-slate-300"
+                title="Close preview"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
         
-        <div className="max-h-[600px] overflow-y-auto scrollbar-hide bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+        <div ref={viewportRef} className="max-h-[70vh] sm:max-h-[680px] overflow-auto overscroll-contain rounded-2xl bg-slate-50 p-2 dark:bg-slate-800 sm:p-4">
           <Document
             file={file}
-            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadSuccess={handleDocumentLoadSuccess}
             onLoadError={(error) => setLoadError(error?.message || 'Failed to load PDF')}
             loading={<LoadingSpinner message="Loading PDF..." />}
           >
             {Array.from(new Array(numPages), (el, index) => (
-              <div key={`page_${index + 1}`} id={`pdf-page-${index + 1}`} className="mb-4 shadow-lg rounded-xl overflow-hidden flex justify-center">
-                <Page pageNumber={index + 1} />
+              <div key={`page_${index + 1}`} id={`pdf-page-${index + 1}`} className="mb-4 flex justify-center overflow-hidden rounded-xl shadow-lg">
+                <Page
+                  pageNumber={index + 1}
+                  width={pageWidth}
+                  renderAnnotationLayer={false}
+                  renderTextLayer={false}
+                />
               </div>
             ))}
           </Document>
@@ -76,7 +135,14 @@ PdfViewer.propTypes = {
     PropTypes.object,
   ]).isRequired,
   filename: PropTypes.string,
-  onClose: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+  onLoadSuccess: PropTypes.func,
+};
+
+PdfViewer.defaultProps = {
+  filename: 'document.pdf',
+  onClose: null,
+  onLoadSuccess: null,
 };
 
 export default PdfViewer;

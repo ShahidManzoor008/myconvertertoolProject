@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useLocation, Link } from "react-router-dom";
 import { XMarkIcon, ShieldCheckIcon } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
@@ -19,11 +18,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
   const location = useLocation();
 
   return (
-    <motion.div
-      initial={{ x: "100%" }}
-      animate={{ x: 0 }}
-      exit={{ x: "100%" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    <div
       className="fixed inset-y-0 right-0 w-full sm:w-80 glass border-l border-white/20 dark:border-slate-800/20 shadow-2xl z-50 md:hidden flex flex-col"
       role="dialog"
       aria-modal="true"
@@ -151,7 +146,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

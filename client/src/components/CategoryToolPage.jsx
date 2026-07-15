@@ -11,21 +11,30 @@ const CategoryToolPage = ({ seoData, badge, badgeClassName, icon, title, accent,
     <div className="pb-20">
       <SEO seoData={seoData} />
 
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border mb-6 ${badgeClassName}`}>
+      <section className="border-b border-slate-200 bg-slate-50/80 py-12 dark:border-slate-800 dark:bg-slate-950/30 md:py-16">
+        <div className="mx-auto max-w-5xl px-4 text-left">
+        <div className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${badgeClassName}`}>
           <span className="material-icons text-xs">{icon}</span>
           {badge}
         </div>
-        <h1 className="text-4xl md:text-6xl font-black mb-4 leading-tight text-slate-900 dark:text-white">
-          {title} <span className="gradient-text">{accent}</span>
+          <h1 className="mb-4 text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-6xl">
+          {title} {accent}
         </h1>
-        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
           {description}
         </p>
+        </div>
       </section>
 
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <div className="mx-auto max-w-6xl px-4 py-12">
+        <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
+          <h2 className="text-xl font-black text-slate-950 dark:text-white">Available tools</h2>
+          <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-slate-500 dark:border-slate-800">
+            {tools.length} {tools.length === 1 ? "tool" : "tools"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool) => (
             <ToolCard
               key={tool.path}
@@ -38,8 +47,8 @@ const CategoryToolPage = ({ seoData, badge, badgeClassName, icon, title, accent,
           ))}
         </div>
 
-        <div className="mt-20 text-center">
-          <Link to="/tools" className="text-sm font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
+        <div className="mt-12 text-center">
+          <Link to="/tools" className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide text-slate-500 transition-colors hover:text-teal-700 dark:hover:text-teal-300">
             <span className="material-icons text-sm">west</span>
             Back to all tools
           </Link>

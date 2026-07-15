@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Popup from "../../components/Popup";
+import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
-import { ClipboardCopy, Download, RotateCcw, Type } from "lucide-react";
+import { ClipboardCopy, Download, Type } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";
 
 const TextCaseTool = () => {
@@ -63,7 +63,7 @@ const TextCaseTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-600/10 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-600/20 mb-6">
           <span className="material-icons text-xs">text_fields</span>
           Content Refiner
@@ -193,5 +193,10 @@ const StatItem = ({ label, value }) => (
     <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{value}</p>
   </div>
 );
+
+StatItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+};
 
 export default TextCaseTool;

@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import PropTypes from 'prop-types';
 
 const UploadedFilesList = ({ files, onRemoveFile }) => {
   if (files.length === 0) return null;
@@ -21,6 +22,15 @@ const UploadedFilesList = ({ files, onRemoveFile }) => {
       </ul>
     </div>
   );
+};
+
+UploadedFilesList.propTypes = {
+  files: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onRemoveFile: PropTypes.func.isRequired,
 };
 
 export default UploadedFilesList;

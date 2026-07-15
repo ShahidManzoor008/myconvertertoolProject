@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
-import Popup from "../../components/Popup";
+import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
@@ -31,10 +31,10 @@ const QrCodeTool = () => {
   const [qrSize, setQrSize] = useState(200);
   const [qrColor, setQrColor] = useState("#000000");
   const [bgColor, setBgColor] = useState("#ffffff");
-  const [includeMargin, setIncludeMargin] = useState(true);
-  const [errorCorrection, setErrorCorrection] = useState("M");
+  const [includeMargin] = useState(true);
+  const [errorCorrection] = useState("M");
   const [logo, setLogo] = useState(null);
-  const [logoSize, setLogoSize] = useState(20);
+  const [logoSize] = useState(20);
   
   // UI state
   const [popupMessage, setPopupMessage] = useState("");
@@ -44,7 +44,6 @@ const QrCodeTool = () => {
   const [tabHistory, setTabHistory] = useState([]);
   
   // Refs
-  const qrRef = useRef(null);
   const fileInputRef = useRef(null);
   
   // Form fields for different content types
@@ -270,7 +269,7 @@ const QrCodeTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/20 mb-6">
           <span className="material-icons text-xs">qr_code_2</span>
           Instant Connectivity
@@ -572,6 +571,14 @@ const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
   </div>
 );
 
+InputField.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  type: PropTypes.string,
+};
+
 const ColorPicker = ({ label, value, onChange }) => (
   <div className="space-y-4">
     <label className="text-xs font-black uppercase tracking-widest text-slate-400 block">{label}</label>
@@ -591,5 +598,11 @@ const ColorPicker = ({ label, value, onChange }) => (
     </div>
   </div>
 );
+
+ColorPicker.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
 
 export default QrCodeTool;

@@ -14,14 +14,11 @@
   },
   "dependencies": {
     "@esbuild/linux-x64": "0.25.10",
-    "@headlessui/react": "^2.2.8",
-    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/oxide-linux-x64-gnu": "4.1.14",
     "@tailwindcss/typography": "^0.5.18",
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/react-query": "^5.100.10",
-    "aos": "^2.3.4",
     "dompurify": "^3.2.7",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.16",
@@ -40,10 +37,8 @@
     "react-dropzone": "^14.3.5",
     "react-helmet-async": "^2.0.5",
     "react-icons": "^5.4.0",
-    "react-intersection-observer": "^9.16.0",
     "react-pdf": "^10.4.1",
-    "react-router-dom": "^6.22.0",
-    "react-syntax-highlighter": "^15.6.6"
+    "react-router-dom": "^6.22.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

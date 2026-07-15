@@ -64,7 +64,7 @@ const Blog = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-16 md:py-24" data-aos="fade-down">
+      <section className="text-center py-16 md:py-24">
         <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-blue-600/10 text-blue-600 text-xs font-black uppercase tracking-widest border border-blue-600/20">
           The Feed
         </div>
@@ -82,7 +82,7 @@ const Blog = () => {
         </div>
       ) : (
         <>
-          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" data-aos="fade-up">
+          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {posts.map((post) => (
               <BlogCard key={post.slug} post={post} />
             ))}

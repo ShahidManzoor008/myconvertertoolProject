@@ -58,10 +58,15 @@ const Profile = () => {
 
   return (
     <div className="pb-24">
-      <SEO title="My Profile - MyConverterTool Account" />
+      <SEO
+        title="My Profile - MyConverterTool Account"
+        description="Manage your MyConverterTool account profile."
+        canonicalUrl="/profile"
+        robots="noindex, follow"
+      />
       
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
           <Shield size={12} />
           Account Management
@@ -156,7 +161,7 @@ const Profile = () => {
                     placeholder="••••••••"
                     minLength={8}
                   />
-                  <p className="text-[10px] font-medium text-slate-400 px-1 italic">Leave blank if you don't wish to change it.</p>
+                  <p className="text-[10px] font-medium text-slate-400 px-1 italic">Leave blank if you do not wish to change it.</p>
                 </div>
               </div>
 

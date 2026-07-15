@@ -1,0 +1,40 @@
+# MyConverterTool
+
+> Free browser-based tools for PDF conversion, JSON formatting, QR code generation, Base64 encoding, URL encoding, text case conversion, and Markdown to DOCX.
+
+MyConverterTool helps developers, writers, students, and office users complete common file, text, and developer workflows directly in the browser.
+
+## Main Pages
+
+- [Home](https://myconvertertool.com/): Overview of the most used online tools.
+- [All Tools](https://myconvertertool.com/tools): Browse available converter, developer, text, and SEO tools.
+- [Blog](https://myconvertertool.com/blog): Guides for using online tools, web development workflows, SEO basics, and document conversion.
+- [About](https://myconvertertool.com/about): Information about MyConverterTool.
+- [Contact](https://myconvertertool.com/contact): Contact page.
+
+## Popular Tools
+
+- [PDF Converter](https://myconvertertool.com/tools/pdf-converter): Convert and process PDF-related files.
+- [JSON Formatter](https://myconvertertool.com/tools/json-formatter): Format, validate, and beautify JSON.
+- [QR Code Generator](https://myconvertertool.com/tools/qr-code-generator): Generate QR codes.
+- [Meta Tag Preview](https://myconvertertool.com/tools/meta-tag-preview): Draft SEO titles and descriptions with search result preview checks.
+- [Base64 Tool](https://myconvertertool.com/tools/base64-encoder): Encode and decode Base64.
+- [URL Encoder/Decoder](https://myconvertertool.com/tools/url-encoder): Encode and decode URLs.
+- [Text Case Converter](https://myconvertertool.com/tools/text-case-converter): Convert text between common case formats.
+- [Word & Character Counter](https://myconvertertool.com/tools/word-counter): Count words, characters, sentences, paragraphs, and reading time.
+- [Markdown to DOCX](https://myconvertertool.com/tools/markdown-to-docx): Convert Markdown content into DOCX documents.
+- [Minify and Beautify](https://myconvertertool.com/tools/minify-beautify): Minify or beautify common code formats.
+
+## Blog Guides
+
+- [Understanding JSON Formatting](https://myconvertertool.com/blog/understanding-json-formatting)
+- [SEO Basics for Developers](https://myconvertertool.com/blog/seo-basics-for-developers)
+- [Getting Started with React and Vite](https://myconvertertool.com/blog/getting-started-with-react-vite)
+- [How to Use Tailwind CSS](https://myconvertertool.com/blog/how-to-use-tailwind-css)
+- [Essential PDF Tools for Your Needs](https://myconvertertool.com/blog/essential-pdf-tools-for-your-needs)
+- [Text Case Conversion Made Easy](https://myconvertertool.com/blog/text-case-conversion-made-easy)
+
+## Machine-Readable References
+
+- [Sitemap](https://myconvertertool.com/sitemap.xml)
+- [Robots policy](https://myconvertertool.com/robots.txt)

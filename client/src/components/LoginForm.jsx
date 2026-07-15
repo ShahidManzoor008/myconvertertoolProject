@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import GoogleSignIn from './GoogleSignIn';
 import LoadingSpinner from './common/LoadingSpinner';
@@ -102,7 +102,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto" data-aos="zoom-in">
+    <div className="w-full max-w-md mx-auto">
       <form 
         onSubmit={handleSubmit} 
         className="glass-card p-1 overflow-hidden"

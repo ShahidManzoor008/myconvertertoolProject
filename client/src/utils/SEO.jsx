@@ -17,6 +17,8 @@ const SEO = (props) => {
     ogImage,
     ogTitle,
     ogDescription,
+    ogType,
+    robots,
     seoData
   } = props;
 
@@ -28,6 +30,8 @@ const SEO = (props) => {
   const finalOgImage = ogImage || (seoData && seoData.ogImage) || '/assets/MyConverterTool.png';
   const finalOgTitle = ogTitle || (seoData && seoData.ogTitle) || finalTitle;
   const finalOgDescription = ogDescription || (seoData && seoData.ogDescription) || finalDescription;
+  const finalOgType = ogType || (seoData && seoData.ogType) || 'website';
+  const finalRobots = robots || (seoData && seoData.robots) || 'index, follow';
   const finalCanonical = canonicalUrl || (seoData && seoData.canonicalUrl) || null;
 
   // SITE_URL: prefer Vite env var VITE_SITE_URL, then a global window override, else a sensible default
@@ -54,7 +58,8 @@ const SEO = (props) => {
       {finalTitle ? <title>{finalTitle}</title> : null}
       {finalDescription ? <meta name="description" content={finalDescription} /> : null}
       {finalKeywords ? <meta name="keywords" content={finalKeywords} /> : null}
-      <meta property="og:type" content="website" />
+      {finalRobots ? <meta name="robots" content={finalRobots} /> : null}
+      <meta property="og:type" content={finalOgType} />
       {finalOgTitle ? <meta property="og:title" content={finalOgTitle} /> : null}
       {finalOgDescription ? <meta property="og:description" content={finalOgDescription} /> : null}
   {currentUrl ? <meta property="og:url" content={currentUrl} /> : null}
@@ -81,6 +86,8 @@ SEO.propTypes = {
   ogImage: PropTypes.string,
   ogTitle: PropTypes.string,
   ogDescription: PropTypes.string,
+  ogType: PropTypes.string,
+  robots: PropTypes.string,
 };
 
 export default SEO;

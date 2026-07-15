@@ -1,40 +1,39 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { memo } from "react";
 
 const colorClasses = {
   blue: {
-    glow: "bg-blue-500",
-    icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    icon: "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900",
+    accent: "group-hover:border-blue-500/70 group-hover:text-blue-700 dark:group-hover:text-blue-300",
   },
   green: {
-    glow: "bg-green-500",
-    icon: "bg-green-500/10 text-green-600 dark:text-green-400",
+    icon: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900",
+    accent: "group-hover:border-emerald-500/70 group-hover:text-emerald-700 dark:group-hover:text-emerald-300",
   },
   yellow: {
-    glow: "bg-yellow-500",
-    icon: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+    icon: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900",
+    accent: "group-hover:border-amber-500/70 group-hover:text-amber-700 dark:group-hover:text-amber-300",
   },
   pink: {
-    glow: "bg-pink-500",
-    icon: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
+    icon: "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:ring-rose-900",
+    accent: "group-hover:border-rose-500/70 group-hover:text-rose-700 dark:group-hover:text-rose-300",
   },
   purple: {
-    glow: "bg-purple-500",
-    icon: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    icon: "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-900",
+    accent: "group-hover:border-violet-500/70 group-hover:text-violet-700 dark:group-hover:text-violet-300",
   },
   indigo: {
-    glow: "bg-indigo-500",
-    icon: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+    icon: "bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900",
+    accent: "group-hover:border-indigo-500/70 group-hover:text-indigo-700 dark:group-hover:text-indigo-300",
   },
   red: {
-    glow: "bg-red-500",
-    icon: "bg-red-500/10 text-red-600 dark:text-red-400",
+    icon: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900",
+    accent: "group-hover:border-red-500/70 group-hover:text-red-700 dark:group-hover:text-red-300",
   },
   teal: {
-    glow: "bg-teal-500",
-    icon: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
+    icon: "bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:ring-teal-900",
+    accent: "group-hover:border-teal-500/70 group-hover:text-teal-700 dark:group-hover:text-teal-300",
   },
 };
 
@@ -42,30 +41,28 @@ const ToolCard = ({ title, link, icon, color, description }) => {
   const classes = colorClasses[color] || colorClasses.blue;
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      whileTap={{ scale: 0.98 }}
-      className="group relative h-full"
-    >
+    <div className="group relative h-full transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.99]">
       <Link
         to={link}
-        className="block h-full p-6 glass-card border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 dark:hover:border-blue-400/50 overflow-hidden"
+        className={`block h-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900 ${classes.accent}`}
       >
-        <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 blur-2xl transition-all group-hover:opacity-20 ${classes.glow}`} />
-
-        <div className="relative z-10 flex h-full flex-col items-center text-center">
-          <div className={`p-4 rounded-2xl ${classes.icon} mb-4 transition-transform group-hover:scale-110`}>
-            <span className="text-4xl">{icon}</span>
+        <div className="flex h-full flex-col">
+          <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ring-1 ${classes.icon}`}>
+            <span className="text-2xl">{icon}</span>
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          <h3 className="mb-2 text-lg font-black leading-snug text-slate-950 dark:text-white">
             {title}
           </h3>
-          <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          <p className="min-h-12 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
             {description || "Open this free online utility."}
           </p>
+          <div className="mt-5 flex items-center gap-2 text-sm font-bold">
+            Open tool
+            <span className="material-icons text-base transition-transform group-hover:translate-x-1">east</span>
+          </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 };
 

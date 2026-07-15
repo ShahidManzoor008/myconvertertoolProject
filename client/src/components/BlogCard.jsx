@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { memo } from 'react';
@@ -6,10 +5,7 @@ import { memo } from 'react';
 // ✅ Reusable Blog Card Component with Image, Excerpt & Read More Button
 const BlogCard = ({ post }) => {
   return (
-    <motion.div 
-      whileHover={{ y: -8 }} 
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    >
+    <div className="transition-transform duration-200 hover:-translate-y-2">
       <Link
         to={post.slug ? `/blog/${post.slug}` : '/blog'}
         className="block glass-card h-full flex flex-col group overflow-hidden border-none"
@@ -66,7 +62,7 @@ const BlogCard = ({ post }) => {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 };
 

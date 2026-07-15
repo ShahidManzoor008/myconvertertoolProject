@@ -1,5 +1,5 @@
 import { validateUploadedFile, cleanupFiles } from '../utils/fileUtils.js';
-import { convertMarkdownToDocx } from '../utils/markdownUtils.js';
+import { convertMarkdownContentToDocx, convertMarkdownToDocx } from '../utils/markdownUtils.js';
 import { convertFileToPDF, convertImagesToPDF, processFileConversion } from '../utils/pdfConversionUtils.js';
 import { createZipArchive } from '../utils/archiveUtils.js';
 import { logConversion } from '../utils/statsUtils.js';
@@ -28,6 +28,8 @@ const allowedConversionMimeTypes = [
   'text/markdown',
   'text/plain',
 ];
+
+const MAX_PASTED_MARKDOWN_BYTES = 2 * 1024 * 1024;
 
 // Controller for /api/convert-md-to-docx
 export const convertMdToDocx = async (req, res) => {
@@ -62,6 +64,45 @@ export const convertMdToDocx = async (req, res) => {
     if (req.file && req.file.path) {
       cleanupFiles(req.file.path);
     }
+  }
+};
+
+export const convertMarkdownTextToDocx = async (req, res) => {
+  const markdown = typeof req.body?.markdown === 'string' ? req.body.markdown : '';
+  const filename = typeof req.body?.filename === 'string' && req.body.filename.trim()
+    ? req.body.filename.trim()
+    : 'pasted-markdown';
+
+  if (!markdown.trim()) {
+    return res.status(400).json({ error: 'Paste Markdown text before converting.' });
+  }
+
+  if (Buffer.byteLength(markdown, 'utf8') > MAX_PASTED_MARKDOWN_BYTES) {
+    return res.status(413).json({ error: 'Pasted Markdown is too large. Please keep it under 2 MB.' });
+  }
+
+  try {
+    const safeBaseName = filename
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9-_ ]+/g, '')
+      .trim()
+      .slice(0, 80) || 'pasted-markdown';
+
+    const docxBuffer = await convertMarkdownContentToDocx(markdown, safeBaseName);
+
+    logConversion({
+      toolName: 'markdown-to-docx',
+      userId: req.user?._id,
+      fileName: `${safeBaseName}.md`,
+      fileSize: docxBuffer.length
+    });
+
+    res.setHeader('Content-Disposition', `attachment; filename="${safeBaseName}.docx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.send(docxBuffer);
+  } catch (error) {
+    console.error('❌ Markdown text to DOCX Error:', error.stack);
+    res.status(500).json({ error: `Failed to convert Markdown to DOCX: ${error.message}` });
   }
 };
 

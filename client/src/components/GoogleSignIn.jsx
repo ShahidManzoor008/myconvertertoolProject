@@ -8,6 +8,31 @@ import GoogleSignInDebug from './GoogleSignInDebug';
 import useToast from '../hooks/useToast';
 
 
+const loadGoogleIdentityScript = () => {
+  if (window.google?.accounts?.id) {
+    return Promise.resolve();
+  }
+
+  const existingScript = document.querySelector('script[data-google-identity]');
+  if (existingScript) {
+    return new Promise((resolve, reject) => {
+      existingScript.addEventListener('load', resolve, { once: true });
+      existingScript.addEventListener('error', reject, { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleIdentity = 'true';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
 const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', className = '', renderNative = true, onSuccess }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -63,13 +88,17 @@ const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', c
       };
     };
 
-    if (document.readyState === 'complete') {
-      init();
-    } else {
-      window.addEventListener('load', init);
-    }
+    let disposed = false;
+    loadGoogleIdentityScript()
+      .then(() => {
+        if (!disposed) init();
+      })
+      .catch(() => {
+        toast?.push?.('Failed to load Google sign-in. Please try again.', { type: 'error' });
+      });
 
     return () => {
+      disposed = true;
       try { delete window.googleSignIn; } catch (e) { console.warn('cleanup googleSignIn failed', e); }
     };
   }, [login, navigate, redirectTo, onSuccess, containerId, renderNative, toast]);

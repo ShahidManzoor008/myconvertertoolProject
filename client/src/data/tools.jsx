@@ -1,4 +1,4 @@
-import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt } from "react-icons/fa";
+import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt, FaRegFileAlt, FaSearch } from "react-icons/fa";
 
 export const tools = [
   {
@@ -27,6 +27,15 @@ export const tools = [
     category: "SEO Tools",
     description: "Create QR codes for links, text, campaigns, and sharing.",
     keywords: ["qr", "qr code", "marketing", "link"]
+  },
+  {
+    name: "Meta Tag Preview",
+    path: "/tools/meta-tag-preview",
+    icon: <FaSearch />,
+    color: "yellow",
+    category: "SEO Tools",
+    description: "Draft SEO titles and descriptions with Google-style preview checks.",
+    keywords: ["meta tags", "seo title", "meta description", "serp preview"]
   },
   {
     name: "JSON Formatter",
@@ -72,6 +81,15 @@ export const tools = [
     category: "Text Tools",
     description: "Convert text to title case, uppercase, lowercase, and more.",
     keywords: ["case", "uppercase", "lowercase", "title case"]
+  },
+  {
+    name: "Word & Character Counter",
+    path: "/tools/word-counter",
+    icon: <FaRegFileAlt />,
+    color: "teal",
+    category: "Text Tools",
+    description: "Count words, characters, sentences, paragraphs, and reading time.",
+    keywords: ["word counter", "character counter", "reading time", "text analysis"]
   },
   {
     name: "Dev Tools",

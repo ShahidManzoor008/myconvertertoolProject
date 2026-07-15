@@ -38,7 +38,7 @@ const About = () => {
 
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-32">
-          <div data-aos="fade-right">
+          <div>
             <h2 className="text-4xl font-black mb-8 leading-tight">
               Our <span className="text-blue-600">Mission</span> to Simplify the Web
             </h2>
@@ -51,7 +51,7 @@ const About = () => {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4" data-aos="fade-left">
+          <div className="grid grid-cols-2 gap-4">
             <StatCard label="Monthly Users" value="10K+" />
             <StatCard label="Tools Available" value="15+" />
             <StatCard label="Avg. Speed" value="~200ms" />
@@ -60,7 +60,7 @@ const About = () => {
         </div>
 
         {/* Values */}
-        <section data-aos="fade-up" className="bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] p-12 md:p-20 border border-slate-200 dark:border-slate-800">
+        <section className="bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] p-12 md:p-20 border border-slate-200 dark:border-slate-800">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black uppercase tracking-widest text-blue-600 mb-2">Our Values</h2>
             <p className="text-slate-500 font-bold">The principles that guide every tool we build.</p>

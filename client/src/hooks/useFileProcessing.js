@@ -30,7 +30,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     }
   }, [getFileExt]);
 
-  const createConvertedFile = useCallback((result, originalName, index = 0) => {
+  const createConvertedFile = useCallback((result, originalName, index = 0, operation = 'convert') => {
     const fileResult = Array.isArray(result) ? result[0] : result;
     const blob = getFileBlob(fileResult);
 
@@ -38,28 +38,65 @@ export const useFileProcessing = (showPopup, addToRecent) => {
       throw new Error('The server did not return a downloadable PDF file.');
     }
 
+    const outputExtension = 'pdf';
+    const defaultName = {
+      merge: 'merged.pdf',
+      split: 'split.pdf',
+      rotate: 'rotated.pdf',
+      compress: 'compressed.pdf',
+      watermark: 'watermarked.pdf',
+    }[operation];
+
     return {
       ...(fileResult && typeof fileResult === 'object' && !(fileResult instanceof Blob) ? fileResult : {}),
       id: `${Date.now()}-${index}-${originalName}`,
       blob,
       originalName,
-      filename: (fileResult?.filename || originalName).replace(/\.[^.]+$/, '') + '.pdf',
+      filename: fileResult?.filename || defaultName || `${originalName.replace(/\.[^.]+$/, '')}.${outputExtension}`,
       mimeType: blob?.type || fileResult?.mimeType || 'application/pdf',
       size: blob?.size || fileResult?.size || 0,
+      previewable: outputExtension === 'pdf',
     };
   }, []);
 
-  // Process a single file
-  const processFile = useCallback(async (file, selectedOperation, currentOperation) => {
-    try {
-      const formData = createFormDataWithFiles(file, {
-        operation: currentOperation,
-      });
+  const buildPdfOperationFormData = useCallback((files, operation, options = {}) => {
+    const fileList = Array.isArray(files) ? files : [files];
+    const formData = new FormData();
 
+    if (operation === 'merge') {
+      fileList.forEach((file) => formData.append('files', file));
+      return formData;
+    }
+
+    formData.append('file', fileList[0]);
+
+    if (operation === 'rotate') {
+      formData.append('rotations', JSON.stringify(options.rotations || [{ pageIndex: 0, angle: 90 }]));
+    }
+
+    if (operation === 'split') {
+      formData.append('ranges', JSON.stringify(options.ranges || [[0, 0]]));
+    }
+
+    if (operation === 'watermark') {
+      formData.append('watermarkText', options.watermarkText || '');
+      formData.append('options', JSON.stringify(options.watermarkOptions || {}));
+    }
+
+    return formData;
+  }, []);
+
+  // Process a single file
+  const processFile = useCallback(async (file, selectedOperation, currentOperation, operationOptions = {}) => {
+    try {
       const isConvertMode = selectedOperation === 'convert';
-      const apiCall = isConvertMode ? pdfApi.convert : pdfApi.edit;
-      const result = await apiCall(formData, isConvertMode ? {} : { responseType: 'blob' });
-      const resultWithDetails = createConvertedFile(result, file.name);
+      const formData = isConvertMode
+        ? createFormDataWithFiles(file, { operation: currentOperation })
+        : buildPdfOperationFormData(file, currentOperation, operationOptions);
+      const result = isConvertMode
+        ? await pdfApi.convert(formData)
+        : await pdfApi.operation(currentOperation, formData, { responseType: 'blob' });
+      const resultWithDetails = createConvertedFile(result, file.name, 0, isConvertMode ? 'convert' : currentOperation);
       setConvertedFiles(prev => [...prev, resultWithDetails]);
       addToRecent(resultWithDetails);
       return resultWithDetails;
@@ -70,27 +107,27 @@ export const useFileProcessing = (showPopup, addToRecent) => {
       showPopup(`${currentOperation} operation failed: ${err.message}`);
       throw err;
     }
-  }, [showPopup, addToRecent, createConvertedFile]);
+  }, [showPopup, addToRecent, createConvertedFile, buildPdfOperationFormData]);
 
   // Batch processing: start sequential processing of all uploaded files
-  const startProcessingAll = useCallback(async (files, selectedOperation, currentOperation) => {
+  const startProcessingAll = useCallback(async (files, selectedOperation, currentOperation, operationOptions = {}) => {
     if (files.length === 0) return showPopup('No files to process');
 
     setLoading(true);
     try {
-      const formData = createFormDataWithFiles(files, {
-        operation: currentOperation,
-      });
-
       const isConvertMode = selectedOperation === 'convert';
-      const apiCall = isConvertMode ? pdfApi.convert : pdfApi.edit;
-      const results = await apiCall(formData, isConvertMode ? {} : { responseType: 'blob' });
+      const formData = isConvertMode
+        ? createFormDataWithFiles(files, { operation: currentOperation })
+        : buildPdfOperationFormData(files, currentOperation, operationOptions);
+      const results = isConvertMode
+        ? await pdfApi.convert(formData)
+        : await pdfApi.operation(currentOperation, formData, { responseType: 'blob' });
       const resultList = Array.isArray(results) ? results : [results];
 
       const newConvertedFiles = resultList.map((result, index) => {
         const originalFile = files[index] || files[0];
         const originalName = originalFile ? originalFile.name : `file_${index}`;
-        return createConvertedFile(result, originalName, index);
+        return createConvertedFile(result, originalName, index, isConvertMode ? 'convert' : currentOperation);
       });
 
       setConvertedFiles(prev => [...prev, ...newConvertedFiles]);
@@ -104,7 +141,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
     } finally {
       setLoading(false);
     }
-  }, [showPopup, addToRecent, createConvertedFile]);
+  }, [showPopup, addToRecent, createConvertedFile, buildPdfOperationFormData]);
 
   // Clear converted files
   const clearConvertedFiles = useCallback(() => {

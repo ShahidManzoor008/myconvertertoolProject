@@ -1,14 +1,20 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  plugins: [react()],
   test: {
     globals: true,
     environment: 'jsdom',
     pool: 'forks',
     maxForks: 1,
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    setupFiles: './src/setupTests.js',
     exclude: [
-      'src/components/LoginForm.test.jsx',
-      'src/pages/tools/MinifyBeautifyTool.test.jsx',
+      'node_modules',
+      'dist',
+      'coverage',
+      '.turbo',
     ],
   },
 });

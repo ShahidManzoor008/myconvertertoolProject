@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Popup from "../../components/Popup";
+import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import { js, css, html } from "js-beautify";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
-import { Copy, Download, Eye, EyeOff, Upload, Code, Check, Info, Sun, RotateCcw, Zap } from "lucide-react";
+import { Copy, Download, Check, Zap } from "lucide-react";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-css";
-import DOMPurify from "dompurify";
 import { statsApi } from "../../utils/apiClient";
 
 const MinifyBeautifyTool = () => {
@@ -17,40 +16,21 @@ const MinifyBeautifyTool = () => {
   const [result, setResult] = useState("");
   const [language, setLanguage] = useState("js");
   const [popupMessage, setPopupMessage] = useState("");
-  const [indentSize, setIndentSize] = useState(2);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [indentSize] = useState(2);
   const [previewVisible, setPreviewVisible] = useState(true);
-  const [fileDetails, setFileDetails] = useState(null);
-  const [preserveNewlines, setPreserveNewlines] = useState(true);
+  const [preserveNewlines] = useState(true);
   const [beforeSize, setBeforeSize] = useState(0);
   const [afterSize, setAfterSize] = useState(0);
   const [copyState, setCopyState] = useState("idle");
   const [highlightedInput, setHighlightedInput] = useState("");
-  const [highlightedOutput, setHighlightedOutput] = useState("");
 
   const iframeRef = useRef(null);
   const fileInputRef = useRef(null);
-  const textareaRef = useRef(null);
-  const codeEditorRef = useRef(null);
-
-  const prismLanguageMap = {
-    "js": "language-javascript",
-    "css": "language-css",
-    "html": "language-markup"
-  };
 
   useEffect(() => {
     setBeforeSize(new Blob([code]).size);
     highlightCode(code, language, setHighlightedInput);
   }, [code, language]);
-
-  useEffect(() => {
-    highlightCode(result, language, setHighlightedOutput);
-    setAfterSize(new Blob([result]).size);
-    if ((language === "html" || language === "css") && result) {
-      updatePreview();
-    }
-  }, [result, language]);
 
   const highlightCode = (codeToHighlight, lang, setterFunction) => {
     if (!codeToHighlight) {
@@ -79,6 +59,13 @@ const MinifyBeautifyTool = () => {
     }
   }, [result, language]);
 
+  useEffect(() => {
+    setAfterSize(new Blob([result]).size);
+    if ((language === "html" || language === "css") && result) {
+      updatePreview();
+    }
+  }, [result, language, updatePreview]);
+
   const handleBeautify = async () => {
     if (!code.trim()) return;
     try {
@@ -91,7 +78,7 @@ const MinifyBeautifyTool = () => {
       setResult(formatted);
       showPopup("Formatted successfully");
       statsApi.increment({ toolName: `beautify-${language}`, fileSize: code.length }).catch(() => {});
-    } catch (e) {
+    } catch {
       showPopup("Formatting failed");
     }
   };
@@ -106,7 +93,7 @@ const MinifyBeautifyTool = () => {
       setResult(minified);
       showPopup("Minified successfully");
       statsApi.increment({ toolName: `minify-${language}`, fileSize: code.length }).catch(() => {});
-    } catch (e) {
+    } catch {
       showPopup("Minification failed");
     }
   };
@@ -124,7 +111,7 @@ const MinifyBeautifyTool = () => {
   };
 
   const handleClear = () => {
-    setCode(""); setResult(""); setFileDetails(null);
+    setCode(""); setResult("");
   };
 
   return (
@@ -140,7 +127,7 @@ const MinifyBeautifyTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-widest border border-pink-500/20 mb-6">
           <span className="material-icons text-xs">auto_awesome</span>
           Developer Productivity
@@ -182,7 +169,7 @@ const MinifyBeautifyTool = () => {
                     const file = e.target.files[0];
                     if (file) {
                       const reader = new FileReader();
-                      reader.onload = (ev) => { setCode(ev.target.result); setFileDetails(file); };
+                      reader.onload = (ev) => { setCode(ev.target.result); };
                       reader.readAsText(file);
                     }
                   }} className="hidden" />
@@ -299,5 +286,11 @@ const StatBox = ({ label, value, color = "text-slate-900 dark:text-white" }) => 
     <p className={`text-lg font-black ${color}`}>{value}</p>
   </div>
 );
+
+StatBox.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  color: PropTypes.string,
+};
 
 export default MinifyBeautifyTool;

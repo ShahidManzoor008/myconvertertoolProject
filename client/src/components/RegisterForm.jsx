@@ -37,7 +37,7 @@ const RegisterForm = ({ onSuccess }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto" data-aos="zoom-in">
+    <div className="w-full max-w-md mx-auto">
       <form 
         onSubmit={handleSubmit} 
         className="glass-card p-1 overflow-hidden"

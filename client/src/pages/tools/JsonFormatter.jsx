@@ -1,35 +1,20 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
-import Popup from "../../components/Popup";
-import { FaCopy, FaDownload, FaSun, FaMoon, FaCheck, FaTimes } from "react-icons/fa";
+import { FaCopy, FaDownload, FaCheck, FaTimes } from "react-icons/fa";
 
 const JsonFormatter = () => {
   const [jsonInput, setJsonInput] = useState("");
   const [formattedJson, setFormattedJson] = useState("");
   const [error, setError] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem("jsonFormatterDarkMode");
-    return saved === "true" || (saved === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  });
   const [indentSize, setIndentSize] = useState(2);
   const [activeTab, setActiveTab] = useState("format");
   const [jsonStats, setJsonStats] = useState(null);
   const [validationResults, setValidationResults] = useState(null);
   const [recentUploads, setRecentUploads] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Apply dark mode from saved preference
-  useEffect(() => {
-    localStorage.setItem("jsonFormatterDarkMode", isDarkMode);
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   // Load recent uploads from localStorage
   useEffect(() => {
@@ -360,10 +345,6 @@ const JsonFormatter = () => {
     setJsonInput(sampleJson);
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -465,7 +446,7 @@ const JsonFormatter = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
           <span className="material-icons text-xs">settings_ethernet</span>
           Developer Essential
@@ -677,5 +658,11 @@ const JsonFormatter = () => {
     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
     </div>
     );
+
+    StatCard.propTypes = {
+    label: PropTypes.string.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    color: PropTypes.string.isRequired,
+    };
 
     export default JsonFormatter;

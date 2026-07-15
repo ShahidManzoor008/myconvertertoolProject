@@ -96,10 +96,36 @@ const BlogPost = () => {
         keywords={`${post.title.toLowerCase()}, blog, tutorial, myconvertertool`}
         canonicalUrl={`/blog/${post.slug}`}
         ogImage={post.coverImage || '/assets/MyConverterTool.png'}
+        ogType="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: post.title,
+          description: post.excerpt,
+          image: post.coverImage ? `https://myconvertertool.com${post.coverImage}` : 'https://myconvertertool.com/assets/MyConverterTool.png',
+          datePublished: post.createdAt,
+          dateModified: post.updatedAt || post.createdAt,
+          author: {
+            '@type': 'Person',
+            name: post.author,
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: 'MyConverterTool',
+            logo: {
+              '@type': 'ImageObject',
+              url: 'https://myconvertertool.com/assets/MyConverterTool.png',
+            },
+          },
+          mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `https://myconvertertool.com/blog/${post.slug}`,
+          },
+        }}
       />
 
       {/* Header */}
-      <header className="pt-16 pb-20 text-center relative overflow-hidden" data-aos="fade-down">
+      <header className="pt-16 pb-20 text-center relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-30">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px]" />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px]" />
@@ -135,7 +161,7 @@ const BlogPost = () => {
 
       {/* Featured Image */}
       {post.coverImage && (
-        <div className="max-w-6xl mx-auto px-4 mb-20" data-aos="zoom-out">
+        <div className="max-w-6xl mx-auto px-4 mb-20">
           <div className="aspect-[21/9] rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white dark:border-slate-800">
             <img 
               src={post.coverImage} 

@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users,
   FileText,
-  Wrench,
   TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight
 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { adminApi } from '../../utils/apiClient';
@@ -37,7 +34,6 @@ const Dashboard = () => {
     posts: 0,
     conversions: 0
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
@@ -45,13 +41,10 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      setLoading(true);
       const data = await adminApi.getStats();
       setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
-    } finally {
-      setLoading(false);
     }
   };
 

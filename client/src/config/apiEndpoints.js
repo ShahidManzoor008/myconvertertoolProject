@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
   },
   markdown: {
     toDocx: `${API_BASE_URL}/api/convert/md-to-docx`,
+    textToDocx: `${API_BASE_URL}/api/convert/md-to-docx/text`,
   },
   batch: {
     download: `${API_BASE_URL}/download-batch`,

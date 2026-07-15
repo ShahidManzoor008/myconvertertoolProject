@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardCopy, Download, RefreshCw, Trash, HelpCircle, Info } from "lucide-react";
+import { ClipboardCopy, Download, RefreshCw, HelpCircle } from "lucide-react";
+import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
@@ -141,7 +142,7 @@ const UrlTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
           <span className="material-icons text-xs">link</span>
           Protocol Suite
@@ -203,7 +204,7 @@ const UrlTool = () => {
                       className="overflow-hidden"
                     >
                       <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-relaxed">
-                        Supports standard percent-encoding and Base64 (UTF-8 safe). Use "Swap" to chain operations like B64 decoding an encoded URL.
+                        Supports standard percent-encoding and Base64 (UTF-8 safe). Use &quot;Swap&quot; to chain operations like B64 decoding an encoded URL.
                       </div>
                     </motion.div>
                   )}
@@ -338,5 +339,10 @@ const Stat = ({ label, value }) => (
     <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
   </div>
 );
+
+Stat.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+};
 
 export default UrlTool;

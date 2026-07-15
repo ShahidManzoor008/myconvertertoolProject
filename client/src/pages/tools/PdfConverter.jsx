@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { motion } from 'framer-motion';
-import { Upload } from 'lucide-react';
+import { FileText, Upload } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
@@ -14,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '../../utils/apiClient';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileProcessing } from '../../hooks/useFileProcessing';
+import { useConversionProgress } from '../../hooks/useConversionProgress';
 import { downloadFile, getFileBlob } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
@@ -25,6 +28,19 @@ const PdfConverter = () => {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewNeedsCleanup, setPreviewNeedsCleanup] = useState(false);
+  const [editorPreviewUrl, setEditorPreviewUrl] = useState("");
+  const [editorPreviewNeedsCleanup, setEditorPreviewNeedsCleanup] = useState(false);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [rotationAngle, setRotationAngle] = useState(90);
+  const [splitStartPage, setSplitStartPage] = useState(1);
+  const [splitEndPage, setSplitEndPage] = useState(1);
+  const [watermarkText, setWatermarkText] = useState("");
+  const conversionProgress = useConversionProgress([
+    { message: "Preparing files...", progress: 10 },
+    { message: "Uploading files...", progress: 32 },
+    { message: "Processing conversion...", progress: 58 },
+    { message: "Packaging output...", progress: 82 },
+  ]);
 
   // Add file to recent conversions
   const addToRecent = (file) => {
@@ -113,11 +129,38 @@ const PdfConverter = () => {
 
   const handleModeChange = (operation) => {
     setSelectedOperation(operation);
-    setCurrentOperation(operation === 'edit' ? 'edit' : 'convert');
+    setCurrentOperation(operation === 'edit' ? 'compress' : 'convert');
     handleClearSelection();
     clearConvertedFiles();
     handleClosePreview();
   };
+
+  const closeEditorPreview = () => {
+    if (editorPreviewNeedsCleanup && editorPreviewUrl) {
+      URL.revokeObjectURL(editorPreviewUrl);
+    }
+    setEditorPreviewUrl("");
+    setEditorPreviewNeedsCleanup(false);
+    setPdfPageCount(0);
+  };
+
+  useEffect(() => {
+    closeEditorPreview();
+
+    if (selectedOperation !== 'edit' || uploadedFiles.length === 0) {
+      return undefined;
+    }
+
+    const firstPdf = uploadedFiles[0];
+    const nextUrl = URL.createObjectURL(firstPdf);
+    setEditorPreviewUrl(nextUrl);
+    setEditorPreviewNeedsCleanup(true);
+
+    return () => {
+      URL.revokeObjectURL(nextUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOperation, uploadedFiles]);
 
   // Handle file preview
   const handlePreviewFile = (file) => {
@@ -177,8 +220,87 @@ const PdfConverter = () => {
       if (previewNeedsCleanup && previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
+      if (editorPreviewNeedsCleanup && editorPreviewUrl) {
+        URL.revokeObjectURL(editorPreviewUrl);
+      }
     };
-  }, [previewNeedsCleanup, previewUrl]);
+  }, [previewNeedsCleanup, previewUrl, editorPreviewNeedsCleanup, editorPreviewUrl]);
+
+  useEffect(() => {
+    if (pdfPageCount > 0) {
+      setSplitStartPage((value) => Math.min(Math.max(value, 1), pdfPageCount));
+      setSplitEndPage((value) => Math.min(Math.max(value, 1), pdfPageCount));
+    }
+  }, [pdfPageCount]);
+
+  const selectedFileCount = uploadedFiles.length;
+  const isEditMode = selectedOperation === 'edit';
+  const hasFiles = selectedFileCount > 0;
+
+  const getOperationOptions = () => {
+    const normalizedStart = Math.max(1, Number(splitStartPage) || 1);
+    const normalizedEnd = Math.max(normalizedStart, Number(splitEndPage) || normalizedStart);
+    const maxEnd = pdfPageCount > 0 ? Math.min(normalizedEnd, pdfPageCount) : normalizedEnd;
+
+    if (currentOperation === 'rotate') {
+      const rotations = Array.from({ length: Math.max(pdfPageCount, 1) }, (_, pageIndex) => ({
+        pageIndex,
+        angle: Number(rotationAngle),
+      }));
+      return { rotations };
+    }
+
+    if (currentOperation === 'split') {
+      return { ranges: [[normalizedStart - 1, maxEnd - 1]] };
+    }
+
+    if (currentOperation === 'watermark') {
+      return {
+        watermarkText: watermarkText.trim(),
+        watermarkOptions: { fontSize: 46, opacity: 0.28, rotate: 45 },
+      };
+    }
+
+    return {};
+  };
+
+  const getActionState = () => {
+    if (loading) return { disabled: true, reason: 'Processing...', label: 'Processing...' };
+    if (!hasFiles) return { disabled: true, reason: 'Upload files to continue.', label: isEditMode ? 'Apply PDF Action' : 'Convert' };
+
+    if (!isEditMode) {
+      return { disabled: false, reason: '', label: selectedFileCount > 1 ? 'Convert Batch' : 'Convert' };
+    }
+
+    if (currentOperation === 'merge') {
+      return selectedFileCount >= 2
+        ? { disabled: false, reason: '', label: 'Merge PDFs' }
+        : { disabled: true, reason: 'Upload at least two PDFs to merge.', label: 'Merge PDFs' };
+    }
+
+    if (selectedFileCount !== 1) {
+      return { disabled: true, reason: 'Use exactly one PDF for this operation.', label: 'Apply PDF Action' };
+    }
+
+    if (currentOperation === 'watermark' && !watermarkText.trim()) {
+      return { disabled: true, reason: 'Enter watermark text first.', label: 'Add Watermark' };
+    }
+
+    if (currentOperation === 'split') {
+      if (pdfPageCount > 0 && (splitStartPage < 1 || splitEndPage > pdfPageCount || splitStartPage > splitEndPage)) {
+        return { disabled: true, reason: `Enter a page range between 1 and ${pdfPageCount}.`, label: 'Split PDF' };
+      }
+      return { disabled: false, reason: '', label: 'Split PDF' };
+    }
+
+    const labels = {
+      rotate: 'Rotate PDF',
+      compress: 'Compress PDF',
+    };
+    return { disabled: false, reason: '', label: labels[currentOperation] || 'Apply PDF Action' };
+  };
+
+  const actionState = getActionState();
 
   // Handle file download from converted files list
   const handleDownloadFile = (file) => {
@@ -198,10 +320,13 @@ const PdfConverter = () => {
   // Handle single file processing with auth check
   const handleProcessSingleFile = async () => {
     setLoading(true);
+    conversionProgress.start();
     try {
-      await processFile(uploadedFiles[0], selectedOperation, currentOperation);
+      await processFile(uploadedFiles[0], selectedOperation, currentOperation, getOperationOptions());
+      conversionProgress.complete('File ready for download');
       handleClearSelection();
     } catch (err) {
+      conversionProgress.fail('Processing failed');
       if (err instanceof AppError && err.status === 401) {
         setShowAuthPopup(true);
       }
@@ -212,10 +337,13 @@ const PdfConverter = () => {
 
   // Handle batch processing with auth check
   const handleBatchProcessing = async () => {
+    conversionProgress.start();
     try {
-      await startProcessingAll(uploadedFiles, selectedOperation, currentOperation);
+      await startProcessingAll(uploadedFiles, selectedOperation, currentOperation, getOperationOptions());
+      conversionProgress.complete('Batch ready for download');
       handleClearSelection();
     } catch (err) {
+      conversionProgress.fail('Batch processing failed');
       if (err instanceof AppError && err.status === 401) {
         setShowAuthPopup(true);
       }
@@ -244,7 +372,7 @@ const PdfConverter = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16" data-aos="fade-down">
+      <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20 mb-6">
           <span className="material-icons text-xs">description</span>
           Pro Document Suite
@@ -297,10 +425,11 @@ const PdfConverter = () => {
                 <button
                   className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                   onClick={() => {
-                    handleClearSelection();
-                    clearConvertedFiles();
-                    handleClosePreview();
-                  }}
+                  handleClearSelection();
+                  clearConvertedFiles();
+                  handleClosePreview();
+                  closeEditorPreview();
+                }}
                 >
                   Clear
                 </button>
@@ -334,11 +463,99 @@ const PdfConverter = () => {
 
               {/* PDF Operations */}
               {selectedOperation === 'edit' && (
-                <div className="mb-10 p-6 glass rounded-2xl border-none">
+                <div className="mb-10 p-4 sm:p-6 glass rounded-2xl border-none">
                   <PdfOperations
                     onOperation={setCurrentOperation}
                     loading={loading}
                     currentOperation={currentOperation}
+                    uploadedCount={uploadedFiles.length}
+                  />
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 text-white">
+                        <FileText size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Settings</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
+                          {currentOperation === 'merge' ? 'Merge all uploaded PDFs in the listed order.' : 'Settings apply to the uploaded PDF preview below.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {currentOperation === 'rotate' && (
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">Rotation angle</span>
+                        <select
+                          value={rotationAngle}
+                          onChange={(event) => setRotationAngle(Number(event.target.value))}
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-red-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                        >
+                          <option value={90}>90 degrees clockwise</option>
+                          <option value={180}>180 degrees</option>
+                          <option value={270}>270 degrees clockwise</option>
+                        </select>
+                      </label>
+                    )}
+
+                    {currentOperation === 'split' && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">Start page</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={pdfPageCount || undefined}
+                            value={splitStartPage}
+                            onChange={(event) => setSplitStartPage(Number(event.target.value))}
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-red-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">End page</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={pdfPageCount || undefined}
+                            value={splitEndPage}
+                            onChange={(event) => setSplitEndPage(Number(event.target.value))}
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-red-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    {currentOperation === 'watermark' && (
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">Watermark text</span>
+                        <input
+                          type="text"
+                          value={watermarkText}
+                          onChange={(event) => setWatermarkText(event.target.value)}
+                          placeholder="Confidential"
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-red-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                        />
+                      </label>
+                    )}
+
+                    {currentOperation === 'compress' && (
+                      <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                        No extra settings are needed for this operation.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isEditMode && editorPreviewUrl && (
+                <div className="mb-10">
+                  <PdfViewer
+                    file={editorPreviewUrl}
+                    filename={uploadedFiles[0]?.name || 'document.pdf'}
+                    onLoadSuccess={({ numPages }) => {
+                      setPdfPageCount(numPages);
+                      setSplitEndPage(numPages || 1);
+                    }}
                   />
                 </div>
               )}
@@ -352,27 +569,14 @@ const PdfConverter = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {uploadedFiles.length === 1 && canProcessSingle(uploadedFiles[0], selectedOperation) && (
-                    <button
-                      onClick={handleProcessSingleFile}
-                      disabled={loading || uploadedFiles.length === 0}
-                      className="btn-primary w-full !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-6 py-5 text-base sm:text-lg font-black"
-                    >
-                      <Upload className="w-5 h-5" />
-                      {loading ? 'Processing...' : (selectedOperation === 'convert' ? 'Convert' : 'Save Changes')}
-                    </button>
-                  )}
-
-                  {uploadedFiles.length > 1 && (
-                    <button
-                      onClick={handleBatchProcessing}
-                      disabled={loading || uploadedFiles.length === 0}
-                      className="btn-primary w-full !bg-slate-900 dark:!bg-white dark:!text-slate-900 px-6 py-5 text-base sm:text-lg font-black"
-                    >
-                      <Upload className="w-5 h-5" />
-                      {loading ? 'Processing...' : 'Batch'}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => (isEditMode && currentOperation === 'merge') || (!isEditMode && uploadedFiles.length > 1) ? handleBatchProcessing() : handleProcessSingleFile()}
+                    disabled={actionState.disabled || (uploadedFiles.length === 1 && !canProcessSingle(uploadedFiles[0], selectedOperation))}
+                    className="btn-primary w-full !bg-red-600 hover:!bg-red-700 shadow-red-500/25 px-6 py-5 text-base sm:text-lg font-black disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <Upload className="w-5 h-5" />
+                    {actionState.label}
+                  </button>
 
                   {uploadedFiles.length > 0 && (
                     <button
@@ -383,12 +587,25 @@ const PdfConverter = () => {
                     </button>
                   )}
                 </div>
+                {actionState.reason && (
+                  <p className="mt-3 text-xs font-bold text-amber-600 dark:text-amber-400">{actionState.reason}</p>
+                )}
               </div>
 
               {/* Loading Indicator */}
-              {loading && (
+              {conversionProgress.active && (
                 <div className="mt-10">
-                  <ConversionProgressBar message={'Processing document...'} />
+                  <ConversionProgressBar
+                    message={conversionProgress.message}
+                    progress={conversionProgress.progress}
+                    status={conversionProgress.status}
+                    events={[
+                      { label: 'Preparing files', active: conversionProgress.progress >= 10 },
+                      { label: 'Uploading', active: conversionProgress.progress >= 32 },
+                      { label: 'Converting', active: conversionProgress.progress >= 58 },
+                      { label: 'Packaging', active: conversionProgress.progress >= 82 },
+                    ]}
+                  />
                 </div>
               )}
 

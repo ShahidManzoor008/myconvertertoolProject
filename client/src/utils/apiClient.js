@@ -28,7 +28,7 @@ const getAuthHeaders = () => {
  * @returns {AppError} Appropriate error instance
  */
 const createError = (response, data) => {
-  const message = data?.message || response.statusText;
+  const message = data?.message || data?.error || response.statusText;
   const details = data?.details || null;
 
   switch (response.status) {
@@ -109,6 +109,31 @@ export const apiClient = {
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new NetworkError('Network request failed', { endpoint, error: error.message });
+    }
+  },
+
+  async postBlob(endpoint, data, options = {}) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          ...options.headers,
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+        ...options,
+      });
+
+      if (!response.ok) {
+        const responseData = await response.json().catch(() => null);
+        throw createError(response, responseData);
+      }
+
+      return response.blob();
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new NetworkError('Download request failed', { endpoint, error: error.message });
     }
   },
 
@@ -279,6 +304,7 @@ export const blogApi = {
 export const pdfApi = {
   convert: (formData, options = {}) => apiClient.upload(API_ENDPOINTS.pdf.converter, formData, options),
   edit: (formData, options = {}) => apiClient.upload(API_ENDPOINTS.pdf.editor, formData, options),
+  operation: (operation, formData, options = {}) => apiClient.upload(`${API_ENDPOINTS.pdf.operations}/${operation}`, formData, options),
   download: (fileId) => apiClient.download(`${API_ENDPOINTS.pdf.operations}/${fileId}`),
 };
 
@@ -292,6 +318,7 @@ export const batchApi = {
 
 export const mdToDocxApi = {
   convert: (formData) => apiClient.upload(API_ENDPOINTS.markdown.toDocx, formData, { responseType: 'blob' }),
+  convertText: (data) => apiClient.postBlob(API_ENDPOINTS.markdown.textToDocx, data),
 };
 
 export const statsApi = {
