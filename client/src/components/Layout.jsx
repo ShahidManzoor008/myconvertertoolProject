@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
 import ScrollToTop from "./ScrollToTop";
 import NavBar from "./NavBar";
 import MobileMenu from "./MobileMenu";
@@ -8,41 +7,40 @@ import { navigation } from "../data/navigation.jsx";
 import PropTypes from "prop-types";
 import { useAuth } from "../hooks/useAuth"; // Changed from default to named import
 import ConversionTrustBadge from "./ConversionTrustBadge";
+import SEO from "../utils/SEO";
 
 const Layout = ({ children }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem("theme");
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem("theme"); } catch { /* Storage can be blocked. */ }
     if (savedTheme !== null) {
       return savedTheme === "dark";
     }
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   const { user, logout } = useAuth();
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)');
+    const closeAtDesktop = () => { if (media.matches) setIsMobileMenuOpen(false); };
+    media.addEventListener('change', closeAtDesktop);
+    return () => media.removeEventListener('change', closeAtDesktop);
+  }, []);
 
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
+      try { localStorage.setItem("theme", "dark"); } catch { /* Optional persistence. */ }
     } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+      try { localStorage.setItem("theme", "light"); } catch { /* Optional persistence. */ }
     }
   }, [darkMode]);
 
-  const handleLinkClick = () => {
-    setIsMenuOpen(false);
-    setIsMobileMenuOpen(false);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
-      </div>
-
+      <SEO metadataOnly />
+      <a className="skip-link" href="#main-content">Skip to content</a>
       {/* Navbar */}
       <NavBar
         darkMode={darkMode}
@@ -65,24 +63,19 @@ const Layout = ({ children }) => {
         )}
 
       {/* Page Content & Sidebar */}
-      <div className="flex flex-grow pt-24 sm:pt-28 lg:pt-32">
-        <main className={`w-full px-3 sm:px-6 lg:px-8 transition-all duration-300 ${isMenuOpen ? 'lg:mr-64' : 'lg:mr-12'}`}>
-          <div className="max-w-7xl mx-auto">
+      <div className="flex flex-grow pt-16 sm:pt-20">
+        <main id="main-content" tabIndex={-1} inert={isMobileMenuOpen} className="min-w-0 w-full px-4 sm:px-6 lg:px-8">
+          <div data-page-content="true" className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
-        <Sidebar 
-          className="hidden lg:block z-30"
-          onLinkClick={handleLinkClick}
-          isOpen={isMenuOpen}
-          onToggle={() => setIsMenuOpen(!isMenuOpen)}
-        />
+
       </div>
 
       <ConversionTrustBadge variant="prefooter" className="mt-16 sm:mt-20" />
 
       {/* Footer */}
-      <footer className="mt-12 w-full border-t border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:mt-16">
+      <footer inert={isMobileMenuOpen} className="mt-12 w-full border-t border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:mt-16">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <div className="grid gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-start">
             <div className="text-center md:text-left">

@@ -1,0 +1,3 @@
+Local security patch of deepmerge 4.3.1 (MIT). Blocks __proto__, constructor, and prototype keys in both target and source merges, including recursive clones. Used only by development tooling. Addresses returned-object prototype poisoning (https://github.com/advisories/GHSA-gcqx-w48m-w2h4). Keep until upstream publishes a fixed release; tests cover both merge directions.
+
+The local package uses version 4.3.2 to satisfy tooling semver ranges. This is a vendored patch, not a claim that an upstream 4.3.2 release exists. The root file dependency provides reproducible resolution without changing registry packages.

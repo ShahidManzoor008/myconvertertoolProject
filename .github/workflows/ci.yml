@@ -1,11 +1,27 @@
-# filepath: d:\Development\WebDevApps\sms-codingProject\myconvertertool.com\.github\workflows\ci.yml
 name: CI
-on: [push]
+on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports: ['27017:27017']
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      CYPRESS_INSTALL_BINARY: '0'
+      MONGO_URI_TEST: mongodb://127.0.0.1:27017/myconvertertool_ci_test
     steps:
-      - uses: actions/checkout@v2
-      - run: npm install
-      - run: npm test
-      - run: npm run lint
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: node --test vendor/deepmerge/security.test.cjs server/tests/middleware.node-test.mjs server/tests/seo.node-test.mjs
+      - run: npm test --workspace server
+      - run: npm test --workspace client
+      - run: npm run lint --workspace client
+      - run: npx puppeteer browsers install chrome
+      - run: npm run build --workspace client
+      - run: npm audit

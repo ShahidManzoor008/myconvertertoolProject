@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { validateUploadedFile, cleanupFiles } from '../utils/fileUtils.js';
 import { convertMarkdownContentToDocx, convertMarkdownToDocx } from '../utils/markdownUtils.js';
 import { convertFileToPDF, convertImagesToPDF, processFileConversion } from '../utils/pdfConversionUtils.js';
@@ -37,7 +38,7 @@ export const convertMdToDocx = async (req, res) => {
     return res.status(400).json({ error: "No Markdown file uploaded." });
   }
   try {
-    const ok = await validateUploadedFile(req.file.path, req.file.originalname);
+    const ok = ['.md', '.markdown', '.txt'].includes(path.extname(req.file.originalname).toLowerCase()) && await validateUploadedFile(req.file.path, req.file.originalname, ['md', 'markdown', 'txt']);
     if (!ok) {
       cleanupFiles(req.file.path);
       return res.status(400).json({ error: 'Invalid or unsupported Markdown file.' });
@@ -158,8 +159,8 @@ export const batchConvert = async (req, res) => {
         const extension = path.extname(file.originalname).toLowerCase().replace(".", "");
         const pdfBuffer = await convertFileToPDF(file.path, extension);
         
-        const outputFilename = file.originalname.replace(/\.[^/.]+$/, "") + ".pdf";
-        const outputPath = path.join('uploads', `temp_${Date.now()}_${outputFilename}`);
+        const outputFilename = path.basename(file.originalname).replace(/[\x00-\x1f"\\/]/g, "_").replace(/\.[^/.]+$/, "") + ".pdf";
+        const outputPath = path.join('uploads', `temp_${crypto.randomUUID()}.pdf`);
         
         await fs.writeFile(outputPath, pdfBuffer);
         convertedFiles.push({ path: outputPath, name: outputFilename });
@@ -183,7 +184,7 @@ export const batchConvert = async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
         res.send(pdfBuffer);
       } else {
-        const zipPath = path.join('uploads', `converted_files_${Date.now()}.zip`);
+        const zipPath = path.join('uploads', `converted_files_${crypto.randomUUID()}.zip`);
         await createZipArchive(convertedFiles, zipPath);
         
         // Log conversion
@@ -245,6 +246,6 @@ export const uploadFiles = async (req, res) => {
 
   } catch (error) {
     console.error("Error in /api/files/upload:", error);
-    res.status(500).json({ error: error.toString() });
+    res.status(422).json({ error: "Conversion failed", files: error.conversionFailures || [] });
   }
 };

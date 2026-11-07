@@ -1,4 +1,6 @@
 import Blog from '../models/Blog.js';
+import mongoose from 'mongoose';
+import { presentPost, readingMinutes } from '../utils/blogPresentation.js';
 import slugify from 'slugify';
 import { validationResult } from 'express-validator';
 import { cleanupFiles, validateUploadedFile } from '../utils/fileUtils.js';
@@ -17,26 +19,34 @@ const allowedImageMimeTypes = [
 export const getAllPosts = async (req, res) => {
   console.log('Fetching all blog posts...');
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
-    const cursor = req.query.cursor; // expects the _id of the last item from the previous page
+    const limit = Number(req.query.limit || 10);
+    const page = Number(req.query.page || 1);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50 || !Number.isInteger(page) || page < 1 || page > 10000) return res.status(400).json({ message: 'Use a positive page and a limit between 1 and 50.' });
+    const cursor = req.query.cursor;
+    if (cursor && !mongoose.isObjectIdOrHexString(cursor)) return res.status(400).json({ message: 'Invalid pagination cursor.' }); // expects the _id of the last item from the previous page
 
     let query = Blog.find().sort({ createdAt: -1, _id: -1 }).limit(limit + 1);
 
     if (cursor) {
-      // Cursor-based pagination: items older than the cursor's _id
-      query = query.where('_id').lt(cursor);
-    }
+      const anchor = await Blog.findById(cursor).select('createdAt').lean();
+      if (!anchor) return res.status(400).json({ message: 'Unknown pagination cursor.' });
+      query = query.where({ $or: [{ createdAt: { $lt: anchor.createdAt } }, { createdAt: anchor.createdAt, _id: { $lt: cursor } }] });
+    } else { query = query.skip((page - 1) * limit); }
 
     // Apply projection and lean for faster plain-object serialization
     query = query
-      .select('title excerpt author coverImage readingTime createdAt slug')
+      .select('title excerpt author coverImage readingTime createdAt slug content')
       .lean();
 
     const docs = await query;
 
     // Determine if there's a next page and extract the cursor
     const hasNextPage = docs.length > limit;
-    const posts = hasNextPage ? docs.slice(0, limit) : docs;
+    const posts = (hasNextPage ? docs.slice(0, limit) : docs).map(value => {
+      const post = presentPost(value);
+      delete post.content;
+      return post;
+    });
     const nextCursor = hasNextPage ? posts[posts.length - 1]._id.toString() : null;
 
     // Only run count when offset pagination is used (cursor pagination omits it for speed)
@@ -61,7 +71,7 @@ export const getAllPosts = async (req, res) => {
       hasNextPage
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Articles are temporarily unavailable. Please try again.' });
   }
 };
 
@@ -73,9 +83,9 @@ export const getPostBySlug = async (req, res) => {
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
-    res.json(post);
+    res.json(presentPost(post));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Articles are temporarily unavailable. Please try again.' });
   }
 };
 
@@ -129,6 +139,7 @@ export const updatePost = async (req, res) => {
   try {
     const { title, content, excerpt, tags } = req.body;
     const updates = {
+      ...(typeof content === 'string' ? { readingTime: readingMinutes(content) } : {}),
       title,
       content,
       excerpt,
@@ -159,7 +170,7 @@ export const updatePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    res.json(post);
+    res.json(presentPost(post));
   } catch (error) {
     if (req.file) cleanupFiles(req.file.path);
     res.status(400).json({ message: error.message });
@@ -175,6 +186,6 @@ export const deletePost = async (req, res) => {
     }
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Articles are temporarily unavailable. Please try again.' });
   }
 };

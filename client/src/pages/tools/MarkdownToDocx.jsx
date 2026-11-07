@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, FileText, Download, FileCode, CheckCircle2, Clipboard, Eraser, Keyboard } from 'lucide-react';
@@ -39,10 +39,11 @@ const MarkdownToDocx = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
+    maxSize: 75 * 1024 * 1024,
     accept: { 'text/markdown': ['.md', '.markdown'] },
     onDrop: (acceptedFiles, rejectedFiles) => {
       if (rejectedFiles.length > 0) {
-        showPopup(`Invalid file type. Please upload a .md file.`);
+        showPopup(`Invalid file type. Please upload a .md file under 75 MB.`);
       }
       if (acceptedFiles.length > 0) {
         setUploadedFile(acceptedFiles[0]);
@@ -52,6 +53,8 @@ const MarkdownToDocx = () => {
       }
     },
   });
+
+  useEffect(() => () => { if (convertedFile?.url) URL.revokeObjectURL(convertedFile.url); }, [convertedFile]);
 
   const handleClearSelection = () => {
     setMarkdownText('');
@@ -84,6 +87,7 @@ const MarkdownToDocx = () => {
   const handleConvert = async () => {
     if (!canConvert) return;
 
+    if (new TextEncoder().encode(markdownText).length > 2 * 1024 * 1024) { showPopup('Paste at most 2 MB of UTF-8 text.'); return; }
     setLoading(true);
     conversionProgress.start();
     try {
@@ -133,14 +137,14 @@ const MarkdownToDocx = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
-          <span className="material-icons text-xs">article</span>
+          <span aria-hidden="true" className="material-icons text-xs">article</span>
           Document Production
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
           MD <span className="text-indigo-600">to DOCX</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
-          Paste Markdown text or upload a file, then generate a polished Word document with tables, code blocks, and math equation support.
+          Paste up to 2 MB of Markdown or upload a .md/.markdown file under 75 MB. Generate Word documents with tables, code blocks, and math. Processing uses our servers; remote images are omitted for safety.
         </p>
       </section>
 
@@ -206,7 +210,7 @@ const MarkdownToDocx = () => {
                       </div>
                     </div>
 
-                    <textarea
+                    <textarea aria-label="Markdown input"
                       value={markdownText}
                       onChange={(event) => {
                         setMarkdownText(event.target.value);
@@ -274,7 +278,7 @@ const MarkdownToDocx = () => {
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(uploadedFile.size / 1024).toFixed(1)} KB • Ready for conversion</p>
                             </div>
                           </div>
-                          <button onClick={handleClearSelection} className="p-3 rounded-xl hover:bg-red-500/10 text-red-500 transition-colors flex-shrink-0">
+                          <button aria-label="Close" onClick={handleClearSelection} className="p-3 rounded-xl hover:bg-red-500/10 text-red-500 transition-colors flex-shrink-0">
                             <X size={20} />
                           </button>
                         </motion.div>
@@ -310,7 +314,7 @@ const MarkdownToDocx = () => {
 
                 <div className="max-w-md mx-auto p-6 rounded-[2rem] glass border-none mb-10 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg flex-shrink-0">
-                    <span className="material-icons">description</span>
+                    <span aria-hidden="true" className="material-icons">description</span>
                   </div>
                   <div className="text-left min-w-0">
                     <p className="text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">{convertedFile.name}</p>

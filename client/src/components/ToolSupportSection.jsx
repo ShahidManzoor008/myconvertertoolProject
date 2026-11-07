@@ -21,7 +21,7 @@ const toolFaqs = {
   "/tools/pdf-converter": [
     {
       question: "What PDF tasks can I do here?",
-      answer: "You can convert supported files to PDF and use available PDF operations such as merging, splitting, compressing, and editing where supported.",
+      answer: "Convert supported documents and images to PDF without registration. Sign in to merge, split, rotate, watermark, or optimize a PDF. Compression optimizes structure and may not reduce file size. PDF-to-Word is not supported.",
     },
     {
       question: "Can I convert images or documents to PDF?",
@@ -29,7 +29,7 @@ const toolFaqs = {
     },
     {
       question: "Are my files kept forever?",
-      answer: "Files are processed for the requested task. Avoid uploading documents you do not have permission to process.",
+      answer: "Uploads are processed on our servers and temporary files are removed after processing or download. Diagnostic logs and conversion metadata may be retained. See the Privacy Policy; do not submit sensitive documents.",
     },
   ],
   "/tools/json-formatter": [
@@ -71,7 +71,7 @@ const toolFaqs = {
     },
     {
       question: "Does it work with query strings?",
-      answer: "Yes. It is useful for query strings, campaign links, API parameters, and encoded snippets.",
+      answer: "Encode individual query parameter values. Encoding a whole URL also encodes its separators; this is not a query-string parser, and decoding does not change + to a space.",
     },
   ],
   "/tools/minify-beautify": [
@@ -151,7 +151,7 @@ const ToolSupportSection = ({ currentPath, category }) => {
             <details key={faq.question} className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/30 p-4">
               <summary className="cursor-pointer list-none font-bold text-slate-900 dark:text-white flex items-center justify-between gap-4">
                 <span>{faq.question}</span>
-                <span className="material-icons text-base text-slate-400 transition group-open:rotate-180">expand_more</span>
+                <span aria-hidden="true" className="material-icons text-base text-slate-400 transition group-open:rotate-180">expand_more</span>
               </summary>
               <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{faq.answer}</p>
             </details>

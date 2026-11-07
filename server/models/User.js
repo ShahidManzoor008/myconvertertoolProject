@@ -66,15 +66,8 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    this.password = await argon2.hash(this.password);
-    next();
-  } catch (error) {
-    next(error);
-  }
+userSchema.pre('save', async function() {
+  if (this.isModified('password')) this.password = await argon2.hash(this.password);
 });
 
 // Method to check password

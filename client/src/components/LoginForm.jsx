@@ -111,7 +111,7 @@ const LoginForm = () => {
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 sm:p-10 shadow-inner">
           <div className="text-center mb-10">
             <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
-              <span className="material-icons text-3xl">lock</span>
+              <span aria-hidden="true" className="material-icons text-3xl">lock</span>
             </div>
             <h1 id="login-title" className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2">Welcome Back</h1>
             <p className="text-sm text-slate-500 font-medium uppercase tracking-widest" id="login-description">Secure access to your workspace</p>
@@ -170,7 +170,7 @@ const LoginForm = () => {
             disabled={loading}
           >
             <span className={`flex items-center justify-center gap-2 transition-transform duration-300 ${loading ? 'translate-y-10' : ''}`}>
-              Sign In to Dashboard <span className="material-icons text-sm">east</span>
+              Sign In to Dashboard <span aria-hidden="true" className="material-icons text-sm">east</span>
             </span>
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center">

@@ -25,7 +25,7 @@ const auth = async (req, res, next) => {
     // Find user
     const user = await User.findOne({ _id: decoded.userId });
 
-    if (!user) {
+    if (!user || user.status !== 'active') {
       throw new Error('User not found');
     }
 

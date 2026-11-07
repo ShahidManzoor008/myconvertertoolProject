@@ -20,8 +20,10 @@ export const logConversion = async ({ toolName, userId, fileName, fileSize, stat
       status,
     });
     logger.debug({ toolName, fileName }, 'Conversion logged successfully');
+    return true;
   } catch (error) {
     logger.error({ error, toolName }, 'Failed to log conversion');
+    return false;
   }
 };
 
@@ -34,6 +36,6 @@ export const getTotalConversions = async () => {
     return await Conversion.countDocuments({ status: 'success' });
   } catch (error) {
     logger.error(error, 'Failed to get total conversions');
-    return 0;
+    throw error;
   }
 };

@@ -1,9 +1,13 @@
+import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import { FaCopy, FaDownload, FaCheck, FaTimes } from "react-icons/fa";
+
+import { parse, stringify, isLosslessNumber } from 'lossless-json';
+import { jsonrepair } from 'jsonrepair';
 
 const JsonFormatter = () => {
   const [jsonInput, setJsonInput] = useState("");
@@ -18,10 +22,10 @@ const JsonFormatter = () => {
 
   // Load recent uploads from localStorage
   useEffect(() => {
-    const savedUploads = localStorage.getItem("jsonFormatterRecentUploads");
-    if (savedUploads) {
-      setRecentUploads(JSON.parse(savedUploads));
-    }
+    try {
+      const savedUploads = JSON.parse(safeStorage.getItem("jsonFormatterRecentUploads") || "[]");
+      setRecentUploads(Array.isArray(savedUploads) ? savedUploads : []);
+    } catch { /* Optional history may be unavailable. */ }
   }, []);
 
   const showPopup = (message) => {
@@ -31,8 +35,8 @@ const JsonFormatter = () => {
 
   const handleFormatJson = () => {
     try {
-      const parsedJson = JSON.parse(jsonInput);
-      setFormattedJson(JSON.stringify(parsedJson, null, indentSize));
+      const parsedJson = parse(jsonInput);
+      setFormattedJson(stringify(parsedJson, null, indentSize));
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
@@ -46,8 +50,8 @@ const JsonFormatter = () => {
 
   const handleMinifyJson = () => {
     try {
-      const parsedJson = JSON.parse(jsonInput);
-      setFormattedJson(JSON.stringify(parsedJson));
+      const parsedJson = parse(jsonInput);
+      setFormattedJson(stringify(parsedJson));
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
@@ -61,7 +65,7 @@ const JsonFormatter = () => {
 
   const analyzeJson = (json) => {
     try {
-      const jsonString = JSON.stringify(json);
+      const jsonString = stringify(json);
       
       // Count object types recursively
       const typeCounts = {
@@ -74,7 +78,9 @@ const JsonFormatter = () => {
       };
       
       const countTypes = (item) => {
-        if (item === null) {
+        if (isLosslessNumber(item)) {
+          typeCounts.numbers++;
+        } else if (item === null) {
           typeCounts.nulls++;
         } else if (typeof item === "object" && !Array.isArray(item)) {
           typeCounts.objects++;
@@ -94,10 +100,10 @@ const JsonFormatter = () => {
       countTypes(json);
       
       const stats = {
-        size: jsonString.length,
-        readableSize: formatSize(jsonString.length),
-        minifiedSize: JSON.stringify(json).length,
-        readableMinifiedSize: formatSize(JSON.stringify(json).length),
+        size: new TextEncoder().encode(jsonInput).length,
+        readableSize: formatSize(new TextEncoder().encode(jsonInput).length),
+        minifiedSize: new TextEncoder().encode(jsonString).length,
+        readableMinifiedSize: formatSize(new TextEncoder().encode(jsonString).length),
         typeCounts
       };
       
@@ -167,7 +173,7 @@ const JsonFormatter = () => {
     try {
       const propertyNames = [];
       const extractPropertyNames = (obj) => {
-        if (obj === null || typeof obj !== "object") return;
+        if (obj === null || typeof obj !== "object" || isLosslessNumber(obj)) return;
         
         if (!Array.isArray(obj)) {
           Object.keys(obj).forEach(key => {
@@ -217,8 +223,9 @@ const JsonFormatter = () => {
       const checkArrayConsistency = (arr) => {
         if (!Array.isArray(arr) || arr.length <= 1) return true;
         
-        const firstType = typeof arr[0];
-        const allSameType = arr.every(item => typeof item === firstType);
+        const typeOf = item => isLosslessNumber(item) ? 'number' : item === null ? 'null' : Array.isArray(item) ? 'array' : typeof item;
+        const firstType = typeOf(arr[0]);
+        const allSameType = arr.every(item => typeOf(item) === firstType);
         
         if (!allSameType) return false;
         
@@ -235,7 +242,7 @@ const JsonFormatter = () => {
       
       const findArrays = (obj, path = '') => {
         let results = [];
-        
+        if (isLosslessNumber(obj)) return results;
         if (Array.isArray(obj)) {
           results.push({ path: path || 'root', array: obj });
           
@@ -248,10 +255,6 @@ const JsonFormatter = () => {
           Object.keys(obj).forEach(key => {
             const value = obj[key];
             const newPath = path ? `${path}.${key}` : key;
-            
-            if (Array.isArray(value)) {
-              results.push({ path: newPath, array: value });
-            }
             
             if (value !== null && typeof value === 'object') {
               results = results.concat(findArrays(value, newPath));
@@ -287,9 +290,11 @@ const JsonFormatter = () => {
     setValidationResults(results);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(formattedJson);
-    showPopup("Copied to clipboard!");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(formattedJson);
+      showPopup("Copied to clipboard!");
+    } catch { setError("Clipboard access blocked. Select and copy the output manually."); }
   };
 
   const handleDownload = () => {
@@ -301,7 +306,8 @@ const JsonFormatter = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showPopup("File downloaded!");
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showPopup("Download started");
   };
 
   const handleClear = () => {
@@ -358,7 +364,7 @@ const JsonFormatter = () => {
     
     const updatedUploads = [newUpload, ...recentUploads.slice(0, 4)];
     setRecentUploads(updatedUploads);
-    localStorage.setItem("jsonFormatterRecentUploads", JSON.stringify(updatedUploads));
+    try { safeStorage.setItem("jsonFormatterRecentUploads", JSON.stringify(updatedUploads)); } catch { /* Optional history. */ }
     
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -375,62 +381,41 @@ const JsonFormatter = () => {
     if (!jsonInput) return;
 
     try {
-      // A more robust way to fix JSON
-      const fixed = jsonInput
-        // Add quotes to unquoted keys.
-        .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
-        // Replace single quotes with double quotes, but not in the middle of a word.
-        .replace(/(?<![a-zA-Z])'|'(?![a-zA-Z])/g, '"')
-         // remove trailing commas
-        .replace(/,(\s*[}\]])/g, '$1');
-
-      // Test if it's valid JSON now
-      JSON.parse(fixed);
+      const fixed = jsonrepair(jsonInput);
+      parse(fixed);
+      setFormattedJson("");
+      setJsonStats(null);
+      setValidationResults(null);
+      setError("");
       setJsonInput(fixed);
-      showPopup("JSON fixed successfully!");
+      showPopup("Repair suggested. Review the input before formatting; repair can change meaning.");
     } catch (error) {
       // If still invalid, show error
       setError(`Couldn't fix JSON automatically: ${error.message}`);
     }
   };
 
-  const copyAsCode = (language) => {
-    let output = "";
-    
+  const copyAsCode = async (language) => {
     try {
-      const parsed = JSON.parse(formattedJson);
-      
-      if (language === "javascript") {
-        output = `const data = ${formattedJson};`;
-      } else if (language === "python") {
-        // A more robust way to convert to Python dictionary
-        const toPython = (obj) => {
-          if (obj === null) return "None";
-          if (typeof obj === 'string') return `'${obj.replace(/'/g, "'")}'`;
-          if (typeof obj === 'boolean') return obj ? "True" : "False";
-          if (typeof obj === 'number') return obj.toString();
-          if (Array.isArray(obj)) {
-            return `[${obj.map(toPython).join(', ')}]`;
-          }
-          if (typeof obj === 'object') {
-            const pairs = Object.keys(obj).map(key => {
-              const formattedKey = `'${key.replace(/'/g, "'")}'`;
-              return `${formattedKey}: ${toPython(obj[key])}`;
-            });
-            return `{${pairs.join(', ')}}`;
-          }
-          return '""';
-        };
-        output = `data = ${toPython(parsed)}`;
-      } else if (language === "php") {
-        output = `<?php\n$data = ${formattedJson};\n?>`;
-      }
-      
-      navigator.clipboard.writeText(output);
+      const parsed = parse(formattedJson);
+      const toPython = value => {
+        if (value === null) return 'None';
+        if (isLosslessNumber(value)) return value.toString();
+        if (typeof value === 'string') return JSON.stringify(value);
+        if (typeof value === 'boolean') return value ? 'True' : 'False';
+        if (Array.isArray(value)) return '[' + value.map(toPython).join(', ') + ']';
+        return '{' + Object.entries(value).map(([key, item]) => JSON.stringify(key) + ': ' + toPython(item)).join(', ') + '}';
+      };
+      let output;
+      if (language === 'javascript') output = `const data = JSON.parse(${JSON.stringify(formattedJson)});\n// JavaScript numbers may lose precision; use a lossless JSON parser for large values.`;
+      else if (language === 'python') output = `data = ${toPython(parsed)}`;
+      else if (language === 'php') {
+        const escaped = formattedJson.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        output = `<?php\n$data = json_decode('${escaped}', true, 512, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING);\n?>`;
+      } else throw new Error('Unsupported export language.');
+      await navigator.clipboard.writeText(output);
       showPopup(`Copied as ${language} code!`);
-    } catch (error) {
-      setError(`Failed to convert to ${language}: ${error.message}`);
-    }
+    } catch (error) { setError(`Failed to copy ${language}: ${error.message}`); }
   };
 
   return (
@@ -448,14 +433,14 @@ const JsonFormatter = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
-          <span className="material-icons text-xs">settings_ethernet</span>
+          <span aria-hidden="true" className="material-icons text-xs">settings_ethernet</span>
           Developer Essential
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
-          JSON <span className="text-indigo-600">Architect</span>
+          JSON Formatter <span className="text-indigo-600">& Validator</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
-          The most powerful way to format, validate, and analyze your JSON data with industrial precision.
+          Format, validate, and explore JSON in your browser. Your input stays on your device.
         </p>
       </section>
 
@@ -471,6 +456,7 @@ const JsonFormatter = () => {
               {["format", "analyze", "settings"].map((tab) => (
                 <button
                   key={tab}
+                  aria-pressed={activeTab === tab}
                   className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                     activeTab === tab
                       ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm'
@@ -499,11 +485,11 @@ const JsonFormatter = () => {
               </div>
 
               <div className="relative group">
-                <textarea
+                <textarea aria-label="JSON input"
                   className="w-full h-80 p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500/50 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none resize-none shadow-inner"
                   placeholder='{ "key": "value" }'
                   value={jsonInput}
-                  onChange={(e) => setJsonInput(e.target.value)}
+                  onChange={(e) => { setJsonInput(e.target.value); setFormattedJson(""); setError(""); setJsonStats(null); setValidationResults(null); }}
                 />
                 <div className="absolute bottom-6 right-8 flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                   <span>Chars: {jsonInput.length}</span>
@@ -517,7 +503,7 @@ const JsonFormatter = () => {
                   onClick={handleFormatJson}
                   className="btn-primary w-full sm:w-auto px-10 py-4 !bg-indigo-600 shadow-indigo-500/25"
                 >
-                  <span className="material-icons text-sm">auto_fix_high</span>
+                  <span aria-hidden="true" className="material-icons text-sm">auto_fix_high</span>
                   Format Code
                 </button>
                 <button
@@ -563,10 +549,10 @@ const JsonFormatter = () => {
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">Formatted Result</h3>
                     <div className="flex gap-3">
-                      <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
+                      <button aria-label="Copy result" onClick={handleCopy} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
                         <FaCopy size={18} />
                       </button>
-                      <button onClick={handleDownload} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
+                      <button aria-label="Download result" onClick={handleDownload} className="p-3 rounded-xl glass hover:text-indigo-600 transition-all">
                         <FaDownload size={18} />
                       </button>
                     </div>

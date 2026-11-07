@@ -1,115 +1,17 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      // Initialize dark mode on page load
-      (function() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      })();
-    </script>
-    
-    <!-- ✅ Corrected Logo Favicon -->
-    <link rel="icon" type="image/png" href="./favicon.ico" alt="MyConverterTool Logo" />
-
-    <!-- ✅ SEO Optimizations -->
-    <title>MyConverterTool - Free PDF, JSON, QR Code & Text Tools</title>
-<meta name="description" content="Use free online tools to convert PDFs, format JSON, generate QR codes, preview meta tags, count words, encode URLs, and create DOCX files from Markdown.">
-<meta name="keywords" content="free online tools, pdf converter, json formatter, qr code generator, meta tag preview, word counter, base64 encoder, url encoder, text case converter, markdown to docx">
-<meta name="author" content="MyConverterTool">
-<meta name="robots" content="index, follow">
-
-    
-    <!-- ✅ OpenGraph (for Social Media Sharing) -->
-    <meta property="og:title" content="MyConverterTool - Free PDF, JSON, QR Code & Text Tools" />
-    <meta property="og:description" content="Fast browser-based tools for PDF conversion, JSON formatting, QR code generation, meta tags, word counts, URL encoding, and Markdown to DOCX." />
-    <meta property="og:image" content="/assets/MyConverterTool.png" />
-    <meta property="og:url" content="https://myconvertertool.com/" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="MyConverterTool - Free PDF, JSON, QR Code & Text Tools">
-<meta name="twitter:description" content="Fast browser-based tools for PDFs, developers, text workflows, QR codes, SEO previews, and Markdown documents.">
-<meta name="twitter:image" content="https://myconvertertool.com/assets/MyConverterTool.png">
-
-<!-- Modern Fonts & Icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-<!-- ✅ Structured Data (Schema.org) for SEO -->
-
-    <script type="application/ld+json">
-      [
-        {
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          "name": "MyConverterTool",
-          "url": "https://myconvertertool.com/",
-          "logo": "https://myconvertertool.com/assets/MyConverterTool.png"
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "MyConverterTool",
-          "url": "https://myconvertertool.com/",
-          "description": "Free browser-based tools for PDFs, JSON, QR codes, meta tags, word counts, Base64, URLs, text case conversion, and Markdown documents."
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          "name": "Popular MyConverterTool utilities",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "url": "https://myconvertertool.com/tools/pdf-converter",
-              "name": "PDF Converter"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "url": "https://myconvertertool.com/tools/json-formatter",
-              "name": "JSON Formatter"
-            },
-            {
-              "@type": "ListItem",
-              "position": 3,
-              "url": "https://myconvertertool.com/tools/qr-code-generator",
-              "name": "QR Code Generator"
-            },
-            {
-              "@type": "ListItem",
-              "position": 4,
-              "url": "https://myconvertertool.com/tools/meta-tag-preview",
-              "name": "Meta Tag Preview"
-            },
-            {
-              "@type": "ListItem",
-              "position": 5,
-              "url": "https://myconvertertool.com/tools/word-counter",
-              "name": "Word & Character Counter"
-            },
-            {
-              "@type": "ListItem",
-              "position": 6,
-              "url": "https://myconvertertool.com/tools/markdown-to-docx",
-              "name": "Markdown to DOCX"
-            }
-          ]
-        }
-      ]
-      </script>
-      
-      </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+<html lang="en"><head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#2563eb" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="preload" href="/fonts/material-icons-8265f64786.woff2" as="font" type="font/woff2" crossorigin />
+<title data-initial-seo="true">Free PDF, Text &amp; Developer Tools | MyConverterTool</title>
+<meta data-initial-seo="true" name="description" content="Free online PDF, text and developer tools for everyday work." />
+<script>try { var theme = localStorage.getItem('theme'); if (theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); } catch (error) { /* Optional storage. */ }</script>
+</head><body>
+<!--app-html--><div id="root"></div><!--/app-html-->
+<noscript><p style="padding:1rem;text-align:center">Browse our tools and guides below. Enable JavaScript to use interactive tools.</p></noscript>
+<script type="module" src="/src/main.jsx"></script>
+</body></html>

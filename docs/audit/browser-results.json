@@ -1,0 +1,132 @@
+{
+  "browser": "Chrome/156.0.8078.47",
+  "complete": true,
+  "checks": [
+    {
+      "name": "Base64 UTF-8 encoding and invalid input",
+      "status": "PASS"
+    },
+    {
+      "name": "URL component and Base64 encoding",
+      "status": "PASS"
+    },
+    {
+      "name": "JSON precision, formatting and invalid input",
+      "status": "PASS"
+    },
+    {
+      "name": "Worker minifier preserves JavaScript URL literals",
+      "status": "PASS"
+    },
+    {
+      "name": "Text sentence conversion and blocked clipboard feedback",
+      "status": "PASS"
+    },
+    {
+      "name": "Unicode word and character counts",
+      "status": "PASS"
+    },
+    {
+      "name": "Meta-tag export escapes HTML and rejects unsafe URLs",
+      "status": "PASS"
+    },
+    {
+      "name": "All nine QR payload types decode independently and resolution changes output",
+      "status": "PASS"
+    },
+    {
+      "name": "Markdown generates a real downloadable DOCX",
+      "status": "PASS"
+    },
+    {
+      "name": "PDF image conversion returns readable output",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /about",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /tools",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /tools/pdf-converter",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /tools/qr-code-generator",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /tools/minify-beautify",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390 /blog/exploring-our-development-tools",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /about",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /tools",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /tools/pdf-converter",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /tools/qr-code-generator",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /tools/minify-beautify",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768 /blog/exploring-our-development-tools",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /about",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /tools",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /tools/pdf-converter",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /tools/qr-code-generator",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /tools/minify-beautify",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440 /blog/exploring-our-development-tools",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": [],
+  "method": "Initial run plus targeted reruns after correcting the PDF action selector and waiting for article metadata to finish loading. Application source/build was unchanged between these browser runs."
+}

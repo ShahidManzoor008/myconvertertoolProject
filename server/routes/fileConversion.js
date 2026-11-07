@@ -12,6 +12,6 @@ router.post('/md-to-docx/text', convertMarkdownTextToDocx);
 router.post("/batch", upload.array("files", 5), batchConvert);
 
 // API: File Upload (General Conversion)
-router.post("/upload", upload.array("files"), uploadFiles);
+router.post("/upload", upload.array("files", 5), uploadFiles);
 
 export default router;

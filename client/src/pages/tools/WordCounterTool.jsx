@@ -7,56 +7,12 @@ import { statsApi } from "../../utils/apiClient";
 
 const sampleText = `Paste your draft, article, essay, caption, or product description here. The counter updates instantly with words, characters, sentences, paragraphs, reading time, and keyword frequency.`;
 
-const countSyllables = (word) => {
-  const cleaned = word.toLowerCase().replace(/[^a-z]/g, "");
-  if (!cleaned) return 0;
-  const groups = cleaned.match(/[aeiouy]+/g);
-  return Math.max(1, (groups || []).length - (cleaned.endsWith("e") ? 1 : 0));
-};
-
-const analyzeText = (text) => {
-  const trimmed = text.trim();
-  const words = trimmed.match(/\b[\w'-]+\b/g) || [];
-  const characters = text.length;
-  const charactersNoSpaces = text.replace(/\s/g, "").length;
-  const sentences = trimmed ? (trimmed.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || []).length : 0;
-  const paragraphs = trimmed ? trimmed.split(/\n\s*\n/).filter(Boolean).length : 0;
-  const minutes = words.length / 225;
-  const syllables = words.reduce((total, word) => total + countSyllables(word), 0);
-  const readingEase = sentences && words.length
-    ? Math.round(206.835 - 1.015 * (words.length / sentences) - 84.6 * (syllables / words.length))
-    : 0;
-
-  const stopWords = new Set(["the", "and", "for", "that", "with", "this", "from", "are", "you", "your", "into", "have", "has", "was", "were", "will", "can", "our", "not", "but", "all"]);
-  const frequencies = words
-    .map((word) => word.toLowerCase().replace(/^'+|'+$/g, ""))
-    .filter((word) => word.length > 2 && !stopWords.has(word))
-    .reduce((acc, word) => {
-      acc[word] = (acc[word] || 0) + 1;
-      return acc;
-    }, {});
-
-  const topKeywords = Object.entries(frequencies)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([word, count]) => ({ word, count }));
-
-  return {
-    words: words.length,
-    characters,
-    charactersNoSpaces,
-    sentences,
-    paragraphs,
-    readingTime: words.length ? Math.max(1, Math.ceil(minutes)) : 0,
-    speakingTime: words.length ? Math.max(1, Math.ceil(words.length / 140)) : 0,
-    readingEase,
-    topKeywords,
-  };
-};
+import { analyzeText } from '../../utils/textAnalysis';
 
 const WordCounterTool = () => {
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
   const stats = useMemo(() => analyzeText(text), [text]);
 
   const setAndTrackText = (nextText) => {
@@ -79,7 +35,8 @@ const WordCounterTool = () => {
       `Reading time: ${stats.readingTime} min`,
     ].join("\n");
 
-    await navigator.clipboard.writeText(report);
+    try { await navigator.clipboard.writeText(report); setError(""); }
+    catch { setError("Clipboard access blocked. Download your text or copy manually."); return; }
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
@@ -138,13 +95,15 @@ const WordCounterTool = () => {
             </div>
           </div>
 
-          <textarea
+          <textarea maxLength={1000000} aria-label="Text input"
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Type or paste text to count words, characters, sentences, paragraphs, and reading time..."
             className="min-h-[420px] w-full resize-y rounded-lg border border-slate-200 bg-slate-50 p-5 text-base leading-7 text-slate-900 outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:focus:bg-slate-950"
           />
 
+          {error && <p role="alert" className="text-red-600">{error}</p>}
+          <p className="mt-2 text-xs text-slate-500">Characters count Unicode code points. Words use browser language segmentation. Times are estimates; readability is an approximate English-only score. Limit: 1,000,000 characters.</p>
           <div className="mt-4 flex flex-wrap justify-end gap-3">
             <button
               onClick={copyReport}
@@ -174,7 +133,7 @@ const WordCounterTool = () => {
             <StatCard label="Paragraphs" value={stats.paragraphs} />
             <StatCard label="Read time" value={`${stats.readingTime}m`} />
             <StatCard label="Speak time" value={`${stats.speakingTime}m`} />
-            <StatCard label="Readability" value={stats.readingEase || "-"} />
+            <StatCard label="Readability" value={stats.readingEase ?? "-"} />
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">

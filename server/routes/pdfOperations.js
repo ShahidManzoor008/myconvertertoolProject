@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -26,7 +27,7 @@ const validatePdf = async (req, res, next) => {
     next();
   } catch (error) {
     cleanupFiles(files);
-    res.status(500).json({ error: 'File validation failed' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'File validation failed' });
   }
 };
 
@@ -59,10 +60,10 @@ router.post('/merge', upload.array('files'), validatePdf, async (req, res) => {
     await sendFileResponse(res, mergedPdf, 'merged.pdf', 'pdf-merge', req.user?._id);
   } catch (error) {
     console.error('Merge PDFs error:', error);
-    res.status(500).json({ error: 'Failed to merge PDFs' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to merge PDFs' });
   } finally {
     // Cleanup uploaded files
-    if (req.files) await Promise.all(req.files.map(file => fs.unlink(file.path)));
+    if (req.files) cleanupFiles(req.files);
   }
 });
 
@@ -81,7 +82,7 @@ router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
     if (splitPdfs.length === 1) {
       await sendFileResponse(res, splitPdfs[0], 'split.pdf', 'pdf-split', req.user?._id);
     } else {
-      const zipPath = path.join('uploads', 'split_pdfs.zip');
+      const zipPath = path.join('uploads', `split_${randomUUID()}.zip`);
       const filesToZip = splitPdfs.map((pdf, i) => ({
         path: pdf,
         name: `split_${i + 1}.pdf`
@@ -101,9 +102,9 @@ router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
     }
   } catch (error) {
     console.error('Split PDF error:', error);
-    res.status(500).json({ error: 'Failed to split PDF' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to split PDF' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -121,9 +122,9 @@ router.post('/rotate', upload.single('file'), validatePdf, async (req, res) => {
     await sendFileResponse(res, rotatedPdf, 'rotated.pdf', 'pdf-rotate', req.user?._id);
   } catch (error) {
     console.error('Rotate PDF error:', error);
-    res.status(500).json({ error: 'Failed to rotate PDF pages' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to rotate PDF pages' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -141,9 +142,9 @@ router.post('/reorder', upload.single('file'), validatePdf, async (req, res) => 
     await sendFileResponse(res, reorderedPdf, 'reordered.pdf', 'pdf-reorder', req.user?._id);
   } catch (error) {
     console.error('Reorder PDF error:', error);
-    res.status(500).json({ error: 'Failed to reorder PDF pages' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to reorder PDF pages' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -152,7 +153,7 @@ router.post('/extract-images', upload.single('file'), validatePdf, async (req, r
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const images = await pdfOperations.extractImages(req.file);
-    const zipPath = path.join('uploads', 'extracted_images.zip');
+    const zipPath = path.join('uploads', `images_${randomUUID()}.zip`);
     await createZipArchive(images, zipPath);
     
     // Log conversion
@@ -168,9 +169,9 @@ router.post('/extract-images', upload.single('file'), validatePdf, async (req, r
     });
   } catch (error) {
     console.error('Extract images error:', error);
-    res.status(500).json({ error: 'Failed to extract images from PDF' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to extract images from PDF' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -188,9 +189,9 @@ router.post('/watermark', upload.single('file'), validatePdf, async (req, res) =
     await sendFileResponse(res, watermarkedPdf, 'watermarked.pdf', 'pdf-watermark', req.user?._id);
   } catch (error) {
     console.error('Add watermark error:', error);
-    res.status(500).json({ error: 'Failed to add watermark' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to add watermark' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -207,7 +208,7 @@ router.post('/protect', upload.single('file'), validatePdf, async (req, res) => 
     const message = status === 501 ? error.message : 'Failed to protect PDF';
     res.status(status).json({ error: message });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 
@@ -219,9 +220,9 @@ router.post('/compress', upload.single('file'), validatePdf, async (req, res) =>
     await sendFileResponse(res, compressedPdf, 'compressed.pdf', 'pdf-compress', req.user?._id);
   } catch (error) {
     console.error('Compress PDF error:', error);
-    res.status(500).json({ error: 'Failed to compress PDF' });
+    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to compress PDF' });
   } finally {
-    if (req.file) await fs.unlink(req.file.path);
+    if (req.file) cleanupFiles(req.file.path);
   }
 });
 

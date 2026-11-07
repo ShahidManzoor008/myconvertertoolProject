@@ -1,3 +1,4 @@
+import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ClipboardCopy, Download, RefreshCw, HelpCircle } from "lucide-react";
@@ -5,6 +6,8 @@ import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
+
+import { encodeText, decodeText } from '../../utils/encoding';
 
 const UrlTool = () => {
   const [text, setText] = useState("");
@@ -43,9 +46,9 @@ const UrlTool = () => {
       } else if (mode === "decode") {
         processedResult = decodeURIComponent(text);
       } else if (mode === "base64encode") {
-        processedResult = btoa(unescape(encodeURIComponent(text)));
+        processedResult = encodeText(text);
       } else if (mode === "base64decode") {
-        processedResult = decodeURIComponent(escape(atob(text)));
+        processedResult = decodeText(text);
       }
       
       setResult(processedResult);
@@ -67,7 +70,7 @@ const UrlTool = () => {
 
       setHistory(prev => {
         const newHistory = [newEntry, ...prev].slice(0, 10);
-        localStorage.setItem("urlToolHistory", JSON.stringify(newHistory));
+        safeStorage.setItem("urlToolHistory", JSON.stringify(newHistory));
         return newHistory;
       });
     } catch (err) {
@@ -76,9 +79,11 @@ const UrlTool = () => {
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result);
-    showPopup("Copied to clipboard!");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      showPopup("Copied to clipboard!");
+    } catch { setError("Clipboard access blocked. Select and copy the output manually."); }
   };
 
   const handleDownload = () => {
@@ -114,15 +119,16 @@ const UrlTool = () => {
 
   const clearHistory = () => {
     setHistory([]);
-    localStorage.removeItem("urlToolHistory");
+    safeStorage.removeItem("urlToolHistory");
     showPopup("History cleared!");
   };
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem("urlToolHistory");
+    const savedHistory = safeStorage.getItem("urlToolHistory");
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const history = JSON.parse(savedHistory);
+        setHistory(Array.isArray(history) ? history : []);
       } catch (e) {
         console.error("Failed to parse history:", e);
       }
@@ -144,14 +150,14 @@ const UrlTool = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
-          <span className="material-icons text-xs">link</span>
+          <span aria-hidden="true" className="material-icons text-xs">link</span>
           Protocol Suite
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
-          URL <span className="gradient-text">Master</span>
+          URL <span className="gradient-text">Encoder / Decoder</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
-          The professional standard for URI manipulation and secure data encoding.
+          Encode URL components and query parameter values, or decode percent-encoded UTF-8 text. Base64 is encoding, not encryption.
         </p>
       </section>
 
@@ -172,7 +178,7 @@ const UrlTool = () => {
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setMode(item.id)}
+                  onClick={() => { setMode(item.id); setResult(""); setError(""); }}
                   className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${
                     mode === item.id 
                       ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
@@ -190,7 +196,7 @@ const UrlTool = () => {
                 <div className="flex justify-between items-end px-2">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Input Source</h3>
-                    <button onClick={() => setShowHelp(!showHelp)} className="text-slate-300 hover:text-blue-500 transition-colors">
+                    <button aria-label="Encoding help" aria-expanded={showHelp} onClick={() => setShowHelp(!showHelp)} className="text-slate-300 hover:text-blue-500 transition-colors">
                       <HelpCircle size={14} />
                     </button>
                   </div>
@@ -211,11 +217,11 @@ const UrlTool = () => {
                 </AnimatePresence>
 
                 <div className="relative">
-                  <textarea
+                  <textarea aria-label="URL input"
                     className="w-full h-64 p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500/50 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none resize-none shadow-inner"
                     placeholder={`Paste text to ${mode}...`}
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => { setText(e.target.value); setResult(""); setError(""); }}
                   />
                   <div className="absolute bottom-6 right-8 text-[10px] font-black text-slate-300">
                     LENGTH: {text.length}
@@ -242,7 +248,7 @@ const UrlTool = () => {
                 </div>
 
                 <div className="relative">
-                  <textarea
+                  <textarea aria-label="URL output"
                     className="w-full h-64 p-8 rounded-[2rem] bg-slate-100/50 dark:bg-slate-800/50 border-none text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none resize-none"
                     placeholder="Results will appear here..."
                     value={result}

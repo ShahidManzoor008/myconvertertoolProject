@@ -16,7 +16,7 @@ export const API_ENDPOINTS = {
   },
   pdf: {
     operations: `${API_BASE_URL}/api/pdf`,
-    editor: `${API_BASE_URL}/api/edit-pdf`,
+    editor: `${API_BASE_URL}/api/editor`,
     converter: `${API_BASE_URL}/api/convert/upload`,
   },
   markdown: {
@@ -24,7 +24,7 @@ export const API_ENDPOINTS = {
     textToDocx: `${API_BASE_URL}/api/convert/md-to-docx/text`,
   },
   batch: {
-    download: `${API_BASE_URL}/download-batch`,
+    download: `${API_BASE_URL}/api/batch`,
   },
   admin: {
     users: `${API_BASE_URL}/api/admin/users`,

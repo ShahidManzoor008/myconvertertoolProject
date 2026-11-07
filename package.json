@@ -30,9 +30,41 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "deepmerge": "file:vendor/deepmerge",
+    "jsqr": "^1.4.0",
     "turbo": "^2.9.12"
   },
   "overrides": {
-    "pdfjs-dist": "^5.4.149"
+    "pdfjs-dist": "^6.5.438",
+    "basic-ftp": "^6.2.6",
+    "postcss-selector-parser": "^7.1.7",
+    "js-beautify": {
+      "glob": "^14.0.4"
+    },
+    "editorconfig": {
+      "minimatch": "^11.0.5"
+    },
+    "readdir-glob": {
+      "minimatch": "^11.0.5"
+    },
+    "nodemon": {
+      "minimatch": "^11.0.5"
+    },
+    "@jest/reporters": {
+      "glob": "^14.0.4"
+    },
+    "jest-config": {
+      "glob": "^14.0.4"
+    },
+    "jest-runtime": {
+      "glob": "^14.0.4"
+    },
+    "test-exclude": {
+      "glob": "^14.0.4",
+      "minimatch": "^11.0.5"
+    }
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }

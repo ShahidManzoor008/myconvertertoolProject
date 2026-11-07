@@ -40,7 +40,7 @@ const AuthPopup = ({ isOpen, onClose, onLogin, onSkip }) => {
             {/* Content */}
             <div className="text-center mb-10">
               <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
-                <span className="material-icons text-3xl">cloud_done</span>
+                <span aria-hidden="true" className="material-icons text-3xl">cloud_done</span>
               </div>
               <h2 id="auth-popup-title" className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2 uppercase">
                 Save Progress

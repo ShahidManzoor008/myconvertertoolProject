@@ -1,130 +1,55 @@
-import fetch from 'node-fetch';
-import path from 'path';
-import { promises as fs } from 'fs';
+import path from 'node:path';
+import os from 'node:os';
+import { promises as fs } from 'node:fs';
 import { createZipArchive } from '../utils/archiveUtils.js';
-import { cleanupFiles } from '../utils/fileUtils.js';
-import * as fileType from 'file-type';
+import { fileTypeFromBuffer } from 'file-type';
+import { downloadPublicFile, MAX_DOWNLOAD_BYTES } from '../utils/safeDownload.js';
 
-// Whitelist of allowed domains for fetching files
-const ALLOWED_DOWNLOAD_DOMAINS = process.env.ALLOWED_DOWNLOAD_DOMAINS ?
-  process.env.ALLOWED_DOWNLOAD_DOMAINS.split(',').map(d => d.trim()) :
-  []; // e.g., ['example.com', 'another.org']
-
-// Helper to validate URLs to prevent SSRF
-const isValidUrl = (url) => {
-  try {
-    const parsedUrl = new URL(url);
-    // Only allow http and https protocols
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return false;
-    }
-
-    // Block private IP ranges (e.g., 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.1)
-    // This is a simplified check and might need a more robust library for production
-    const hostname = parsedUrl.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
-    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return false;
-    if (hostname.startsWith('172.') && parseInt(hostname.split('.')[1], 10) >= 16 && parseInt(hostname.split('.')[1], 10) <= 31) return false;
-
-    // If a whitelist is configured, check against it
-    if (ALLOWED_DOWNLOAD_DOMAINS.length > 0) {
-      return ALLOWED_DOWNLOAD_DOMAINS.includes(hostname);
-    }
-
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-// Allowed MIME types for downloaded files (example, adjust as needed)
-const allowedDownloadMimeTypes = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/zip',
-  'text/plain',
-  'text/csv',
+const allowedTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/zip',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-];
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+
+export const safeArchiveName = name => typeof name === 'string' && name.length > 0 && name.length <= 180 &&
+  !/[\\/\x00-\x1f\x7f:]/.test(name) && name !== '.' && name !== '..' && !name.startsWith('.');
 
 export const downloadBatch = async (req, res) => {
-  const { files } = req.body;
-
-  if (!files || !Array.isArray(files) || files.length === 0) {
-    return res.status(400).json({ error: 'No files provided' });
+  const files = req.body?.files;
+  if (!Array.isArray(files) || !files.length || files.length > 5 ||
+      files.some(f => !f || !safeArchiveName(f.filename) || typeof f.url !== 'string')) {
+    return res.status(400).json({ error: 'Provide 1–5 files with valid filenames and URLs' });
   }
-
-  const tempFilesToZip = [];
-  const tempDir = path.join('uploads', 'batch_temp');
-  await fs.mkdir(tempDir, { recursive: true });
-
+  let directory;
   try {
+    directory = await fs.mkdtemp(path.join(os.tmpdir(), 'converter-batch-'));
+    const entries = [];
+    let total = 0;
     for (const file of files) {
-      let fileBuffer;
-      let detectedMimeType = null;
-
+      let buffer;
       if (file.url.startsWith('data:')) {
-        const base64Data = file.url.split(',')[1];
-        fileBuffer = Buffer.from(base64Data, 'base64');
-        const type = await fileType.fromBuffer(fileBuffer);
-        if (type) detectedMimeType = type.mime;
+        const match = /^data:[^;,]+;base64,([A-Za-z0-9+/]*={0,2})$/.exec(file.url);
+        if (!match || match[1].length > Math.ceil(MAX_DOWNLOAD_BYTES / 3) * 4) throw new Error('Invalid or oversized file data');
+        buffer = Buffer.from(match[1], 'base64');
       } else {
-        // Validate URL before fetching
-        if (!isValidUrl(file.url)) {
-          console.warn(`Attempted to download from invalid URL: ${file.url}`);
-          // Skip this file and continue, or return an error for the whole batch
-          continue; // For now, skip invalid URLs
-        }
-        const response = await fetch(file.url);
-        if (!response.ok) {
-          console.warn(`Failed to fetch ${file.url}: ${response.statusText}`);
-          continue; // Skip this file if fetch fails
-        }
-        fileBuffer = await response.buffer();
-        const type = await fileType.fromBuffer(fileBuffer);
-        if (type) detectedMimeType = type.mime;
+        buffer = await downloadPublicFile(file.url);
       }
-
-      // Validate detected MIME type
-      if (!detectedMimeType || !allowedDownloadMimeTypes.includes(detectedMimeType)) {
-        console.warn(`Rejected downloaded file ${file.filename} with unsupported MIME type: ${detectedMimeType}`);
-        continue; // Skip unsupported file types
-      }
-
-      const tempFilePath = path.join(tempDir, file.filename);
-      await fs.writeFile(tempFilePath, fileBuffer);
-      tempFilesToZip.push({ path: tempFilePath, name: file.filename });
+      total += buffer.length;
+      if (total > MAX_DOWNLOAD_BYTES) throw new Error('Batch exceeds 20 MB limit');
+      const type = await fileTypeFromBuffer(buffer);
+      if (!type || !allowedTypes.has(type.mime)) throw new Error('Unsupported file type');
+      // Files stay in memory until archiving; client filenames are archive labels only.
+      entries.push({ path: buffer, name: file.filename });
     }
-
-    if (tempFilesToZip.length === 0) {
-      return res.status(400).json({ error: 'No valid files to download or process.' });
-    }
-
-    const zipPath = path.join('uploads', 'processed_files.zip');
-    await createZipArchive(tempFilesToZip, zipPath);
-
-    res.download(zipPath, 'processed_files.zip', async (err) => {
-      if (err) {
-        console.error('Error sending zip file:', err);
-      }
-      // Clean up the created zip file and temporary files
-      await fs.unlink(zipPath);
-      cleanupFiles(tempFilesToZip.map(f => f.path));
-      await fs.rm(tempDir, { recursive: true, force: true });
+    const archive = path.join(directory, 'processed_files.zip');
+    await createZipArchive(entries, archive);
+    // Wait for completion or client disconnect before deleting this request's files.
+    await new Promise((resolve, reject) => {
+      res.once('close', resolve);
+      res.download(archive, 'processed_files.zip', error => error ? reject(error) : resolve());
     });
-
   } catch (error) {
-    console.error('Error creating batch download:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to create batch download' });
-    }
+    console.error('Batch download failed:', error.message);
+    if (!res.headersSent && !res.destroyed) res.status(400).json({ error: 'Batch download failed. Check file types, size, and allowed URLs.' });
   } finally {
-    // Ensure cleanup even if download fails or is aborted
-    cleanupFiles(tempFilesToZip.map(f => f.path));
-    await fs.rm(tempDir, { recursive: true, force: true });
+    if (directory) await fs.rm(directory, { recursive: true, force: true }).catch(error => console.error('Batch cleanup failed:', error.message));
   }
 };

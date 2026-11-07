@@ -39,7 +39,7 @@ const ConversionProgressBar = ({ message = 'Processing...', progress, status = '
           <p className={`text-[10px] font-black ${config.text}`}>{Math.round(progress)}%</p>
         )}
       </div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-900">
+      <div role="progressbar" aria-label={message} aria-valuemin={0} aria-valuemax={100} aria-valuenow={isIndeterminate ? undefined : progress} className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-900">
         <motion.div
           className={`h-full rounded-full bg-gradient-to-r ${config.color}`}
           initial={{ width: 0 }}
@@ -47,7 +47,7 @@ const ConversionProgressBar = ({ message = 'Processing...', progress, status = '
           transition={isIndeterminate ? { repeat: Infinity, duration: 1.5, ease: "linear" } : { duration: 0.3 }}
         />
       </div>
-      {events.length > 0 && (
+      {status === "complete" && events.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {events.map((event) => (
             <div key={event.label} className={`flex items-center gap-2 text-[11px] font-bold ${event.active ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}>

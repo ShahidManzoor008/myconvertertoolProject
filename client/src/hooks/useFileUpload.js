@@ -37,10 +37,12 @@ export const useFileUpload = (selectedOperation) => {
   // Configure dropzone for file uploads
   const { getRootProps, getInputProps } = useDropzone({
     multiple: true,
+    maxFiles: 5,
+    maxSize: 75 * 1024 * 1024,
     accept: getAcceptForOperation(selectedOperation || 'convert'),
     onDrop: (acceptedFiles, rejectedFiles) => {
       if (rejectedFiles.length > 0) {
-        showPopup(`Invalid file types: ${rejectedFiles.map((f) => f.name).join(", ")}`);
+        showPopup("Choose up to 5 supported files, each under 75 MB.");
       }
 
       const allowedMimeTypes = getAcceptForOperation(selectedOperation || 'convert');
@@ -56,6 +58,10 @@ export const useFileUpload = (selectedOperation) => {
         return;
       }
 
+      if (filteredFiles.reduce((total, file) => total + file.size, 0) > 95 * 1024 * 1024) {
+        showPopup("Combined files must be under 95 MB.");
+        return;
+      }
       setUploadedFiles(filteredFiles);
       showPopup(`${filteredFiles.length} valid file(s) selected`);
     },

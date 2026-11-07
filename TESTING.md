@@ -1,55 +1,69 @@
-# Testing and Linting
+# Project checks
 
-Quick reference for running tests and linters in this monorepo.
+Use Node.js 24 (`nvm use` reads `.nvmrc`) and install from the repository root:
 
-Notes
-- This repo is a monorepo with `client/` (React + Vite + Vitest) and `server/` (Node/Express + Jest) packages.
-- On Windows, `mongodb-memory-server` may fail to download/start. The server test setup falls back to the `MONGODB_URI` (default: `mongodb://localhost:27017/myconvertertool`) — make sure you have a local MongoDB running for tests to pass.
-
-Client (frontend)
-
-- Run unit tests (Vitest):
-
-```powershell
-npm test --prefix client
+```sh
+PUPPETEER_SKIP_DOWNLOAD=true CYPRESS_INSTALL_BINARY=0 npm ci
 ```
 
-- Run ESLint in the client:
+The root `package-lock.json` is the authoritative workspace lockfile. Do not run independent installs in `client/` or `server/`.
 
-```powershell
-npm run lint --prefix client
+Run backend tests against a dedicated local MongoDB instance or container, never production. `MONGO_URI_TEST` must use `localhost` or `127.0.0.1` and a database name ending in `_test`. Test setup ignores the production `MONGODB_URI`. The fixtures delete users and sessions in the selected test database.
+
+```sh
+MONGO_URI_TEST=mongodb://127.0.0.1:27018/myconvertertool_test npm test --workspace server
+node --test vendor/deepmerge/security.test.cjs server/tests/middleware.node-test.mjs
+npm test --workspace client
+npm run lint --workspace client
+npm run build --workspace client
+npm audit
 ```
 
-Server (backend)
+CI starts its own MongoDB service and runs these checks. The local `vendor/deepmerge` package is a documented security patch for development tooling; keep its regression tests until a patched upstream release can replace it.
 
-- Run server tests (Jest + ESM support):
+Production PDF conversion additionally needs LibreOffice and Chrome. Install the browser for the server account with `npx puppeteer browsers install chrome`. The Docker image uses system Chromium instead. Docker Compose builds from the repository root and keeps MongoDB data in a named volume.
 
-```powershell
-npm test --prefix server
+The backend listens on loopback by default behind nginx. Set `HOST=0.0.0.0` when running it in a container. Conversion endpoints accept at most five files, 75 MB per file and 100 MB per request, and reject concurrent conversion requests with HTTP 503 and a retry hint. The frontend allows 95 MB combined to leave room for multipart overhead. Batch ZIP downloads accept up to 20 MB total; JSON requests are also subject to the 10 MB body limit. Remote batch URLs require an explicit `ALLOWED_DOWNLOAD_DOMAINS` allowlist, public DNS addresses, and safe redirect destinations.
+
+## Audit regression and browser checks
+
+The server suite includes PDF validation, actual DOCX generation, compression size,
+blog pagination, and exact-match legacy article corrections. The frontend suite covers
+UTF-8/binary Base64, numeric fidelity, string-safe JSON repair, minifier semantics,
+QR payload escaping, Unicode counts, truthful progress, and clipboard errors.
+
+Build the candidate outside the production-served directory:
+
+```sh
+FRONTEND_BUILD_DIR=/tmp/myconvertertool-audit-build npm run build --workspace client
 ```
 
-Notes on the server test runner:
-- Tests are executed using Node's `--experimental-vm-modules` flag to allow ESM imports inside the test runtime. This is configured in `server/package.json` test script.
-- If you prefer not to use VM Modules, you can run the tests in an environment that supports ESM natively for Jest or adapt the tests to CommonJS.
+With a dedicated MongoDB on loopback port 27018, run the local QA server in one terminal:
 
-Full monorepo check
-
-To run both client and server tests and the client linter (recommended):
-
-```powershell
-npm test --prefix server; npm test --prefix client; npm run lint --prefix client
+```sh
+LOG_LEVEL=fatal node scripts/audit-server.mjs
 ```
 
-Common troubleshooting
+In another terminal:
 
-- "Invalid hook call" or React "useRef" errors in client tests:
-  - Ensure only a single React copy is resolved. We enforce this with `vite.config.js` aliases and `resolve.dedupe`.
-  - Remove local copies of `react`/`react-dom` from `client/node_modules` if you see duplication.
+```sh
+node scripts/verify-public-tools.mjs
+```
 
-- mongodb-memory-server fails to start on Windows:
-  - Ensure you have a working local MongoDB and the `server` tests will fall back to `MONGODB_URI`.
-  - Alternatively, configure CI/Dev to allow mongodb-memory-server to download binaries (network, proxy, and permissions).
+Both scripts reject non-local targets. The QA server seeds only the explicitly selected
+local `_test` database and uses a temporary upload directory. Browser checks use real
+candidate APIs and independently decode QR images with `jsqr`; they write screenshots,
+downloads, and JSON results under `/tmp/myconvertertool-browser-results`.
+`AUDIT_CHECK_FILTER` selects named checks for a targeted rerun, and `AUDIT_OUTPUT_DIR`
+selects a separate evidence directory. Chromium coverage does not establish Safari or
+Firefox compatibility or field Core Web Vitals.
 
-Contact
+Check the generated public page metadata after building:
 
-If you want me to run the full tests and fix remaining deprecation warnings (`deps.inline` in `vite.config.js`) and the single ESLint warning about missing useEffect dep, tell me and I'll continue.
+```sh
+FRONTEND_BUILD_DIR=/tmp/myconvertertool-audit-build node scripts/check-prerender.mjs
+```
+
+The check verifies one title, description, H1, canonical URL, absolute social image,
+image alt presence, valid JSON-LD, and a noindex 404 page. It does not claim Google
+indexing, ranking, rich-result eligibility, or full accessibility compliance.

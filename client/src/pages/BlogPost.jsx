@@ -55,7 +55,7 @@ const BlogPost = () => {
         setError(null);
       } catch (err) {
         console.error('Error fetching blog post:', err);
-        setError('Failed to load blog post. Please try again later.');
+        setError(err.status === 404 ? 'not-found' : 'unavailable');
       } finally {
         setLoading(false);
       }
@@ -71,10 +71,11 @@ const BlogPost = () => {
   if (error || !post) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 px-4">
+        <SEO title={error === 'unavailable' ? 'Article unavailable | MyConverterTool' : 'Article not found | MyConverterTool'} robots="noindex, follow" />
         <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500">
-          <span className="material-icons text-4xl">error_outline</span>
+          <span aria-hidden="true" className="material-icons text-4xl">error_outline</span>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Post Not Found</h2>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{error === 'unavailable' ? 'Article temporarily unavailable' : 'Article not found'}</h1>
         <p className="text-slate-600 dark:text-slate-400 text-center max-w-md">
           The article you are looking for might have been moved or deleted.
         </p>
@@ -102,7 +103,7 @@ const BlogPost = () => {
           '@type': 'Article',
           headline: post.title,
           description: post.excerpt,
-          image: post.coverImage ? `https://myconvertertool.com${post.coverImage}` : 'https://myconvertertool.com/assets/MyConverterTool.png',
+          image: post.coverImage ? new URL(post.coverImage, 'https://myconvertertool.com').href : 'https://myconvertertool.com/assets/og-default.png',
           datePublished: post.createdAt,
           dateModified: post.updatedAt || post.createdAt,
           author: {
@@ -148,11 +149,11 @@ const BlogPost = () => {
 
           <div className="flex items-center justify-center gap-6 pt-6 border-t border-slate-200/50 dark:border-slate-800/50 max-w-xs mx-auto">
             <div className="flex items-center gap-2">
-              <span className="material-icons text-blue-600 text-sm">schedule</span>
-              <span className="text-sm font-black text-slate-600 dark:text-slate-400">{post.readingTime}m Read</span>
+              <span aria-hidden="true" className="material-icons text-blue-600 text-sm">schedule</span>
+              <span className="text-sm font-black text-slate-600 dark:text-slate-400">{Math.max(1, post.readingTime || 1)}m Read</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="material-icons text-blue-600 text-sm">visibility</span>
+              <span aria-hidden="true" className="material-icons text-blue-600 text-sm">visibility</span>
               <span className="text-sm font-black text-slate-600 dark:text-slate-400">Pro Content</span>
             </div>
           </div>
@@ -177,7 +178,7 @@ const BlogPost = () => {
         <div className="prose prose-slate dark:prose-invert prose-lg md:prose-xl prose-headings:font-black prose-headings:tracking-tighter prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-img:rounded-3xl prose-img:shadow-xl prose-pre:bg-slate-900 prose-pre:rounded-2xl">
           <div
             className="article-content leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(/<[a-z][\s\S]*>/i.test(post.content) ? post.content : md.render(post.content)).replace(/<(\/?)h1\b/g, '<$1h2') }}
           />
         </div>
 
@@ -198,7 +199,7 @@ const BlogPost = () => {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="p-4 rounded-2xl glass hover:bg-blue-600 hover:text-white transition-all group"
             >
-              <span className="material-icons group-hover:-translate-y-1 transition-transform">arrow_upward</span>
+              <span aria-hidden="true" className="material-icons group-hover:-translate-y-1 transition-transform">arrow_upward</span>
             </button>
             <button 
               onClick={() => {
@@ -208,7 +209,7 @@ const BlogPost = () => {
               }}
               className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
             >
-              <span className="material-icons text-sm">share</span>
+              <span aria-hidden="true" className="material-icons text-sm">share</span>
               Share Article
             </button>
           </div>

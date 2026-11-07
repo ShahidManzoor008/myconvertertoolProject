@@ -14,7 +14,7 @@ const CategoryToolPage = ({ seoData, badge, badgeClassName, icon, title, accent,
       <section className="border-b border-slate-200 bg-slate-50/80 py-12 dark:border-slate-800 dark:bg-slate-950/30 md:py-16">
         <div className="mx-auto max-w-5xl px-4 text-left">
         <div className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${badgeClassName}`}>
-          <span className="material-icons text-xs">{icon}</span>
+          <span aria-hidden="true" className="material-icons text-xs">{icon}</span>
           {badge}
         </div>
           <h1 className="mb-4 text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-6xl">
@@ -49,7 +49,7 @@ const CategoryToolPage = ({ seoData, badge, badgeClassName, icon, title, accent,
 
         <div className="mt-12 text-center">
           <Link to="/tools" className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide text-slate-500 transition-colors hover:text-teal-700 dark:hover:text-teal-300">
-            <span className="material-icons text-sm">west</span>
+            <span aria-hidden="true" className="material-icons text-sm">west</span>
             Back to all tools
           </Link>
         </div>

@@ -1,4 +1,6 @@
 import multer from 'multer';
+import AppError from '../utils/AppError.js';
+import { randomUUID } from 'node:crypto';
 import path from 'path';
 import * as fileType from 'file-type';
 import fs from 'fs';
@@ -19,6 +21,9 @@ const fileFilter = async (req, file, cb) => {
     "image/jpeg",
     "image/png",
     "image/jpg",
+    "image/webp",
+    "image/gif",
+    "image/bmp",
     "text/markdown",
     "text/plain",
     "application/octet-stream", // Generic binary data, might need further inspection
@@ -26,12 +31,13 @@ const fileFilter = async (req, file, cb) => {
 
   const allowedExtensions = [
     "pdf", "docx", "pptx", "xlsx", "doc", "ppt", "odp", "ods", "odt", "xls",
-    "jpeg", "png", "jpg", "md", "txt"
+    "jpeg", "png", "jpg", "webp", "gif", "bmp", "md", "markdown", "txt"
   ];
 
-  if (!allowedMimeTypes.includes(file.mimetype)) {
+  const extension = path.extname(file.originalname).slice(1).toLowerCase();
+  if (!allowedExtensions.includes(extension) || !allowedMimeTypes.includes(file.mimetype)) {
     console.error(`❌ Rejected file type: ${file.mimetype}`);
-    return cb(new Error("Invalid file type"), false);
+    return cb(new AppError("Invalid file type", 400), false);
   }
   cb(null, true);
 };
@@ -46,12 +52,12 @@ const storage = multer.diskStorage({
     }
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, randomUUID() + path.extname(file.originalname));
   },
 });
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 75 * 1024 * 1024 }, // 75MB max file size
+  limits: { fileSize: 75 * 1024 * 1024, files: 5, fields: 20, parts: 25 }, // 75MB max file size
   fileFilter
 });

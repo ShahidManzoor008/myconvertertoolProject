@@ -1,173 +1,78 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fs from 'fs/promises';
+import path from 'node:path';
 import { cleanupFiles, validateUploadedFile } from '../utils/fileUtils.js';
 
-const allowedPdfMimeTypes = [
-  'application/pdf',
-];
-
-// Helper function to load PDF and handle errors
-const loadPdf = async (filePath, originalName) => {
-  const ok = await validateUploadedFile(filePath, originalName, allowedPdfMimeTypes);
-  if (!ok) {
-    cleanupFiles(filePath);
-    throw new Error('Invalid or unsupported PDF file.');
-  }
-  const pdfBytes = await fs.readFile(filePath);
-  return PDFDocument.load(pdfBytes);
+const invalid = message => Object.assign(new Error(message), { statusCode: 400 });
+const numeric = (value, fallback, label, min = 0, max = 100000) => {
+  if (value === undefined) return fallback;
+  if (value === '' || value === null || !['string', 'number'].includes(typeof value)) throw invalid(`Invalid ${label}.`);
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max) throw invalid(`Invalid ${label}.`);
+  return number;
 };
-
-// Helper function to save and send PDF
-const saveAndSendPdf = async (res, pdfDoc, originalFilename) => {
-  const modifiedPdfBytes = await pdfDoc.save();
-  res.setHeader('Content-Disposition', `attachment; filename="edited_${originalFilename || 'document.pdf'}"`);
-  res.setHeader('Content-Type', 'application/pdf');
-  res.send(Buffer.from(modifiedPdfBytes));
+const pageAt = (document, value) => {
+  const index = numeric(value, undefined, 'page index');
+  if (!Number.isInteger(index) || index >= document.getPageCount()) throw invalid('Page index is outside the document.');
+  return document.getPage(index);
 };
-
-export const addPage = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No PDF file uploaded." });
-  }
+const loadPdf = async file => {
+  if (!await validateUploadedFile(file.path, file.originalname, ['pdf'])) throw invalid('Upload a valid PDF file.');
   try {
-    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
-    pdfDoc.addPage();
-    await saveAndSendPdf(res, pdfDoc, req.file.originalname);
-  } catch (error) {
-    console.error('❌ Add Page Error:', error.stack);
-    res.status(500).json({ error: `Failed to add page: ${error.message}` });
-  } finally {
-    cleanupFiles(req.file.path);
+    const document = await PDFDocument.load(await fs.readFile(file.path), { throwOnInvalidObject: true });
+    if (!document.getPageCount()) throw new Error('No usable PDF pages.');
+    return document;
   }
+  catch { throw invalid('This PDF is corrupt, encrypted, or unsupported.'); }
 };
-
-export const deletePage = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No PDF file uploaded." });
-  }
+const drawText = async (document, edit) => {
+  const page = pageAt(document, edit.pageIndex);
+  if (typeof edit.text !== 'string' || !edit.text.trim() || edit.text.length > 1000) throw invalid('Enter 1 to 1,000 characters of text.');
+  let color = edit.color;
+  if (typeof color === 'string') { try { color = JSON.parse(color); } catch { throw invalid('Invalid text color.'); } }
+  const components = color === undefined ? [0, 0, 0] : ['r', 'g', 'b'].map(key => numeric(color?.[key], undefined, 'color component', 0, 1));
+  if (components.some(value => value === undefined)) throw invalid('Provide all RGB color components.');
+  const font = await document.embedFont(StandardFonts.Helvetica);
   try {
-    const { pageIndex } = req.body; // Expecting 0-indexed page number
-    if (typeof pageIndex === 'undefined' || pageIndex < 0) {
-      return res.status(400).json({ error: "Page index is required and must be non-negative." });
-    }
-
-    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
-    if (pdfDoc.getPages().length <= 1) {
-      return res.status(400).json({ error: "Cannot delete the last page of the PDF." });
-    }
-    pdfDoc.removePage(pageIndex);
-    await saveAndSendPdf(res, pdfDoc, req.file.originalname);
-  } catch (error) {
-    console.error('❌ Delete Page Error:', error.stack);
-    res.status(500).json({ error: `Failed to delete page: ${error.message}` });
-  } finally {
-    cleanupFiles(req.file.path);
-  }
-};
-
-export const addText = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No PDF file uploaded." });
-  }
-  try {
-    const { text, pageIndex, x, y, size, color } = req.body;
-    if (!text || typeof pageIndex === 'undefined' || pageIndex < 0) {
-      return res.status(400).json({ error: "Text, page index, x, y, size, and color are required." });
-    }
-
-    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
-    const pages = pdfDoc.getPages();
-    const targetPage = pages[pageIndex];
-
-    if (!targetPage) {
-      return res.status(400).json({ error: "Page not found." });
-    }
-
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    targetPage.drawText(text, {
-      x: x || 50,
-      y: y || (targetPage.getHeight() - 50),
-      font,
-      size: size || 24,
-      color: color ? rgb(color.r, color.g, color.b) : rgb(0, 0, 0),
+    page.drawText(edit.text, {
+      x: numeric(edit.x, 50, 'x coordinate'), y: numeric(edit.y, page.getHeight() - 50, 'y coordinate'),
+      size: numeric(edit.size, 24, 'font size', 1, 300), font, color: rgb(...components),
     });
-
-    await saveAndSendPdf(res, pdfDoc, req.file.originalname);
-  } catch (error) {
-    console.error('❌ Add Text Error:', error.stack);
-    res.status(500).json({ error: `Failed to add text: ${error.message}` });
-  } finally {
-    cleanupFiles(req.file.path);
-  }
+  } catch (error) { if (error.statusCode) throw error; throw invalid('This text cannot be rendered with the supported font.'); }
 };
-
-export const savePdf = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No PDF file uploaded." });
-  }
+const run = operation => async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No PDF file uploaded.' });
   try {
-    // For savePdf, we essentially just return the uploaded file as is, or if it was modified
-    // by a previous operation in the same session, that modified version.
-    // Since each operation already saves and sends, this might be redundant.
-    // However, if we want a dedicated 'Save' button that doesn't imply further edits,
-    // we can just send the current file.
-    const pdfBytes = await fs.readFile(req.file.path);
-    res.setHeader('Content-Disposition', `attachment; filename="${req.file.originalname}"`);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.send(Buffer.from(pdfBytes));
+    const document = await loadPdf(req.file);
+    await operation(document, req.body || {}, res);
+    const bytes = await document.save();
+    res.attachment(`edited_${path.basename(req.file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')}`);
+    res.type('application/pdf').send(Buffer.from(bytes));
   } catch (error) {
-    console.error('❌ Save PDF Error:', error.stack);
-    res.status(500).json({ error: `Failed to save PDF: ${error.message}` });
-  } finally {
-    cleanupFiles(req.file.path);
-  }
+    res.status(error.statusCode === 400 ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Unable to edit this PDF. Please try again.' });
+  } finally { cleanupFiles(req.file.path); }
 };
-
-// Existing editPdf function (can be refactored or removed if specific routes cover all needs)
-export const editPdf = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No PDF file uploaded." });
+export const addPage = run(document => { document.addPage(); });
+export const deletePage = run((document, body) => {
+  const page = pageAt(document, body.pageIndex);
+  if (document.getPageCount() <= 1) throw invalid('Cannot delete the last page of the PDF.');
+  document.removePage(document.getPages().indexOf(page));
+});
+export const addText = run(drawText);
+export const savePdf = run(() => {});
+export const editPdf = run(async (document, body, res) => {
+  let edits = body.edits;
+  if (typeof edits === 'string') { try { edits = JSON.parse(edits); } catch { throw invalid('Edits must be a JSON array.'); } }
+  if (edits === undefined) return;
+  if (!Array.isArray(edits) || edits.length > 100) throw invalid('Provide at most 100 edit operations.');
+  for (const edit of edits) {
+    if (!edit || typeof edit !== 'object') throw invalid('Invalid edit operation.');
+    if (edit.type === 'addText') await drawText(document, edit);
+    else if (edit.type === 'removeText' || edit.type === 'coverArea') {
+      // A visual overlay is never secure redaction: underlying content remains extractable.
+      const page = pageAt(document, edit.pageIndex);
+      page.drawRectangle({ x: numeric(edit.x, 0, 'x'), y: numeric(edit.y, 0, 'y'), width: numeric(edit.width, 100, 'width', 1), height: numeric(edit.height, 20, 'height', 1), color: rgb(1, 1, 1) });
+      res.set('Warning', '299 - "Visual overlay only; underlying content is not removed"');
+    } else throw invalid('Unsupported edit operation.');
   }
-
-  try {
-    const pdfDoc = await loadPdf(req.file.path, req.file.originalname);
-
-    const { edits } = req.body; // Expecting an array of edit operations
-
-    if (edits && edits.length > 0) {
-      for (const edit of edits) {
-        const page = pdfDoc.getPages()[edit.pageIndex];
-        if (!page) continue;
-
-        if (edit.type === 'addText') {
-          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-          page.drawText(edit.text, {
-            x: edit.x || 50,
-            y: edit.y || (page.getHeight() - 50),
-            font,
-            size: edit.size || 24,
-            color: edit.color ? rgb(edit.color.r, edit.color.g, edit.color.b) : rgb(0, 0, 0),
-          });
-        } else if (edit.type === 'removeText') {
-          // Redaction: Draw an opaque rectangle over the area
-          page.drawRectangle({
-            x: edit.x || 0,
-            y: edit.y || 0,
-            width: edit.width || 100,
-            height: edit.height || 20,
-            color: rgb(1, 1, 1), // White for "removal", or black for redaction
-            opacity: 1,
-          });
-        }
-      }
-    }
-
-    await saveAndSendPdf(res, pdfDoc, req.file.originalname);
-
-  } catch (error) {
-    console.error('❌ PDF Editor Error:', error.stack);
-    res.status(500).json({ error: `Failed to edit PDF: ${error.message}` });
-  } finally {
-    cleanupFiles(req.file.path);
-  }
-};
+});

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import SEO from '../utils/SEO.jsx';
+import { primaryTools } from '../data/tools.jsx';
 import { motion } from 'framer-motion';
 
 const About = () => {
@@ -52,9 +53,9 @@ const About = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <StatCard label="Monthly Users" value="10K+" />
-            <StatCard label="Tools Available" value="15+" />
-            <StatCard label="Avg. Speed" value="~200ms" />
+            <StatCard label="Access" value="Browser" />
+            <StatCard label="Tools Available" value={String(primaryTools.length)} />
+            <StatCard label="Tool Categories" value={String(new Set(primaryTools.map(tool => tool.category)).size)} />
             <StatCard label="Cost to You" value="$0.00" />
           </div>
         </div>
@@ -70,17 +71,17 @@ const About = () => {
             <ValueItem 
               icon="security" 
               title="Privacy First" 
-              desc="Your data is processed and never stored. What you convert stays with you."
+              desc="Encoding, formatting, and text counting run in your browser; document conversions use our servers. See our Privacy Policy for file handling and retention."
             />
             <ValueItem 
               icon="speed" 
               title="Blazing Fast" 
-              desc="Optimized backend ensures your conversions happen in milliseconds, not minutes."
+              desc="Processing time depends on the tool, file size, document complexity, and your device or connection."
             />
             <ValueItem 
               icon="stars" 
               title="Pro Quality" 
-              desc="We don't settle for 'good enough'. Our tools output precise, industry-standard results."
+              desc="Review converted documents before sharing them. Complex layouts and unsupported content can affect results."
             />
           </div>
         </section>
@@ -99,7 +100,7 @@ const StatCard = ({ label, value }) => (
 const ValueItem = ({ icon, title, desc }) => (
   <div className="text-center">
     <div className="w-16 h-16 rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center mx-auto mb-6">
-      <span className="material-icons text-3xl">{icon}</span>
+      <span aria-hidden="true" className="material-icons text-3xl">{icon}</span>
     </div>
     <h3 className="text-xl font-bold mb-4">{title}</h3>
     <p className="text-slate-500 leading-relaxed">{desc}</p>

@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+import { safeStorage } from '../../utils/storage';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Upload } from 'lucide-react';
 import AuthPopup from '../../components/AuthPopup';
 import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import PdfOperations from '../../components/PdfOperations';
-import PdfViewer from '../../components/PdfViewer';
+const PdfViewer = lazy(() => import('../../components/PdfViewer'));
 import ConversionProgressBar from '../../components/common/ConversionProgressBar';
 import UploadedFilesList from '../../components/UploadedFilesList';
 import ConvertedFilesList from '../../components/ConvertedFilesList';
@@ -63,12 +62,12 @@ const PdfConverter = () => {
       });
 
       try {
-        localStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
+        safeStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
       } catch (error) {
         if (error.name === 'QuotaExceededError') {
-          localStorage.removeItem('recentFiles');
+          safeStorage.removeItem('recentFiles');
           try {
-            localStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
+            safeStorage.setItem('recentFiles', JSON.stringify(storedUpdated));
           } catch (e) {
             console.error("Still unable to save recent files after clearing.", e);
           }
@@ -123,7 +122,8 @@ const PdfConverter = () => {
 
   // Load recent files from localStorage
   useEffect(() => {
-    const loadedRecent = JSON.parse(localStorage.getItem('recentFiles') || '[]');
+    let loadedRecent = [];
+    try { loadedRecent = JSON.parse(safeStorage.getItem('recentFiles') || '[]'); } catch { /* Optional history. */ }
     setRecentFiles(loadedRecent);
   }, []);
 
@@ -374,7 +374,7 @@ const PdfConverter = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20 mb-6">
-          <span className="material-icons text-xs">description</span>
+          <span aria-hidden="true" className="material-icons text-xs">description</span>
           Pro Document Suite
         </div>
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 leading-tight">
@@ -415,7 +415,7 @@ const PdfConverter = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg">
-                    <span className="material-icons text-sm">settings</span>
+                    <span aria-hidden="true" className="material-icons text-sm">settings</span>
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active Mode</p>
@@ -441,7 +441,7 @@ const PdfConverter = () => {
                 whileHover={{ y: -2 }}
                 className="group relative border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center cursor-pointer rounded-[2rem] mb-10 hover:border-red-500/50 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all"
               >
-                <input {...getInputProps()} />
+                <input aria-label="Choose files to convert" {...getInputProps()} />
                 <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-red-500 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
                   <Upload className="w-8 h-8" />
                 </div>
@@ -450,7 +450,7 @@ const PdfConverter = () => {
                 </h4>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                   {selectedOperation === 'convert'
-                    ? 'Supports DOCX, XLSX, Images, Markdown & more'
+                    ? 'DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG, MD and TXT. Up to 5 files, 75 MB each, 95 MB combined. Files are processed on our servers.'
                     : 'Select PDF files to begin editing'}
                 </p>
               </motion.div>
@@ -549,14 +549,14 @@ const PdfConverter = () => {
 
               {isEditMode && editorPreviewUrl && (
                 <div className="mb-10">
-                  <PdfViewer
+                  <Suspense fallback={<p role="status">Loading PDF preview…</p>}><PdfViewer
                     file={editorPreviewUrl}
                     filename={uploadedFiles[0]?.name || 'document.pdf'}
                     onLoadSuccess={({ numPages }) => {
                       setPdfPageCount(numPages);
                       setSplitEndPage(numPages || 1);
                     }}
-                  />
+                  /></Suspense>
                 </div>
               )}
 
@@ -635,11 +635,11 @@ const PdfConverter = () => {
                   className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm px-4 py-6 sm:px-6 sm:py-10 overflow-y-auto"
                 >
                   <div className="max-w-5xl mx-auto">
-                    <PdfViewer
+                    <Suspense fallback={<p role="status">Loading PDF preview…</p>}><PdfViewer
                       file={previewUrl}
                       filename={previewFile.filename || previewFile.originalName || previewFile.name || 'document.pdf'}
                       onClose={handleClosePreview}
-                    />
+                    /></Suspense>
                   </div>
                 </motion.div>
               )}

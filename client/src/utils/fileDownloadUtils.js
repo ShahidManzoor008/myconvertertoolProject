@@ -27,7 +27,7 @@ export const downloadFile = (fileData, filename, showPopup) => {
       setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
 
       if (showPopup) {
-        showPopup(`${downloadName} downloaded.`);
+        showPopup(`Download started: ${downloadName}`);
       }
       return;
     } else {
@@ -40,7 +40,7 @@ export const downloadFile = (fileData, filename, showPopup) => {
     document.body.removeChild(link);
 
     if (showPopup) {
-      showPopup(`${downloadName} downloaded.`);
+      showPopup(`Download started: ${downloadName}`);
     }
   } catch (error) {
     console.error('Download failed:', error);

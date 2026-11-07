@@ -1,11 +1,11 @@
 import express from 'express';
-import { auth } from '../middleware/auth.js';
+import { adminAuth } from '../middleware/auth.js';
 import { sendNotification } from '../services/notifications.js';
 
 const router = express.Router();
 
 // Send notification (internal use)
-router.post('/send', auth, async (req, res) => {
+router.post('/send', adminAuth, async (req, res) => {
   try {
     await sendNotification(req.body.to, req.body.subject, req.body.text);
     res.json({ message: 'Notification sent' });

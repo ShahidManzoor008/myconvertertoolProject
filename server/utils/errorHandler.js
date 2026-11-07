@@ -73,6 +73,8 @@ export const errorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
 
+    if (err.type === 'entity.parse.failed') error = new AppError('Invalid JSON request body', 400);
+    if (err.type === 'entity.too.large') error = new AppError('Request body exceeds the size limit', 413);
     if (err.name === 'CastError') error = handleCastErrorDB(err);
     if (err.code === 11000) error = handleDuplicateFieldsDB(err);
     if (err.name === 'ValidationError') error = handleValidationErrorDB(err);

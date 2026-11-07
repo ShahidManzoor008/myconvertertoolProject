@@ -1,0 +1,137 @@
+{
+  "publicPages": [
+    {
+      "path": "/",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/dev",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/text",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/seo",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/pdf-converter",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/json-formatter",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/base64-encoder",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/url-encoder",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/minify-beautify",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/qr-code-generator",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/meta-tag-preview",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/text-case-converter",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/word-counter",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/tools/markdown-to-docx",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/blog",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/contact",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/privacy-policy",
+      "status": 200,
+      "metadata": "PASS"
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "metadata": "PASS"
+    }
+  ],
+  "otherChecks": [
+    {
+      "test": "CORS https://myconvertertool.com",
+      "status": 200
+    },
+    {
+      "test": "CORS https://unapproved-audit-origin.example",
+      "status": 403
+    },
+    {
+      "test": "unknown page",
+      "status": 404
+    },
+    {
+      "test": "account noindex",
+      "status": 200
+    },
+    {
+      "test": "XML sitemap",
+      "urls": 27
+    },
+    {
+      "test": "canonical redirect",
+      "input": "http://myconvertertool.com",
+      "final": "https://myconvertertool.com/"
+    },
+    {
+      "test": "canonical redirect",
+      "input": "https://www.myconvertertool.com",
+      "final": "https://myconvertertool.com/"
+    }
+  ],
+  "buildHashMatches": true
+}

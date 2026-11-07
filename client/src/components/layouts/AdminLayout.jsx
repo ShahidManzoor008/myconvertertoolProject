@@ -35,7 +35,7 @@ const AdminLayout = () => {
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <span className="material-icons">
+              <span aria-hidden="true" className="material-icons">
                 {isSidebarOpen ? 'chevron_left' : 'chevron_right'}
               </span>
             </button>
@@ -54,7 +54,7 @@ const AdminLayout = () => {
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <span className="material-icons mr-3">{item.icon}</span>
+                    <span aria-hidden="true" className="material-icons mr-3">{item.icon}</span>
                     {isSidebarOpen && <span>{item.label}</span>}
                   </Link>
                 </li>
@@ -67,7 +67,7 @@ const AdminLayout = () => {
             <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
               <div className="flex items-center">
                 <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                  <span className="material-icons text-sm">person</span>
+                  <span aria-hidden="true" className="material-icons text-sm">person</span>
                 </div>
                 {isSidebarOpen && (
                   <div className="ml-3">
@@ -100,10 +100,10 @@ const AdminLayout = () => {
             </h1>
             <div className="flex items-center space-x-4">
               <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                <span className="material-icons">notifications</span>
+                <span aria-hidden="true" className="material-icons">notifications</span>
               </button>
               <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                <span className="material-icons">dark_mode</span>
+                <span aria-hidden="true" className="material-icons">dark_mode</span>
               </button>
             </div>
           </div>

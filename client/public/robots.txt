@@ -1,23 +1,9 @@
 User-agent: *
 Allow: /
-
-# AI and answer-engine crawlers
-User-agent: GPTBot
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
+Disallow: /api/auth/
+Disallow: /api/admin/
+Disallow: /api/dashboard/
+Disallow: /api/notifications/
+Disallow: /app.html
 
 Sitemap: https://myconvertertool.com/sitemap.xml

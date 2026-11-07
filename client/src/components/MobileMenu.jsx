@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useLocation, Link } from "react-router-dom";
 import { XMarkIcon, ShieldCheckIcon } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
@@ -16,10 +17,34 @@ const mobileToolColors = {
 
 const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
   const location = useLocation();
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const previousFocus = document.querySelector('[aria-controls="mobile-navigation"]') || document.activeElement;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusable = () => [...dialogRef.current.querySelectorAll('a[href],button:not([disabled])')];
+    focusable()[0]?.focus();
+    const handleKey = event => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0], last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      document.removeEventListener('keydown', handleKey);
+      requestAnimationFrame(() => previousFocus?.focus());
+    };
+  }, [onClose]);
 
   return (
     <div
-      className="fixed inset-y-0 right-0 w-full sm:w-80 glass border-l border-white/20 dark:border-slate-800/20 shadow-2xl z-50 md:hidden flex flex-col"
+      ref={dialogRef}
+      id="mobile-navigation"
+      className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-slate-950 xl:hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Mobile navigation menu"
@@ -27,7 +52,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
       <div className="p-6 border-b border-white/10 dark:border-slate-800/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg">
-            <span className="material-icons text-sm">architecture</span>
+            <span aria-hidden="true" className="material-icons text-sm">architecture</span>
           </div>
           <span className="text-lg font-black tracking-tighter">Menu</span>
         </div>
@@ -56,10 +81,11 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                 <span>Admin Dashboard</span>
               </Link>
             )}
-            {navigation.map((item) => (
+            {navigation.filter(item => user ? !["Register", "Login"].includes(item.name) : item.name !== "Profile").map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
+                aria-current={location.pathname === item.href ? "page" : undefined}
                 onClick={onClose}
                 className={`flex items-center gap-3 p-3 rounded-2xl font-bold transition-all ${
                   location.pathname === item.href
@@ -84,7 +110,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                   onClick={onClose}
                   className="flex flex-col items-center justify-center p-4 rounded-2xl glass hover:bg-blue-600 hover:text-white transition-all gap-2"
                 >
-                  <span className="material-icons">login</span>
+                  <span aria-hidden="true" className="material-icons">login</span>
                   <span className="text-xs font-bold uppercase">Sign In</span>
                 </Link>
                 <Link
@@ -92,7 +118,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                   onClick={onClose}
                   className="flex flex-col items-center justify-center p-4 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/25 gap-2"
                 >
-                  <span className="material-icons">person_add</span>
+                  <span aria-hidden="true" className="material-icons">person_add</span>
                   <span className="text-xs font-bold uppercase">Sign Up</span>
                 </Link>
               </div>
@@ -115,7 +141,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                   onClick={() => { onLogout(); onClose(); }}
                   className="flex items-center justify-center gap-2 w-full p-3 rounded-2xl bg-red-500/10 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-all mt-2"
                 >
-                  <span className="material-icons text-sm">logout</span>
+                  <span aria-hidden="true" className="material-icons text-sm">logout</span>
                   Logout
                 </button>
               </div>

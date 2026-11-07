@@ -45,7 +45,8 @@ export default defineConfig({
     extensions: ['.js', '.jsx', '.json']
   },
   build: {
-    outDir: 'dist',
+    outDir: process.env.FRONTEND_BUILD_DIR || 'dist',
+    emptyOutDir: !process.env.FRONTEND_BUILD_DIR,
     modulePreload: {
       resolveDependencies: (_filename, deps) => deps.filter((dep) => !/(motion|pdf-tools|pdf-worker|pdf.worker|code-tools)/.test(dep)),
     },
@@ -74,8 +75,7 @@ export default defineConfig({
       'framer-motion',
       'react-dropzone',
       'lucide-react',
-      'prop-types',
-      'date-fns'
+      'prop-types'
     ],
     esbuildOptions: {
       loader: {
@@ -87,6 +87,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    maxWorkers: 1,
+    testTimeout: 15000,
+    hookTimeout: 30000,
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['node_modules', 'dist', 'coverage', '.turbo'],

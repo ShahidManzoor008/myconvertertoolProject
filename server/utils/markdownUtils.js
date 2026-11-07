@@ -1,7 +1,12 @@
 import markdownit from 'markdown-it';
+import sanitizeHtml from 'sanitize-html';
+
 import { promises as fs } from 'fs';
 import path from 'path';
-import htmlToDocx from 'html-to-docx';
+import { createRequire } from 'node:module';
+const requireNative = createRequire(import.meta.url);
+const htmlToDocx = requireNative('@turbodocx/html-to-docx');
+
 import { init } from 'mathjax';
 import sharp from 'sharp';
 
@@ -50,6 +55,7 @@ const latexToImageBase64 = async (latex, isDisplay) => {
   // Decide output format
   if (LATEX_IMAGE_FORMAT === 'svg') {
     const base64Url = `data:image/svg+xml;base64,${Buffer.from(svgElement).toString('base64')}`;
+    if (latexCache.size >= 100) latexCache.delete(latexCache.keys().next().value);
     latexCache.set(cacheKey, base64Url);
     return base64Url;
   }
@@ -258,7 +264,15 @@ export const convertMarkdownContentToDocx = async (markdownContent, sourceLabel 
     console.log('✅ LaTeX equations preprocessed');
 
     // 2. Convert Markdown to styled HTML
-    const renderedHtml = md.render(processedContent);
+    const renderedHtml = sanitizeHtml(md.render(processedContent), {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+      allowedAttributes: { a: ['href', 'title'], img: ['src', 'alt', 'width', 'height'] },
+      allowedSchemes: ['https', 'http', 'mailto'],
+      allowedSchemesByTag: { img: ['data'] },
+      allowProtocolRelative: false,
+      exclusiveFilter: frame => frame.tag === 'img' && !/^data:image\/(?:png|jpeg);base64,/i.test(frame.attribs.src || ''),
+      transformTags: { img: (tagName, attribs) => ({ tagName, attribs: /^data:image\/(?:png|jpeg);base64,[a-z0-9+/=]+$/i.test(attribs.src || '') ? attribs : { alt: attribs.alt || 'External image omitted' } }) },
+    });
     const htmlContent = buildDocumentHtml(renderedHtml);
     console.log('✅ Markdown converted to styled HTML');
 

@@ -57,7 +57,7 @@ export const loginUser = async (req, res) => {
     const session = new Session({
       user: user._id,
       token: jwt.sign(
-        { userId: user._id },
+        { userId: user._id, jti: crypto.randomUUID() },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       ),
@@ -94,11 +94,17 @@ export const updateProfile = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const updates = {};
-    if (req.body.name) updates.name = req.body.name;
-    if (req.body.password) updates.password = req.body.password;
-    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
-    res.json(user);
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (req.body.name) user.name = req.body.name;
+    if (req.body.password) user.password = req.body.password;
+    await user.save(); // Runs the Argon2 pre-save hook and schema validators.
+    if (req.body.password) {
+      await Session.updateMany({ user: user._id, token: { $ne: req.token } }, { isValid: false });
+    }
+    const profile = user.toObject();
+    for (const key of ['password', 'resetToken', 'resetTokenExpiry', 'emailVerificationToken']) delete profile[key];
+    res.json(profile);
   } catch (error) {
     res.status(500).json({ error: 'Profile update failed' });
   }
@@ -164,11 +170,13 @@ export const googleAuth = async (req, res) => {
       await user.save();
     }
 
+    if (user.status !== 'active') return res.status(403).json({ error: 'Account is not active' });
+
     // Create session (resilient)
     const session = new Session({
       user: user._id,
       token: jwt.sign(
-        { userId: user._id },
+        { userId: user._id, jti: crypto.randomUUID() },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       ),

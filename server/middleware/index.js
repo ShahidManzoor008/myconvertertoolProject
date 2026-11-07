@@ -1,4 +1,5 @@
 import cors from 'cors';
+import AppError from '../utils/AppError.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { securityMiddleware } from './security.js';
@@ -15,7 +16,7 @@ export const setupMiddleware = (app, allowedOrigins) => {
       if (allowedOrigins.includes(origin) || !origin) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new AppError('Origin is not allowed', 403));
       }
     },
     credentials: true,
@@ -49,15 +50,17 @@ export const setupMiddleware = (app, allowedOrigins) => {
 
   // Rate Limiting
   const globalLimiter = rateLimit({
+    skip: () => process.env.NODE_ENV === 'test',
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 30, // Global limit
     message: { error: "Too many requests, please try again later." },
   });
   const authLimiter = rateLimit({
+    skip: () => process.env.NODE_ENV === 'test',
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // Stricter limit for auth endpoints
     message: { error: "Too many auth requests, please try again later." },
   });
-  app.use(globalLimiter);
+  app.use('/api', globalLimiter);
   app.use("/api/auth", authLimiter);
 };

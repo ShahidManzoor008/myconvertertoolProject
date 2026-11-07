@@ -7,11 +7,13 @@ import ToolSupportSection from "../../components/ToolSupportSection";
 import { Copy, Download, Check, Zap } from "lucide-react";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-css";
 import { statsApi } from "../../utils/apiClient";
 
+import { runMinifier } from '../../utils/runMinifier';
+import { parse, stringify } from 'lossless-json';
+
 const MinifyBeautifyTool = () => {
+  const [processing, setProcessing] = useState(false);
   const [code, setCode] = useState("");
   const [result, setResult] = useState("");
   const [language, setLanguage] = useState("js");
@@ -24,6 +26,7 @@ const MinifyBeautifyTool = () => {
   const [copyState, setCopyState] = useState("idle");
   const [highlightedInput, setHighlightedInput] = useState("");
 
+  const highlightedRef = useRef(null);
   const iframeRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -37,7 +40,7 @@ const MinifyBeautifyTool = () => {
       setterFunction("");
       return;
     }
-    const grammar = lang === "js" ? Prism.languages.javascript : lang === "css" ? Prism.languages.css : Prism.languages.markup;
+    const grammar = lang === "js" ? Prism.languages.javascript : lang === "css" ? Prism.languages.css : lang === "json" ? Prism.languages.javascript : Prism.languages.markup;
     const highlighted = Prism.highlight(codeToHighlight, grammar, lang);
     setterFunction(highlighted);
   };
@@ -45,6 +48,7 @@ const MinifyBeautifyTool = () => {
   const updatePreview = useCallback(() => {
     if (iframeRef.current) {
       let previewContent = result;
+      const policy = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'none'; base-uri 'none'">`;
       if (language === "css") {
         previewContent = `<style>${result}</style><div style="font-family: Inter, sans-serif; padding: 40px;">
           <h1 style="font-weight: 900; letter-spacing: -0.05em; font-size: 3rem;">CSS Preview</h1>
@@ -55,7 +59,7 @@ const MinifyBeautifyTool = () => {
           </div>
         </div>`;
       }
-      iframeRef.current.srcdoc = previewContent;
+      iframeRef.current.srcdoc = policy + previewContent;
     }
   }, [result, language]);
 
@@ -67,12 +71,13 @@ const MinifyBeautifyTool = () => {
   }, [result, language, updatePreview]);
 
   const handleBeautify = async () => {
-    if (!code.trim()) return;
+    if (!code.trim()) { setResult(""); showPopup("Enter source code first."); return; }
     try {
       const options = { indent_size: indentSize, preserve_newlines: preserveNewlines, max_preserve_newlines: 2 };
       let formatted;
       if (language === "js") formatted = js(code, options);
       else if (language === "css") formatted = css(code, options);
+      else if (language === "json") formatted = stringify(parse(code), null, indentSize);
       else formatted = html(code, options);
       
       setResult(formatted);
@@ -84,18 +89,16 @@ const MinifyBeautifyTool = () => {
   };
 
   const handleMinify = async () => {
-    if (!code.trim()) return;
+    if (!code.trim() || processing) return;
+    setProcessing(true);
+    setResult("");
     try {
-      let minified = code.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '').replace(/\s+/g, ' ').trim();
-      if (language === "css") minified = minified.replace(/\s*([:;,{}])\s*/g, '$1').replace(/;}/g, '}');
-      if (language === "html") minified = minified.replace(/<!--[\s\S]*?-->/g, '').replace(/>\s+</g, '><');
-      
+      const minified = await runMinifier(code, language);
       setResult(minified);
       showPopup("Minified successfully");
       statsApi.increment({ toolName: `minify-${language}`, fileSize: code.length }).catch(() => {});
-    } catch {
-      showPopup("Minification failed");
-    }
+    } catch (error) { showPopup(`Minification failed: ${error.message}`); }
+    finally { setProcessing(false); }
   };
 
   const showPopup = (msg) => {
@@ -103,8 +106,9 @@ const MinifyBeautifyTool = () => {
     setTimeout(() => setPopupMessage(""), 2000);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result);
+  const handleCopy = async () => {
+    try { await navigator.clipboard.writeText(result); }
+    catch { showPopup("Clipboard access blocked. Copy the output manually."); return; }
     setCopyState("copied");
     setTimeout(() => setCopyState("idle"), 2000);
     showPopup("Copied!");
@@ -129,11 +133,11 @@ const MinifyBeautifyTool = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-widest border border-pink-500/20 mb-6">
-          <span className="material-icons text-xs">auto_awesome</span>
+          <span aria-hidden="true" className="material-icons text-xs">auto_awesome</span>
           Developer Productivity
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
-          Code <span className="gradient-text">Refinery</span>
+          Code Formatter <span className="gradient-text">& Minifier</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
           Compress, beautify, and refine your source code with industry-standard algorithms.
@@ -150,10 +154,12 @@ const MinifyBeautifyTool = () => {
             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10 shadow-inner">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                  {["js", "css", "html"].map((lang) => (
+                  {["js", "css", "html", "json"].map((lang) => (
                     <button
                       key={lang}
-                      onClick={() => setLanguage(lang)}
+                      aria-pressed={language === lang}
+                      disabled={processing}
+                      onClick={() => { setLanguage(lang); setResult(""); }}
                       className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                         language === lang 
                           ? 'bg-white dark:bg-slate-700 text-pink-600 shadow-sm'
@@ -178,26 +184,30 @@ const MinifyBeautifyTool = () => {
                 </div>
               </div>
 
-              <div className="relative group rounded-3xl overflow-hidden bg-slate-900 shadow-2xl">
+              <div className="code-editor-surface relative group rounded-3xl overflow-hidden bg-slate-900 shadow-2xl">
                 <textarea
                   className="w-full h-[400px] p-8 font-mono text-xs leading-relaxed outline-none resize-none bg-transparent text-transparent caret-white z-10 relative"
+                  aria-label="Source code"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  onScroll={event => { if (highlightedRef.current) { highlightedRef.current.scrollTop = event.currentTarget.scrollTop; highlightedRef.current.scrollLeft = event.currentTarget.scrollLeft; } }}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => { setCode(e.target.value); setResult(""); }}
                   placeholder={`// Paste your ${language.toUpperCase()} here...`}
                   spellCheck="false"
                 />
-                <div 
+                <div ref={highlightedRef} aria-hidden="true"
                   className="absolute inset-0 p-8 font-mono text-xs leading-relaxed pointer-events-none whitespace-pre overflow-hidden"
                   dangerouslySetInnerHTML={{ __html: highlightedInput || `<span class="opacity-30">Waiting for code...</span>` }}
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <button onClick={handleBeautify} className="btn-primary flex-1 !bg-pink-600 shadow-pink-500/25 py-4">
+                <button disabled={processing} onClick={handleBeautify} className="btn-primary flex-1 !bg-pink-600 shadow-pink-500/25 py-4">
                   <Zap size={18} /> Beautify Code
                 </button>
-                <button onClick={handleMinify} className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all flex-1">
-                  Minify Bundle
+                <button disabled={processing} onClick={handleMinify} className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all flex-1">
+                  {processing ? "Processing…" : "Minify Code"}
                 </button>
               </div>
             </div>
@@ -214,15 +224,16 @@ const MinifyBeautifyTool = () => {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Processed Output</h3>
                 <div className="flex gap-2">
-                  <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-pink-600 transition-all">
+                  <button aria-label="Copy formatted code" disabled={!result || processing} onClick={handleCopy} className="p-3 rounded-xl glass hover:text-pink-600 transition-all">
                     {copyState === 'copied' ? <Check size={16} /> : <Copy size={16} />}
                   </button>
-                  <button onClick={() => {
+                  <button aria-label="Download formatted code" disabled={!result || processing} onClick={() => {
                     const blob = new Blob([result], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url; a.download = `optimized.${language}`;
                     a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
                   }} className="p-3 rounded-xl glass hover:text-pink-600 transition-all">
                     <Download size={16} />
                   </button>
@@ -257,7 +268,7 @@ const MinifyBeautifyTool = () => {
                 </div>
                 {previewVisible && (
                   <div className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white">
-                    <iframe ref={iframeRef} title="preview" className="w-full h-48 border-none" sandbox="allow-scripts" />
+                    <iframe ref={iframeRef} title="preview" className="w-full h-48 border-none" sandbox="" />
                   </div>
                 )}
               </div>

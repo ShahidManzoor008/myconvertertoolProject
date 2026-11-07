@@ -1,0 +1,85 @@
+{
+  "publicRoutes": [
+    {
+      "path": "/",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/dev",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/text",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/seo",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/pdf-converter",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/json-formatter",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/base64-encoder",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/url-encoder",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/minify-beautify",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/qr-code-generator",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/meta-tag-preview",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/text-case-converter",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/word-counter",
+      "status": "PASS"
+    },
+    {
+      "path": "/tools/markdown-to-docx",
+      "status": "PASS"
+    },
+    {
+      "path": "/blog",
+      "status": "PASS"
+    },
+    {
+      "path": "/about",
+      "status": "PASS"
+    },
+    {
+      "path": "/contact",
+      "status": "PASS"
+    },
+    {
+      "path": "/privacy-policy",
+      "status": "PASS"
+    },
+    {
+      "path": "/terms",
+      "status": "PASS"
+    }
+  ],
+  "notFoundNoindex": "PASS"
+}

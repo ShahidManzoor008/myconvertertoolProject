@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { readingMinutes } from '../utils/blogPresentation.js';
 
 const blogSchema = new mongoose.Schema({
   title: {
@@ -46,11 +47,8 @@ const blogSchema = new mongoose.Schema({
 });
 
 // Calculate reading time before saving
-blogSchema.pre('save', function(next) {
-  const wordsPerMinute = 200;
-  const wordCount = this.content.split(/\s+/).length;
-  this.readingTime = Math.ceil(wordCount / wordsPerMinute);
-  next();
+blogSchema.pre('save', function() {
+  this.readingTime = readingMinutes(this.content);
 });
 
 // Add indexes for better query performance

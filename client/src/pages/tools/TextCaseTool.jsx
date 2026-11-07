@@ -6,10 +6,13 @@ import ToolSupportSection from "../../components/ToolSupportSection";
 import { ClipboardCopy, Download, Type } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";
 
+import { capitalizeWords, sentenceCase } from '../../utils/textAnalysis';
+
 const TextCaseTool = () => {
   const [text, setText] = useState("");
   const [convertedText, setConvertedText] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
+  const [copyError, setCopyError] = useState("");
 
   const showPopup = (message) => {
     setPopupMessage(message);
@@ -17,6 +20,7 @@ const TextCaseTool = () => {
   };
 
   const handleTransform = (transformFn, label) => {
+    if (!text.trim()) { setConvertedText(""); showPopup("Enter text to transform."); return; }
     const result = transformFn(text);
     setConvertedText(result);
     
@@ -29,12 +33,15 @@ const TextCaseTool = () => {
 
   const toUpperCase = () => handleTransform(t => t.toUpperCase(), 'upper');
   const toLowerCase = () => handleTransform(t => t.toLowerCase(), 'lower');
-  const toCapitalize = () => handleTransform(t => t.replace(/\b\w/g, c => c.toUpperCase()), 'capitalize');
-  const toSentenceCase = () => handleTransform(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase(), 'sentence');
+  const toCapitalize = () => handleTransform(capitalizeWords, 'capitalize');
+  const toSentenceCase = () => handleTransform(sentenceCase, 'sentence');
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(convertedText);
-    showPopup("Copied to clipboard!");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(convertedText);
+      setCopyError("");
+      showPopup("Copied to clipboard!");
+    } catch { setCopyError("Clipboard access blocked. Select and copy the output manually."); }
   };
 
   const handleDownload = () => {
@@ -65,11 +72,11 @@ const TextCaseTool = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-600/10 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-600/20 mb-6">
-          <span className="material-icons text-xs">text_fields</span>
+          <span aria-hidden="true" className="material-icons text-xs">text_fields</span>
           Content Refiner
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
-          Text <span className="text-green-600">Transformer</span>
+          Text <span className="text-green-600">Case Converter</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
           The ultimate workspace for refining, cleaning, and transforming your text-based content.
@@ -90,11 +97,11 @@ const TextCaseTool = () => {
                 <button onClick={() => {setText(""); setConvertedText("");}} className="text-xs font-bold text-red-500 hover:underline">Clear All</button>
               </div>
 
-              <textarea
+              <textarea aria-label="Text input"
                 className="w-full h-64 p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-green-500/50 focus:bg-white transition-all text-slate-900 dark:text-white font-medium text-sm leading-relaxed outline-none resize-none shadow-inner"
                 placeholder="Type or paste your text here..."
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => { setText(e.target.value); setConvertedText(""); }}
               />
 
               {/* Transformation Grid */}
@@ -130,6 +137,7 @@ const TextCaseTool = () => {
               </div>
             </div>
 
+            {copyError && <p role="alert" className="mt-4 text-sm text-red-600">{copyError}</p>}
             {/* Output Workspace */}
             <AnimatePresence>
               {convertedText && (
@@ -146,10 +154,10 @@ const TextCaseTool = () => {
                       <h3 className="font-bold text-slate-900 dark:text-white">Refined Output</h3>
                     </div>
                     <div className="flex gap-3">
-                      <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-green-600 transition-all">
+                      <button aria-label="Copy result" onClick={handleCopy} className="p-3 rounded-xl glass hover:text-green-600 transition-all">
                         <ClipboardCopy size={18} />
                       </button>
-                      <button onClick={handleDownload} className="p-3 rounded-xl glass hover:text-green-600 transition-all">
+                      <button aria-label="Download result" onClick={handleDownload} className="p-3 rounded-xl glass hover:text-green-600 transition-all">
                         <Download size={18} />
                       </button>
                     </div>

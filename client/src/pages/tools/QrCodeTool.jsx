@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
 import PropTypes from "prop-types";
@@ -21,7 +21,18 @@ import {
   X
 } from "lucide-react";
 
+import { buildQrPayload, checkQrColors } from '../../utils/qrPayload';
+
+const contentFields = {
+  phone: [['number', 'Phone number', 'tel', '+15551234567']],
+  sms: [['phone', 'Phone number', 'tel', '+15551234567'], ['message', 'Message', 'text', 'Your message']],
+  location: [['latitude', 'Latitude', 'number', '0'], ['longitude', 'Longitude', 'number', '0']],
+  event: [['title', 'Event title', 'text', 'Team meeting'], ['start', 'Start (local time)', 'datetime-local', ''], ['end', 'End (optional, local time)', 'datetime-local', ''], ['location', 'Event location', 'text', 'Meeting room'], ['description', 'Description', 'text', 'Event details']],
+  contact: [['name', 'Full name', 'text', 'Ada Lovelace'], ['phone', 'Phone number', 'tel', '+15551234567'], ['email', 'Email address', 'email', 'ada@example.com'], ['address', 'Address', 'text', 'Street and city'], ['website', 'Website', 'url', 'https://example.com']],
+};
 const QrCodeTool = () => {
+  const [error, setError] = useState('');
+  const qrContainerRef = useRef(null);
   // Main content state
   const [content, setContent] = useState("");
   const [contentType, setContentType] = useState("text");
@@ -59,91 +70,14 @@ const QrCodeTool = () => {
     contact: { name: "", phone: "", email: "", address: "", website: "" }
   });
 
-  // Validate content when it changes
   useEffect(() => {
-    if (content) {
-      // setIsValid(true);
-    } else {
-      // setIsValid(false);
-    }
-  }, [content]);
-
-  // Function to build content based on type and form fields
-  useEffect(() => {
-    let newContent = "";
-    
-    switch (contentType) {
-      case "text":
-        newContent = formFields.text;
-        setTitle(formFields.text.substring(0, 20) + (formFields.text.length > 20 ? "..." : ""));
-        break;
-      case "url":
-        newContent = formFields.url;
-        setTitle("URL");
-        break;
-      case "email":
-        if (formFields.email.address) {
-          newContent = `mailto:${formFields.email.address}`;
-          if (formFields.email.subject) newContent += `?subject=${encodeURIComponent(formFields.email.subject)}`;
-          if (formFields.email.body) newContent += `${formFields.email.subject ? "&" : "?"}body=${encodeURIComponent(formFields.email.body)}`;
-        }
-        setTitle("Email");
-        break;
-      case "sms":
-        if (formFields.sms.phone) {
-          newContent = `sms:${formFields.sms.phone}`;
-          if (formFields.sms.message) newContent += `?body=${encodeURIComponent(formFields.sms.message)}`;
-        }
-        setTitle("SMS");
-        break;
-      case "phone":
-        if (formFields.phone.number) {
-          newContent = `tel:${formFields.phone.number}`;
-        }
-        setTitle("Phone");
-        break;
-      case "location":
-        if (formFields.location.latitude && formFields.location.longitude) {
-          newContent = `geo:${formFields.location.latitude},${formFields.location.longitude}`;
-        }
-        setTitle("Location");
-        break;
-      case "wifi":
-        if (formFields.wifi.ssid) {
-          newContent = `WIFI:S:${formFields.wifi.ssid};`;
-          if (formFields.wifi.password) newContent += `P:${formFields.wifi.password};`;
-          newContent += `T:${formFields.wifi.encryption};`;
-        }
-        setTitle("WiFi");
-        break;
-      case "event":
-        if (formFields.event.title && formFields.event.start) {
-          newContent = `BEGIN:VEVENT\nSUMMARY:${formFields.event.title}\nDTSTART:${formFields.event.start.replace(/[-:]/g, "")}\n`;
-          if (formFields.event.end) newContent += `DTEND:${formFields.event.end.replace(/[-:]/g, "")}\n`;
-          if (formFields.event.location) newContent += `LOCATION:${formFields.event.location}\n`;
-          if (formFields.event.description) newContent += `DESCRIPTION:${formFields.event.description}\n`;
-          newContent += "END:VEVENT";
-        }
-        setTitle("Event");
-        break;
-      case "contact":
-        if (formFields.contact.name) {
-          newContent = "BEGIN:VCARD\nVERSION:3.0\n";
-          newContent += `FN:${formFields.contact.name}\n`;
-          if (formFields.contact.phone) newContent += `TEL:${formFields.contact.phone}\n`;
-          if (formFields.contact.email) newContent += `EMAIL:${formFields.contact.email}\n`;
-          if (formFields.contact.address) newContent += `ADR:;;${formFields.contact.address};;;;\n`;
-          if (formFields.contact.website) newContent += `URL:${formFields.contact.website}\n`;
-          newContent += "END:VCARD";
-        }
-        setTitle("Contact");
-        break;
-      default:
-        newContent = "";
-    }
-    
-    setContent(newContent);
-  }, [contentType, formFields]);
+    try {
+      checkQrColors(qrColor, bgColor);
+      setContent(buildQrPayload(contentType, formFields));
+      setTitle(contentType);
+      setError('');
+    } catch (error) { setContent(''); setError(error.message); }
+  }, [contentType, formFields, qrColor, bgColor]);
 
   const showPopup = (message) => {
     setPopupMessage(message);
@@ -178,6 +112,7 @@ const QrCodeTool = () => {
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 2 * 1024 * 1024) { showPopup("Choose a PNG, JPEG, or WebP logo under 2 MB."); return; }
       const reader = new FileReader();
       reader.onload = (event) => {
         setLogo(event.target.result);
@@ -194,7 +129,7 @@ const QrCodeTool = () => {
   };
 
   const handleDownload = () => {
-    const canvas = document.querySelector("canvas");
+    const canvas = qrContainerRef.current?.querySelector("canvas");
     if (canvas) {
       const url = canvas.toDataURL("image/png");
       const a = document.createElement("a");
@@ -209,30 +144,24 @@ const QrCodeTool = () => {
       // Log conversion
       statsApi.increment({
         toolName: 'qrcode-generator',
-        fileName: `qrcode-${title || "code"}.png`
+        fileSize: content.length
       }).catch(err => console.error('Failed to log stats:', err));
     }
   };
 
-  const handleCopy = () => {
-    const canvas = document.querySelector("canvas");
-    if (canvas) {
-      canvas.toBlob(blob => {
-        const item = new ClipboardItem({ "image/png": blob });
-        navigator.clipboard.write([item]);
-        showPopup("QR Code copied to clipboard!");
-
-        // Log conversion
-        statsApi.increment({
-          toolName: 'qrcode-generator',
-          status: 'copy'
-        }).catch(err => console.error('Failed to log stats:', err));
-      });
-    }
+  const handleCopy = async () => {
+    try {
+      const canvas = qrContainerRef.current?.querySelector("canvas");
+      if (!canvas) throw new Error();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      showPopup("QR Code copied to clipboard!");
+    } catch { showPopup("Image copying is unavailable. Download the PNG instead."); }
   };
 
   const handlePreview = () => {
-    const canvas = document.querySelector("canvas");
+    const canvas = qrContainerRef.current?.querySelector("canvas");
     if (canvas) {
       setPreviewUrl(canvas.toDataURL("image/png"));
       setIsPreview(true);
@@ -271,7 +200,7 @@ const QrCodeTool = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/20 mb-6">
-          <span className="material-icons text-xs">qr_code_2</span>
+          <span aria-hidden="true" className="material-icons text-xs">qr_code_2</span>
           Instant Connectivity
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
@@ -318,8 +247,8 @@ const QrCodeTool = () => {
               <div className="space-y-6 animate-fade-in">
                 {contentType === "text" && (
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Raw Text</label>
-                    <textarea
+                    <label htmlFor="qr-text" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Raw Text</label>
+                    <textarea id="qr-text" aria-label="QR code input"
                       className="w-full p-6 rounded-3xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-teal-500/50 outline-none transition-all font-medium text-slate-900 dark:text-white min-h-[150px]"
                       placeholder="What should this QR code contain?"
                       value={formFields.text}
@@ -330,11 +259,11 @@ const QrCodeTool = () => {
 
                 {contentType === "url" && (
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Website URL</label>
+                    <label htmlFor="qr-url" className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Website URL</label>
                     <div className="relative">
                       <Link size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-teal-500" />
                       <input
-                        type="url"
+                        id="qr-url" type="url"
                         className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-teal-500/50 outline-none transition-all font-bold text-slate-900 dark:text-white"
                         placeholder="https://example.com"
                         value={formFields.url}
@@ -345,7 +274,7 @@ const QrCodeTool = () => {
                 )}
 
                 {/* Email, SMS, WiFi, etc (grouped for brevity but styled same) */}
-                {(contentType === "email" || contentType === "sms" || contentType === "wifi" || contentType === "location" || contentType === "contact" || contentType === "event") && (
+                {(contentType === "phone" || contentType === "email" || contentType === "sms" || contentType === "wifi" || contentType === "location" || contentType === "contact" || contentType === "event") && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {contentType === "wifi" && (
                       <>
@@ -353,7 +282,7 @@ const QrCodeTool = () => {
                         <InputField label="Password" type="password" value={formFields.wifi.password} onChange={(val) => handleFormChange("wifi", "password", val)} placeholder="••••••••" />
                         <div className="md:col-span-2">
                           <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1 mb-2 block">Encryption</label>
-                          <select
+                          <select aria-label="Wi-Fi encryption"
                             className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none outline-none font-bold"
                             value={formFields.wifi.encryption}
                             onChange={(e) => handleFormChange("wifi", "encryption", e.target.value)}
@@ -374,7 +303,9 @@ const QrCodeTool = () => {
                         </div>
                       </>
                     )}
-                    {/* Add other types as needed with same pattern */}
+                    {(contentFields[contentType] || []).map(([field, label, type, placeholder]) => (
+                      <InputField key={field} label={label} type={type} placeholder={placeholder} value={formFields[contentType][field]} onChange={value => handleFormChange(contentType, field, value)} />
+                    ))}
                   </div>
                 )}
               </div>
@@ -416,7 +347,7 @@ const QrCodeTool = () => {
                       <div className="space-y-4">
                         <label className="text-xs font-black uppercase tracking-widest text-slate-400 block">QR Resolution: {qrSize}px</label>
                         <input
-                          type="range" min="100" max="400" step="10"
+                          aria-label="QR resolution" type="range" min="100" max="400" step="10"
                           value={qrSize} onChange={(e) => setQrSize(Number(e.target.value))}
                           className="w-full accent-teal-600"
                         />
@@ -436,7 +367,7 @@ const QrCodeTool = () => {
                             {logo ? 'Change Logo' : 'Upload Image'}
                           </label>
                           {logo && (
-                            <button onClick={removeLogo} className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                            <button aria-label="Close" onClick={removeLogo} className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
                               <X size={20} />
                             </button>
                           )}
@@ -451,7 +382,7 @@ const QrCodeTool = () => {
         </div>
 
         {/* Output Panel */}
-        <div className="lg:col-span-4">
+        <div ref={qrContainerRef} className="lg:col-span-4">
           <div className="sticky top-32 space-y-6">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
@@ -460,43 +391,45 @@ const QrCodeTool = () => {
             >
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-8">Live Preview</h2>
               
-              <div className="relative inline-block p-6 rounded-[2.5rem] bg-white shadow-2xl border-8 border-slate-50 mb-10 group">
+              <div className="qr-preview relative inline-block w-full max-w-xs p-3 sm:p-6 rounded-[2.5rem] bg-white shadow-2xl border-8 border-slate-50 mb-10 group">
                 <div className="absolute inset-0 bg-teal-500/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative z-10">
-                  <QRCodeCanvas
-                    value={content || "https://myconvertertool.com"}
-                    size={220}
+                  {content ? <QRCodeCanvas
+                    value={content || " "}
+                    size={qrSize}
                     fgColor={qrColor}
                     bgColor={bgColor}
                     includeMargin={includeMargin}
-                    level={errorCorrection}
+                    level={logo ? "H" : errorCorrection}
                     imageSettings={
                       logo
                         ? {
                             src: logo,
                             excavate: true,
-                            width: (220 * logoSize) / 100,
-                            height: (220 * logoSize) / 100,
+                            width: (qrSize * logoSize) / 100,
+                            height: (qrSize * logoSize) / 100,
                           }
                         : undefined
                     }
-                  />
+                  /> : <p className="py-12 text-sm text-slate-500">Your QR code will appear here.</p>}
                 </div>
               </div>
 
+              {error && <p role="alert" className="mb-3 text-sm text-red-600">{error}</p>}
+              {!content && !error && <p className="mb-3 text-sm text-slate-500">Enter content to create a QR code.</p>}
               <div className="space-y-3">
                 <button
-                  onClick={handleDownload}
+                  disabled={!content || Boolean(error)} onClick={handleDownload}
                   className="btn-primary w-full !bg-teal-600 hover:!bg-teal-700 shadow-teal-500/25 py-4"
                 >
                   <Download size={20} />
                   Download PNG
                 </button>
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={handleCopy} className="py-3 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                  <button disabled={!content || Boolean(error)} onClick={handleCopy} className="py-3 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                     <Copy size={16} /> Copy
                   </button>
-                  <button onClick={handlePreview} className="py-3 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                  <button disabled={!content || Boolean(error)} onClick={handlePreview} className="py-3 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                     <Image size={16} /> Preview
                   </button>
                 </div>
@@ -505,7 +438,7 @@ const QrCodeTool = () => {
               <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Security Note</p>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Your content is processed locally in your browser. No data is stored on our servers.
+                  QR content and logos stay in your browser. Anonymous usage counts may be sent to our servers. Always scan the result before printing.
                 </p>
               </div>
             </motion.div>
@@ -534,12 +467,12 @@ const QrCodeTool = () => {
               className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 shadow-2xl max-w-md w-full text-center relative"
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={closePreview} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+              <button aria-label="Close" onClick={closePreview} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
                 <X size={24} />
               </button>
               <h2 className="text-2xl font-black mb-8 tracking-tighter">Your QR Code</h2>
               <img src={previewUrl} alt="QR Code" className="w-full rounded-3xl shadow-lg mb-8" />
-              <button onClick={handleDownload} className="btn-primary w-full !bg-teal-600">
+              <button disabled={!content || Boolean(error)} onClick={handleDownload} className="btn-primary w-full !bg-teal-600">
                 Download Now
               </button>
             </motion.div>
@@ -558,11 +491,13 @@ const QrCodeTool = () => {
   );
 };
 
-const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
+const InputField = ({ label, value, onChange, placeholder, type = "text" }) => {
+  const id = useId();
+  return (
   <div className="space-y-2">
-    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">{label}</label>
+    <label htmlFor={id} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">{label}</label>
     <input
-      type={type}
+      id={id} type={type}
       className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none outline-none font-bold text-slate-900 dark:text-white transition-all focus:ring-2 focus:ring-teal-500/20"
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -571,6 +506,7 @@ const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
   </div>
 );
 
+};
 InputField.propTypes = {
   label: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
@@ -585,13 +521,13 @@ const ColorPicker = ({ label, value, onChange }) => (
     <div className="flex items-center gap-3">
       <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">
         <input
-          type="color" value={value}
+          aria-label={label} type="color" value={value}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-[-50%] w-[200%] h-[200%] cursor-pointer"
         />
       </div>
       <input
-        type="text" value={value}
+        aria-label={`${label} hexadecimal`} type="text" value={value}
         onChange={(e) => onChange(e.target.value)}
         className="flex-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-mono text-sm font-bold uppercase"
       />

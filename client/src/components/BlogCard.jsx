@@ -16,6 +16,9 @@ const BlogCard = ({ post }) => {
               src={post.coverImage}
               alt={post.title}
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+              width="640"
+              height="360"
+              decoding="async"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
@@ -27,16 +30,16 @@ const BlogCard = ({ post }) => {
           </div>
         )}
 
-        <div className="p-8 flex-1 flex flex-col">
+        <div className="p-5 sm:p-6 flex-1 flex flex-col">
           <div className="flex items-center gap-3 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <time>
+            <time dateTime={new Date(post.createdAt).toISOString()}>
               {new Date(post.createdAt).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric'
               })}
             </time>
             <span>•</span>
-            <span>{post.readingTime} min read</span>
+            <span>{Math.max(1, Math.ceil(post.readingTime || 1))} min read</span>
           </div>
 
           <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -57,7 +60,7 @@ const BlogCard = ({ post }) => {
               </span>
             </div>
             <span className="text-blue-600 dark:text-blue-400 p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-              <span className="material-icons text-sm">arrow_forward</span>
+              <span aria-hidden="true" className="material-icons text-sm">arrow_forward</span>
             </span>
           </div>
         </div>

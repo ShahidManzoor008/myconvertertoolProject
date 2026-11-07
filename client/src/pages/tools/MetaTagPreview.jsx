@@ -5,6 +5,8 @@ import SEO from "../../utils/SEO";
 import ToolSupportSection from "../../components/ToolSupportSection";
 import { statsApi } from "../../utils/apiClient";
 
+import { buildMetaTags } from '../../utils/metaTags';
+
 const initialState = {
   title: "Free Online PDF, JSON, QR Code & Text Tools",
   description: "Use free online tools to convert PDFs, format JSON, generate QR codes, encode Base64, encode URLs, convert text case, and create DOCX files from Markdown.",
@@ -22,33 +24,26 @@ const getStatus = (value, min, max) => {
 const MetaTagPreview = () => {
   const [form, setForm] = useState(initialState);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
   const titleStatus = useMemo(() => getStatus(form.title, 30, 60), [form.title]);
   const descriptionStatus = useMemo(() => getStatus(form.description, 120, 160), [form.description]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
-    if (value.length > 30) {
-      statsApi.increment({
-        toolName: "meta-tag-preview",
-        fileSize: value.length,
-      }).catch((err) => console.error("Failed to log stats:", err));
-    }
+    setCopied(false);
+    setError("");
   };
 
   const copyTags = async () => {
-    const tags = [
-      `<title>${form.title}</title>`,
-      `<meta name="description" content="${form.description}">`,
-      `<meta property="og:title" content="${form.title}">`,
-      `<meta property="og:description" content="${form.description}">`,
-      `<meta property="og:url" content="${form.url}">`,
-      `<link rel="canonical" href="${form.url}">`,
-    ].join("\n");
-
-    await navigator.clipboard.writeText(tags);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    try {
+      const tags = buildMetaTags(form);
+      await navigator.clipboard.writeText(tags);
+      setError("");
+      setCopied(true);
+      statsApi.increment({ toolName: "meta-tag-preview", fileSize: tags.length }).catch(() => {});
+      setTimeout(() => setCopied(false), 1800);
+    } catch (error) { setCopied(false); setError(error.message || "Unable to copy. Check your URL and clipboard permissions."); }
   };
 
   return (
@@ -97,8 +92,8 @@ const MetaTagPreview = () => {
               label="SEO title"
               value={form.title}
               status={titleStatus}
-              maxLength={70}
-              helper="Best range: 30-60 characters."
+              maxLength={300}
+              helper="Suggested range: 30-60 characters."
               onChange={(value) => updateField("title", value)}
             />
             <MetaField
@@ -106,8 +101,8 @@ const MetaTagPreview = () => {
               label="Meta description"
               value={form.description}
               status={descriptionStatus}
-              maxLength={180}
-              helper="Best range: 120-160 characters."
+              maxLength={1000}
+              helper="Suggested range: 120-160 characters."
               textarea
               onChange={(value) => updateField("description", value)}
             />
@@ -122,6 +117,7 @@ const MetaTagPreview = () => {
             </div>
           </div>
 
+          {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
           <button
             onClick={copyTags}
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
@@ -132,6 +128,7 @@ const MetaTagPreview = () => {
         </section>
 
         <aside className="space-y-5">
+          <p className="text-sm text-slate-500">Previews are approximate. Character ranges are editorial guidance, not Google limits. Search engines may rewrite titles and descriptions.</p>
           <PreviewCard title="Google-style Preview" icon={<Eye size={16} />}>
             <div className="font-sans">
               <p className="truncate text-sm text-emerald-700 dark:text-emerald-300">{form.url || "https://example.com/page"}</p>

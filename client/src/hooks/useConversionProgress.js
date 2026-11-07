@@ -23,32 +23,9 @@ export const useConversionProgress = (steps = DEFAULT_STEPS) => {
 
   const start = useCallback(() => {
     clearTimers();
-    setState({
-      active: true,
-      message: steps[0]?.message || "Preparing...",
-      progress: Math.min(steps[0]?.progress || 10, 20),
-      status: "running",
-    });
-
-    steps.slice(1).forEach((step, index) => {
-      const timer = window.setTimeout(() => {
-        setState((current) => {
-          if (current.status !== "running") {
-            return current;
-          }
-
-          return {
-            active: true,
-            message: step.message,
-            progress: Math.max(current.progress, step.progress),
-            status: "running",
-          };
-        });
-      }, 650 + index * 850);
-
-      timersRef.current.push(timer);
-    });
-  }, [clearTimers, steps]);
+    // The conversion API does not report byte or job progress. Do not invent stages or percentages.
+    setState({ active: true, message: "Uploading and processing your request…", progress: undefined, status: "running" });
+  }, [clearTimers]);
 
   const complete = useCallback((message = "Conversion complete") => {
     clearTimers();
@@ -71,10 +48,10 @@ export const useConversionProgress = (steps = DEFAULT_STEPS) => {
 
   const fail = useCallback((message = "Conversion failed") => {
     clearTimers();
-    setState((current) => ({
+    setState(() => ({
       active: true,
       message,
-      progress: Math.max(current.progress, 100),
+      progress: undefined,
       status: "error",
     }));
   }, [clearTimers]);

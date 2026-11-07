@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
-import AdminLayout from '../components/layouts/AdminLayout';
+const AdminLayout = lazy(() => import('../components/layouts/AdminLayout'));
 import AdminRoute from './AdminRoute'; // Import the new AdminRoute component
 
 // Lazy load admin pages

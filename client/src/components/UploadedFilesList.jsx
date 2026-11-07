@@ -11,7 +11,7 @@ const UploadedFilesList = ({ files, onRemoveFile }) => {
         {files.map((file, index) => (
           <li key={index} className="flex items-center justify-between py-1">
             <span className="truncate">{file.name}</span>
-            <button
+            <button aria-label="Close"
               onClick={() => onRemoveFile(index)}
               className="text-red-500 hover:text-red-700 ml-2"
             >

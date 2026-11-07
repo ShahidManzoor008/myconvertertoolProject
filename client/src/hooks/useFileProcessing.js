@@ -138,6 +138,7 @@ export const useFileProcessing = (showPopup, addToRecent) => {
         throw err; // Re-throw for auth handling
       }
       showPopup(`${currentOperation} operation failed: ${err.message}`);
+      throw err;
     } finally {
       setLoading(false);
     }

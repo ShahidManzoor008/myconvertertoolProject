@@ -33,8 +33,8 @@ export const securityMiddleware = [
         'https://accounts.google.com/gsi/'
       ],
       'img-src': [SELF, 'data:', 'https:', ...googleDomains],
-      'style-src': [SELF, UNSAFE_INLINE],
-      'font-src': [SELF, 'data:'],
+      'style-src': [SELF, UNSAFE_INLINE, 'https://fonts.googleapis.com'],
+      'font-src': [SELF, 'data:', 'https://fonts.gstatic.com'],
       'form-action': [SELF],
       'base-uri': [SELF]
     }

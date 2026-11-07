@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
+import {
   Search,
   Plus,
   Edit2,
@@ -51,7 +51,7 @@ const Users = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name?.toLowerCase().includes(search.toLowerCase()) ||
     user.email?.toLowerCase().includes(search.toLowerCase())
   );
@@ -167,21 +167,21 @@ const Users = () => {
                           <Edit2 className="h-5 w-5" />
                         </button>
                         {user.status === 'active' ? (
-                          <button 
+                          <button
                             onClick={() => handleToggleStatus(user)}
                             className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                           >
                             <UserX className="h-5 w-5" />
                           </button>
                         ) : (
-                          <button 
+                          <button
                             onClick={() => handleToggleStatus(user)}
                             className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                           >
                             <UserCheck className="h-5 w-5" />
                           </button>
                         )}
-                        <button 
+                        <button aria-label="Remove item"
                           onClick={() => handleDelete(user._id)}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >

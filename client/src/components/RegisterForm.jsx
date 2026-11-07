@@ -45,7 +45,7 @@ const RegisterForm = ({ onSuccess }) => {
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 sm:p-10 shadow-inner">
           <div className="text-center mb-10">
             <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
-              <span className="material-icons text-3xl">person_add</span>
+              <span aria-hidden="true" className="material-icons text-3xl">person_add</span>
             </div>
             <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2 uppercase">Create Account</h2>
             <p className="text-sm text-slate-500 font-medium uppercase tracking-widest">Join our professional community</p>
@@ -100,7 +100,7 @@ const RegisterForm = ({ onSuccess }) => {
             disabled={loading}
           >
             <span className={`flex items-center justify-center gap-2 transition-transform duration-300 ${loading ? 'translate-y-10' : ''}`}>
-              Get Started for Free <span className="material-icons text-sm">rocket_launch</span>
+              Get Started for Free <span aria-hidden="true" className="material-icons text-sm">rocket_launch</span>
             </span>
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center">

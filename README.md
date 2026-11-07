@@ -30,7 +30,7 @@ A full-stack web application offering a suite of free online tools for file conv
 
 - **Frontend:** React, Vite, Tailwind CSS, Framer Motion, Lucide React
 - **Backend:** Node.js, Express
-- **Database:** (Add your DB, e.g., MongoDB, if used)
+- **Database:** MongoDB with Mongoose; users, sessions, blog posts, and conversion metadata.
 - **Deployment:** Docker, Render
 - **Linting:** ESLint, PropTypes
 
@@ -69,7 +69,7 @@ myconvertertool.com/
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 24.9+ (24.x)
 - npm
 - Docker (for containerized deployment)
 
@@ -80,16 +80,11 @@ cd myconvertertool.com
 ```
 
 ### 2. Install Dependencies
-#### Client
+Use the root workspace lockfile (do not install client/server independently):
 ```sh
-cd client
-npm install
+PUPPETEER_SKIP_DOWNLOAD=true CYPRESS_INSTALL_BINARY=0 npm ci
 ```
-#### Server
-```sh
-cd ../server
-npm install
-```
+See [TESTING.md](TESTING.md) for local test database isolation and required browser/LibreOffice dependencies.
 
 ### 3. Development
 #### Start Client (React)
@@ -117,8 +112,7 @@ npm run lint
 ### Docker
 Build and run the server with Docker:
 ```sh
-cd server
-docker build -t myconvertertool-server .
+docker build -f server/Dockerfile -t myconvertertool-server .
 docker run -p 10000:10000 myconvertertool-server
 ```
 

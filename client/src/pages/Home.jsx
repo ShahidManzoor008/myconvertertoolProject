@@ -105,7 +105,7 @@ const Home = () => {
         jsonLd={seoData.home.jsonLd}
       />
 
-      <section className="border-b border-slate-200 bg-slate-50/80 pt-20 pb-14 dark:border-slate-800 dark:bg-slate-950/30">
+      <section className="border-b border-slate-200 bg-slate-50/80 pt-8 pb-10 sm:pt-12 sm:pb-14 lg:pt-16 dark:border-slate-800 dark:bg-slate-950/30">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div>
           <div
@@ -116,7 +116,7 @@ const Home = () => {
           </div>
 
             <h1 className="mb-6 max-w-4xl text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-6xl">
-            Free Online PDF, Text, SEO & Developer Tools
+            Free PDF, text & developer tools
           </h1>
 
             <p className="mb-8 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
@@ -127,15 +127,15 @@ const Home = () => {
               <Link to="/tools" className="btn-primary w-full px-6 py-3 sm:w-auto">
                 Browse All Tools
               </Link>
-              <Link to="/tools/word-counter" className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 font-bold text-slate-800 transition hover:border-teal-500 hover:text-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:w-auto">
-                Word Counter
-                <span className="material-icons text-base">east</span>
+              <Link to="/tools/pdf-converter" className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 font-bold text-slate-800 transition hover:border-teal-500 hover:text-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:w-auto">
+                Convert to PDF
+                <span aria-hidden="true" className="material-icons text-base">east</span>
               </Link>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-left">
               <HeroStat value={primaryTools.length} label="Live tools" />
-              <HeroStat value="No signup" label="Most tools" />
+              <HeroStat value="Free" label="No fees" />
               <HeroStat value="Fast" label="Browser first" />
             </div>
           </div>
@@ -143,13 +143,13 @@ const Home = () => {
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <label htmlFor="tool-search" className="sr-only">Search tools</label>
             <div className="relative">
-              <span className="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+              <span aria-hidden="true" className="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
               <input
                 id="tool-search"
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search PDF, JSON, QR, Base64, text tools..."
+                placeholder="Search tools…"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 py-4 pl-14 pr-5 text-base font-semibold outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:focus:bg-slate-950"
               />
             </div>
@@ -163,7 +163,7 @@ const Home = () => {
                       className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-teal-500 hover:text-teal-700 dark:border-slate-800 dark:text-slate-200 dark:hover:text-teal-300"
                   >
                     <span>{tool.name}</span>
-                    <span className="material-icons text-base">east</span>
+                    <span aria-hidden="true" className="material-icons text-base">east</span>
                   </Link>
                 ))
               ) : (
@@ -183,7 +183,7 @@ const Home = () => {
             <p className="text-slate-600 dark:text-slate-400">Find the right utility by task type and get to work quickly.</p>
           </div>
           <Link to="/tools" className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-600 transition hover:text-teal-700 dark:text-slate-300">
-            View directory <span className="material-icons text-base">east</span>
+            View directory <span aria-hidden="true" className="material-icons text-base">east</span>
           </Link>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -203,7 +203,7 @@ const Home = () => {
             <p className="text-slate-600 dark:text-slate-400">Fast utilities for common document, data, and text tasks.</p>
           </div>
           <Link to="/tools" className="flex items-center gap-2 font-bold text-teal-700 transition-all hover:gap-3 dark:text-teal-300">
-            See all tools <span className="material-icons">east</span>
+            See all tools <span aria-hidden="true" className="material-icons">east</span>
           </Link>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

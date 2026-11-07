@@ -2,12 +2,13 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { cleanupFiles } from './fileUtils.js';
 import puppeteer from 'puppeteer';
 import markdownit from 'markdown-it';
+import { fileURLToPath } from 'node:url';
 
-const execAsync = promisify(exec);
+const execAsync = promisify(execFile);
 
 // Helper Function: Convert Image(s) to PDF
 export const convertImagesToPDF = async (imagePaths) => {
@@ -35,6 +36,8 @@ export const convertImagesToPDF = async (imagePaths) => {
   return Buffer.from(await pdfDoc.save());
 };
 
+let renderingText = false;
+
 // Helper Function: Convert Text to PDF (with Markdown styling)
 const convertTextToPDF = async (filePath) => {
   const extension = path.extname(filePath).toLowerCase();
@@ -59,43 +62,57 @@ const convertTextToPDF = async (filePath) => {
   }
 
   // Read the GitHub Markdown CSS
-  const cssPath = path.resolve(path.dirname(filePath), '..', 'assets', 'markdown-styles.css');
+  const cssPath = fileURLToPath(new URL('../assets/markdown-styles.css', import.meta.url));
   const cssContent = await fs.promises.readFile(cssPath, 'utf-8');
 
-  // Launch Puppeteer
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  const page = await browser.newPage();
+  // Retain the renderer lock through browser cleanup, including disconnected requests.
+  if (renderingText) throw new Error('Text converter is busy');
+  renderingText = true;
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      timeout: 60000,
+      protocolTimeout: 60000,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      if (/^(data:|about:blank$)/.test(request.url())) request.continue();
+      else request.abort();
+    });
 
-  // Set the HTML content with embedded styles
-  await page.setContent(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>${cssContent}</style>
-    </head>
-    <body class="markdown-body">
-      ${htmlContent}
-    </body>
-    </html>
-  `, { waitUntil: 'networkidle0' });
+    // Set the HTML content with embedded styles
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>${cssContent}</style>
+      </head>
+      <body class="markdown-body">
+        ${htmlContent}
+      </body>
+      </html>
+    `, { waitUntil: 'load', timeout: 60000 });
 
-  // Generate PDF
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: {
-      top: '20mm',
-      right: '20mm',
-      bottom: '20mm',
-      left: '20mm'
-    }
-  });
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '20mm',
+        bottom: '20mm',
+        left: '20mm'
+      }
+    });
 
-  await browser.close();
-  return pdfBuffer;
+    return pdfBuffer;
+  } finally {
+    try { if (browser) await browser.close(); } finally { renderingText = false; }
+  }
 };
 
 
@@ -133,10 +150,10 @@ const convertToPDF = async (inputPath) => {
   const outputDir = path.dirname(inputPath);
   const baseName = path.basename(inputPath, path.extname(inputPath));
 
-  const toPdfCommand = `"${libreOfficePath}" --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+  const conversionArgs = ['--headless', '--convert-to', 'pdf', '--outdir', outputDir, inputPath];
 
   try {
-    const { stdout, stderr } = await execAsync(toPdfCommand);
+    const { stdout, stderr } = await execAsync(libreOfficePath, conversionArgs, { timeout: 60000, maxBuffer: 1024 * 1024 });
     console.log("📄 LibreOffice to PDF Output:", stdout);
 
     if (stderr) {
@@ -187,6 +204,7 @@ export const convertFileToPDF = async (filePath, fileType) => {
 // Process conversion for one or more files
 export const processFileConversion = async (files) => {
   const convertedResults = [];
+  const failures = [];
   const imageFiles = [];
   const otherFiles = [];
 
@@ -214,6 +232,7 @@ export const processFileConversion = async (files) => {
       });
     } catch (error) {
       console.error(`❌ Error converting images:`, error);
+      failures.push({ filename: "images", error: "Image conversion failed" });
     }
   }
 
@@ -230,11 +249,17 @@ export const processFileConversion = async (files) => {
       });
     } catch (error) {
       console.error(`❌ Error converting ${file.originalname}:`, error);
+      failures.push({ filename: file.originalname, error: "File conversion failed" });
     }
   }
 
   // Cleanup original uploaded files
   cleanupFiles(files.map(file => file.path));
 
+  if (failures.length) {
+    const error = new Error("One or more files could not be converted");
+    error.conversionFailures = failures;
+    throw error;
+  }
   return convertedResults;
 };

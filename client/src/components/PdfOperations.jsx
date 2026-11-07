@@ -46,7 +46,7 @@ const PdfOperations = ({ onOperation, loading, currentOperation, uploadedCount }
       id: 'compress',
       name: 'Compress PDF',
       icon: <FileDown className="w-5 h-5" />,
-      description: 'Reduce PDF file size',
+      description: 'Optimize structure; savings vary',
       disabled: uploadedCount > 1,
       disabledReason: 'Use one PDF'
     }

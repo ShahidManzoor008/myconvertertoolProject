@@ -23,7 +23,7 @@ const ConvertedFilesList = ({ files, onPreview, onDownload, onRemove }) => {
             >
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow-lg">
-                  <span className="material-icons text-sm">picture_as_pdf</span>
+                  <span aria-hidden="true" className="material-icons text-sm">picture_as_pdf</span>
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">{filename}</p>

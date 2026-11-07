@@ -6,6 +6,8 @@ import ToolSupportSection from "../../components/ToolSupportSection";
 import { Copy, Download, RotateCcw, Upload, FileText, HelpCircle } from "lucide-react";
 import { statsApi } from "../../utils/apiClient";
 
+import { encodeText, decodeText, decodeBytes, encodeBytes } from '../../utils/encoding';
+
 const Base64Tool = () => {
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
@@ -33,7 +35,8 @@ const Base64Tool = () => {
   const handleEncode = async () => {
     setMode("encode");
     try {
-      const encoded = btoa(text);
+      if (!text && !selectedFile) throw new Error("Enter text or choose a file.");
+      const encoded = activeTab === "file" && selectedFile ? encodeBytes(new Uint8Array(await selectedFile.arrayBuffer())) : encodeText(text);
       setResult(encoded); // Encode to Base64
       setError("");
       
@@ -51,7 +54,8 @@ const Base64Tool = () => {
   const handleDecode = async () => {
     setMode("decode");
     try {
-      const decoded = atob(text);
+      if (!text.trim()) throw new Error("Enter Base64 data to decode.");
+      const decoded = activeTab === "file" ? new TextDecoder().decode(decodeBytes(text, true)) : decodeText(text);
       setResult(decoded); // Decode from Base64
       setError("");
 
@@ -61,14 +65,16 @@ const Base64Tool = () => {
         fileSize: text.length
       }).catch(err => console.error('Failed to log stats:', err));
     } catch {
-      setError("Decoding failed. Invalid Base64 input.");
+      setError("Invalid Base64 or non-UTF-8 data. Use File mode to export binary data.");
       setResult("");
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result);
-    showPopup("Copied to clipboard!");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      showPopup("Copied to clipboard!");
+    } catch { setError("Clipboard access blocked. Select and copy the output manually."); }
   };
 
   const handleDownload = () => {
@@ -95,14 +101,18 @@ const Base64Tool = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.size > 10 * 1024 * 1024) { setError("Choose a file under 10 MB."); return; }
+    setResult("");
     setSelectedFile(file);
     const reader = new FileReader();
+    reader.onerror = () => { setError("Unable to read this file."); setResult(""); };
 
     if (mode === "encode") {
       reader.onload = (event) => {
         const base64 = event.target.result.split(",")[1]; // Remove data URL part
         setText(base64);
         setResult(base64);
+        setError("");
       };
       reader.readAsDataURL(file);
     } else {
@@ -110,7 +120,7 @@ const Base64Tool = () => {
         try {
           const text = event.target.result;
           setText(text);
-          setResult(atob(text));
+          setResult(new TextDecoder().decode(decodeBytes(text, true)));
           setError("");
         } catch {
           setError("Decoding failed. Invalid Base64 file.");
@@ -126,11 +136,7 @@ const Base64Tool = () => {
     if (mode === "decode" && result) {
       try {
         // Try to convert the result to a Uint8Array (for binary data)
-        const binaryString = atob(text);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+        const bytes = decodeBytes(text, true);
         
         const blob = new Blob([bytes], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
@@ -150,11 +156,11 @@ const Base64Tool = () => {
     }
   };
 
-  const handleUrlEncodedBase64 = () => {
+  const handleUrlEncodedBase64 = async () => {
     if (mode === "encode") {
       try {
         // First encode to Base64, then make it URL safe
-        const base64 = btoa(text);
+        const base64 = activeTab === "file" && selectedFile ? encodeBytes(new Uint8Array(await selectedFile.arrayBuffer())) : encodeText(text);
         const urlSafeBase64 = base64
           .replace(/\+/g, "-")
           .replace(/\//g, "_")
@@ -177,7 +183,7 @@ const Base64Tool = () => {
           standardBase64 += "=";
         }
         
-        setResult(atob(standardBase64));
+        setResult(decodeText(standardBase64));
         setError("");
       } catch {
         setError("URL-safe decoding failed. Invalid input.");
@@ -201,11 +207,11 @@ const Base64Tool = () => {
       {/* Header */}
       <section className="text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
-          <span className="material-icons text-xs">code</span>
+          <span aria-hidden="true" className="material-icons text-xs">code</span>
           Data Transformation
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-tight text-slate-900 dark:text-white">
-          Base64 <span className="gradient-text">Engine</span>
+          Base64 <span className="gradient-text">Encoder / Decoder</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
           Professional-grade encoding and decoding for text and binary data with URL-safe support.
@@ -281,11 +287,11 @@ const Base64Tool = () => {
             {/* Main Input */}
             <div className="relative group">
               {activeTab === "text" ? (
-                <textarea
+                <textarea aria-label="Base64 input"
                   className="w-full h-64 p-8 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500/50 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none resize-none shadow-inner"
                   placeholder={mode === "encode" ? "Enter raw data to encode..." : "Paste Base64 string here..."}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => { setText(e.target.value); setResult(""); setError(""); }}
                 />
               ) : (
                 <div className="h-64 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center group-hover:border-blue-500/50 transition-all">
@@ -327,7 +333,7 @@ const Base64Tool = () => {
               </button>
               <button
                 onClick={handleReset}
-                className="p-4 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-auto"
+                aria-label="Clear input" className="p-4 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-auto"
               >
                 <RotateCcw size={20} />
               </button>
@@ -344,7 +350,7 @@ const Base64Tool = () => {
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center text-white shadow-lg">
-                        <span className="material-icons text-sm">task_alt</span>
+                        <span aria-hidden="true" className="material-icons text-sm">task_alt</span>
                       </div>
                       <h3 className="font-bold text-slate-900 dark:text-white">Output Generated</h3>
                       <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -352,10 +358,10 @@ const Base64Tool = () => {
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={handleCopy} className="p-3 rounded-xl glass hover:text-blue-600 transition-all">
+                      <button aria-label="Copy result" onClick={handleCopy} className="p-3 rounded-xl glass hover:text-blue-600 transition-all">
                         <Copy size={18} />
                       </button>
-                      <button onClick={handleFileExport} className="p-3 rounded-xl glass hover:text-blue-600 transition-all">
+                      <button aria-label="Download result" onClick={handleFileExport} className="p-3 rounded-xl glass hover:text-blue-600 transition-all">
                         <Download size={18} />
                       </button>
                     </div>

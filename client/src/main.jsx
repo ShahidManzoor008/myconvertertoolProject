@@ -1,3 +1,4 @@
+import { initialPageLoader } from './config/pageLoaders';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -8,7 +9,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const queryClient = new QueryClient()
 
-createRoot(document.getElementById('root')).render(
+async function startApp() {
+  await initialPageLoader(window.location.pathname)();
+  document.head.querySelectorAll('[data-initial-seo], [data-rh]').forEach(element => element.remove());
+  createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -19,3 +23,12 @@ createRoot(document.getElementById('root')).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+}
+startApp().catch(error => {
+  console.error('Unable to start the app:', error);
+  const notice = document.createElement('p');
+  notice.setAttribute('role', 'alert');
+  notice.textContent = 'Interactive tools could not load. Please reload this page to try again.';
+  notice.style.cssText = 'padding:1rem;text-align:center;background:#fff7ed;color:#9a3412';
+  document.body.prepend(notice);
+});

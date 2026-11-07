@@ -89,7 +89,7 @@ const BlogManagement = () => {
             to="/admin/posts/new"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
           >
-            <span className="material-icons mr-2">add</span>
+            <span aria-hidden="true" className="material-icons mr-2">add</span>
             New Post
           </Link>
           {selectedPosts.length > 0 && (
@@ -97,7 +97,7 @@ const BlogManagement = () => {
               onClick={handleBulkDelete}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
             >
-              <span className="material-icons mr-2">delete</span>
+              <span aria-hidden="true" className="material-icons mr-2">delete</span>
               Delete Selected
             </button>
           )}
@@ -105,7 +105,7 @@ const BlogManagement = () => {
 
         <div className="flex-1 max-w-md ml-4">
           <div className="relative">
-            <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <span aria-hidden="true" className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               search
             </span>
             <input
@@ -216,13 +216,13 @@ const BlogManagement = () => {
                         to={`/admin/posts/${post.slug}/edit`}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:bg-blue-900/30"
                       >
-                        <span className="material-icons">edit</span>
+                        <span aria-hidden="true" className="material-icons">edit</span>
                       </Link>
-                      <button
+                      <button aria-label="Remove item"
                         onClick={() => handleDelete(post)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg dark:text-red-400 dark:hover:bg-red-900/30"
                       >
-                        <span className="material-icons">delete</span>
+                        <span aria-hidden="true" className="material-icons">delete</span>
                       </button>
                     </div>
                   </td>
