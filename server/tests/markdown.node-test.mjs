@@ -20,6 +20,8 @@ $$
 
 $$E=mc^2 \tag{1}$$
 
+$$a<b \implies a+c<b+c$$
+
 \[
 \begin{pmatrix}1 & 2 \\ 3 & 4\end{pmatrix}
 \]
@@ -59,7 +61,7 @@ const images = html => [...html.matchAll(/<img [^>]+>/g)];
 
 test('all equation syntaxes, matrices, tables, and notes produce embedded images', async () => {
   const html = await renderMarkdownHtml(fixture);
-  assert.equal(images(html).length, 9);
+  assert.equal(images(html).length, 10);
   assert.match(html, /text-align:center/);
   assert.match(html, /<table>/);
   assert.match(html, /text-align:right/);
@@ -79,6 +81,23 @@ test('inline sums retain the whole equation instead of only the first MathJax SV
   assert.equal(images(html).length, 1);
   const width = Number(html.match(/width="(\d+)"/)[1]);
   assert.ok(width > 60, `Equation should include every term, got ${width}px`);
+});
+
+test('inequalities and XML-sensitive equation metadata produce valid PNGs', async () => {
+  const equations = [
+    '$a<b$',
+    '$$a<b \\implies a+c<b+c$$',
+    String.raw`$$\begin{aligned}a&<b\\c&>0\end{aligned}$$`,
+    String.raw`$\text{a < b \& "quoted"} < c$`,
+  ];
+  for (const equation of equations) {
+    const html = await renderMarkdownHtml(equation);
+    assert.equal(images(html).length, 1);
+    const bytes = Buffer.from(html.match(/base64,([^"]+)/)[1], 'base64');
+    const metadata = await sharp(bytes).metadata();
+    assert.equal(metadata.format, 'png');
+    assert.ok(metadata.width > 10 && metadata.height > 10);
+  }
 });
 
 test('tagged equations retain both the expression and its number', async () => {
@@ -177,7 +196,7 @@ test('PDF embeds every equation for .md and .markdown, even when the stored file
       const embedded = pdf.context.enumerateIndirectObjects().filter(([, object]) =>
         object instanceof PDFRawStream && object.dict.get(PDFName.of('Subtype')) === PDFName.of('Image'));
       // Transparent PNGs may also have grayscale alpha masks.
-      assert.ok(embedded.length >= 9, `Only ${embedded.length} PDF images were embedded`);
+      assert.ok(embedded.length >= 10, `Only ${embedded.length} PDF images were embedded`);
     }
     // Plain text must stay literal even if it happens to contain Markdown math.
     const plain = await PDFDocument.load(await convertFileToPDF(file, 'txt'));

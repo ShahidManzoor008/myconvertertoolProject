@@ -41,6 +41,10 @@ const latexToImage = async (latex, display) => {
   const svgNode = mathJax.startup.adaptor.tags(result, 'svg')[0];
   if (!svgNode) throw new Error('Could not render LaTeX equation');
   let svg = mathJax.startup.adaptor.outerHTML(svgNode);
+  // The HTML adaptor leaves '<' literal in attributes such as data-latex.
+  // That is valid HTML, but sharp reads SVG as XML and requires it escaped.
+  // Preserve the adaptor's existing entity escaping (especially ampersands).
+  svg = svg.replace(/="([^"]*)"/g, (_, value) => `="${value.replace(/</g, '&lt;')}"`);
   // Give both Word and Chromium explicit layout dimensions, independent of PNG DPI.
   const root = svg.match(/^<svg[^>]*>/)[0];
   const widthEx = Number(root.match(/width="([\d.]+)ex"/)?.[1]);
