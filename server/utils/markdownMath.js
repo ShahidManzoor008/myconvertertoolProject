@@ -1,4 +1,13 @@
 // Parse math alongside Markdown so code, escaped delimiters and link URLs stay intact.
+// Pandoc exports sometimes mix raw TeX code attributes with Markdown escapes
+// inside math. Normalize only those equations; ordinary LaTeX stays untouched.
+const normalizePandocMath = source => {
+  return source
+    .replace(/^([`~]{3,})\{=tex\}[^\S\n]*\n([\s\S]*?)\n\1[^\S\n]*$/gim, '$2')
+    .replace(/(`+)([\s\S]*?)\1\{=tex\}/gi, '$2')
+    .replace(/\\([\^_<>|])/g, '$1');
+};
+
 export default function markdownMath(md) {
   const escaped = (text, index) => {
     let slashes = 0;
@@ -10,6 +19,31 @@ export default function markdownMath(md) {
     while (index !== -1 && escaped(text, index)) index = text.indexOf(delimiter, index + delimiter.length);
     return index;
   };
+
+  md.inline.ruler.before('backticks', 'pandoc_tex', (state, silent) => {
+    const start = state.pos;
+    if (state.src[start] !== '`') return false;
+    const ticks = state.src.slice(start).match(/^`+/)[0];
+    let end = start + ticks.length;
+    while ((end = state.src.indexOf(ticks, end)) !== -1) {
+      if (state.src[end + ticks.length] !== '`' && state.src.startsWith('{=tex}', end + ticks.length)) {
+        const next = end + ticks.length + 6;
+        if (next > state.posMax) return false;
+        if (!silent) {
+          const token = state.push('math_inline', '', 0);
+          token.content = state.src.slice(start + ticks.length, end).replace(/\n/g, ' ');
+          token.meta = { display: false, pandoc: true };
+        }
+        state.pos = next;
+        return true;
+      }
+      // A completed ordinary code span belongs to Markdown, even if a later
+      // span has a raw TeX attribute.
+      if (state.src[end - 1] !== '`' && state.src[end + ticks.length] !== '`') return false;
+      end += ticks.length;
+    }
+    return false;
+  });
 
   md.inline.ruler.before('escape', 'math', (state, silent) => {
     const start = state.pos;
@@ -63,12 +97,24 @@ export default function markdownMath(md) {
 
   // Fenced math is common in Markdown exported from notebooks and GitHub.
   md.core.ruler.after('inline', 'math_fences', state => {
+    const flat = [];
+    const collect = tokens => {
+      for (const token of tokens) {
+        flat.push(token);
+        if (token.children) collect(token.children);
+      }
+    };
+    collect(state.tokens);
+    const pandoc = flat.some(token => token.meta?.pandoc
+      || (/^math_/.test(token.type) && /\{=tex\}/i.test(token.content))
+      || (token.type === 'fence' && token.info.trim() === '{=tex}'));
     const visit = tokens => {
       for (const token of tokens) {
-        if (token.type === 'fence' && /^(math|latex|tex)$/i.test(token.info.trim())) {
+        if (token.type === 'fence' && /^(math|latex|tex|\{=tex\})$/i.test(token.info.trim())) {
           token.type = 'math_block';
           token.meta = { display: true };
         }
+        if (pandoc && /^math_/.test(token.type)) token.content = normalizePandocMath(token.content);
         if (token.children) visit(token.children);
       }
     };

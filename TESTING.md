@@ -75,6 +75,10 @@ This standalone suite does not connect to MongoDB. It checks all supported math
 delimiters, code and currency preservation, sanitization, actual DOCX media and
 PDF image embedding, plus Markdown upload validation. See
 [the conversion guide](docs/markdown-conversion.md) for syntax and limitations.
+It also converts the full reported mathematics stress-test fixture to both
+formats, checking all 170 equation images and three Pandoc simple tables.
+The test files run sequentially to keep browser memory use within small-server
+limits.
 
 ## Tool entry and home page UI
 

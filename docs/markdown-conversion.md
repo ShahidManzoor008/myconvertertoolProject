@@ -16,8 +16,16 @@ Math syntax:
 - Inline: `$E=mc^2$` or `\(E=mc^2\)`.
 - Display: `$$ ... $$` or `\[ ... \]` on their own lines.
 - Fenced blocks with the language `math`, `latex`, or `tex`.
+- Pandoc raw TeX spans (`` `\alpha`{=tex} ``) and `{=tex}` fences, including
+  fragments nested inside display equations. In documents containing these
+  raw TeX markers, Markdown escapes for powers, subscripts, inequalities and
+  absolute-value bars are normalized inside equations only.
 - Standalone `equation`, `align`, `gather`, `multline`, and `displaymath`
   environments, including starred variants where applicable.
+
+Single-line Pandoc simple tables with dashed column separators and at least
+two spaces between cells are also supported. Ordinary code spans and language
+code fences remain literal, even when they contain raw TeX examples.
 
 For example:
 

@@ -11,6 +11,7 @@ import { init } from 'mathjax';
 import sharp from 'sharp';
 
 import markdownMath from './markdownMath.js';
+import markdownSimpleTables from './markdownSimpleTables.js';
 import footnote from 'markdown-it-footnote';
 import sub from 'markdown-it-sub';
 import sup from 'markdown-it-sup';
@@ -19,7 +20,7 @@ import deflist from 'markdown-it-deflist';
 const IMAGE_DENSITY = Math.min(600, Math.max(96, Number(process.env.IMAGE_DENSITY) || 300));
 const latexCache = new Map();
 const md = markdownit({ html: true, linkify: true, typographer: true })
-  .use(markdownMath).use(footnote).use(sub).use(sup).use(deflist);
+  .use(markdownMath).use(markdownSimpleTables).use(footnote).use(sub).use(sup).use(deflist);
 let mathJaxPromise;
 const getMathJax = () => mathJaxPromise ||= init({
   loader: { load: ['input/tex', 'output/svg'] },

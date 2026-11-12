@@ -11,7 +11,7 @@
     "clear:blogs": "node scripts/clearBlogs.js",
     "reset:blogs": "npm run clear:blogs && npm run seed:blogs",
     "manage:blogs": "node scripts/manageBlog.js",
-    "test:markdown": "node --test tests/markdown.node-test.mjs"
+    "test:markdown": "node --test --test-concurrency=1 tests/markdown*.node-test.mjs"
   },
   "keywords": [],
   "author": "Shahid Manzoor",
