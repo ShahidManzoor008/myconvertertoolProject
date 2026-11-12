@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
@@ -13,6 +14,7 @@ import { runMinifier } from '../../utils/runMinifier';
 import { parse, stringify } from 'lossless-json';
 
 const MinifyBeautifyTool = () => {
+  const workspaceRef = useToolWorkspace();
   const [processing, setProcessing] = useState(false);
   const [code, setCode] = useState("");
   const [result, setResult] = useState("");
@@ -131,7 +133,7 @@ const MinifyBeautifyTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-widest border border-pink-500/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">auto_awesome</span>
           Developer Productivity
@@ -144,7 +146,7 @@ const MinifyBeautifyTool = () => {
         </p>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Editor Side */}
         <div className="lg:col-span-7 space-y-6">
           <motion.div 

@@ -14,7 +14,7 @@ export const useFileUpload = (selectedOperation) => {
           "application/msword": ['.doc'],
           "application/vnd.ms-excel": ['.xlsx', '.xls'],
           "application/vnd.ms-powerpoint": ['.ppt', '.pptx'],
-          "text/markdown": ['.md', '.MD'],
+          "text/markdown": ['.md', '.MD', '.markdown', '.MARKDOWN'],
           "text/plain": ['.txt'],
           'image/jpeg': ['.jpg', '.jpeg'],
           'image/png': ['.png'],

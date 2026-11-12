@@ -67,3 +67,28 @@ FRONTEND_BUILD_DIR=/tmp/myconvertertool-audit-build node scripts/check-prerender
 The check verifies one title, description, H1, canonical URL, absolute social image,
 image alt presence, valid JSON-LD, and a noindex 404 page. It does not claim Google
 indexing, ranking, rich-result eligibility, or full accessibility compliance.
+
+## Markdown document conversion
+
+Run `npm run test:markdown --workspace server` with Node 24 and Chrome installed.
+This standalone suite does not connect to MongoDB. It checks all supported math
+delimiters, code and currency preservation, sanitization, actual DOCX media and
+PDF image embedding, plus Markdown upload validation. See
+[the conversion guide](docs/markdown-conversion.md) for syntax and limitations.
+
+## Tool entry and home page UI
+
+The frontend suite checks that tool navigation focuses the workspace without
+opening a mobile keyboard, and that the searchable tool list comes before the
+category section. To check actual desktop and phone layouts after building a
+candidate, run:
+
+```sh
+FRONTEND_BUILD_DIR=/tmp/myconvertertool-audit-build node scripts/verify-tool-navigation.mjs
+```
+
+This browser check serves the candidate on loopback and mocks API responses;
+it does not contact production APIs. It checks all ten tool links at desktop
+and phone widths, direct navigation at 320 px, file selection, search, section
+order, and dark mode. Screenshots and results are saved under
+`/tmp/myconvertertool-ui-checks` (override with `UI_CHECK_OUTPUT`).

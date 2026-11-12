@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { execFile } from 'child_process';
 import { cleanupFiles } from './fileUtils.js';
 import puppeteer from 'puppeteer';
-import markdownit from 'markdown-it';
+import { renderMarkdownHtml } from './markdownUtils.js';
 import { fileURLToPath } from 'node:url';
 
 const execAsync = promisify(execFile);
@@ -39,15 +39,14 @@ export const convertImagesToPDF = async (imagePaths) => {
 let renderingText = false;
 
 // Helper Function: Convert Text to PDF (with Markdown styling)
-const convertTextToPDF = async (filePath) => {
+const convertTextToPDF = async (filePath, fileType) => {
   const extension = path.extname(filePath).toLowerCase();
   let htmlContent;
 
   // Read file and convert Markdown to HTML if applicable
   const fileContent = await fs.promises.readFile(filePath, 'utf-8');
-  if (extension === '.md') {
-    const md = markdownit();
-    htmlContent = md.render(fileContent);
+  if (['md', 'markdown'].includes(fileType || extension.slice(1))) {
+    htmlContent = await renderMarkdownHtml(fileContent);
   } else {
     // For plain text, wrap in <pre> for basic formatting
     htmlContent = `<pre>${fileContent.replace(/[&<>"']/g, (match) => {
@@ -89,13 +88,26 @@ const convertTextToPDF = async (filePath) => {
       <!DOCTYPE html>
       <html>
       <head>
-        <style>${cssContent}</style>
+        <meta charset="utf-8" />
+        <style>${cssContent}
+          .markdown-body pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+          .markdown-body pre code { white-space: pre-wrap; }
+          .markdown-body table { display: table; table-layout: fixed; }
+          .markdown-body td, .markdown-body th { overflow-wrap: anywhere; }
+          .markdown-body img { max-width: 100%; object-fit: contain; }
+          .markdown-body h1, .markdown-body h2, .markdown-body h3 { break-after: avoid; }
+        </style>
       </head>
       <body class="markdown-body">
         ${htmlContent}
       </body>
       </html>
     `, { waitUntil: 'load', timeout: 60000 });
+
+    await page.evaluate(async () => {
+      await Promise.all(Array.from(document.images, image => image.decode()));
+      await document.fonts.ready;
+    });
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
@@ -181,14 +193,14 @@ const convertToPDF = async (inputPath) => {
 // Helper Function: Convert Files to PDF for Batch Mode
 export const convertFileToPDF = async (filePath, fileType) => {
   const supportedImageTypes = ["png", "jpg", "jpeg"];
-  const supportedTextTypes = ["md", "txt"];
+  const supportedTextTypes = ["md", "markdown", "txt"];
   const supportedLibreOfficeTypes = ["docx", "pptx", "xlsx", "odt", "ods", "odp"];
 
   if (supportedImageTypes.includes(fileType)) {
     // convertImagesToPDF expects an array, so wrap filePath in an array
     return await convertImagesToPDF([filePath]);
   } else if (supportedTextTypes.includes(fileType)) {
-    return await convertTextToPDF(filePath);
+    return await convertTextToPDF(filePath, fileType);
   } else if (fileType === 'pdf') {
     return await fs.promises.readFile(filePath);
   } else if (supportedLibreOfficeTypes.includes(fileType)) {

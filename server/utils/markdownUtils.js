@@ -10,154 +10,98 @@ const htmlToDocx = requireNative('@turbodocx/html-to-docx');
 import { init } from 'mathjax';
 import sharp from 'sharp';
 
-// Configuration: image density for high‑resolution rendering (DPI)
-const IMAGE_DENSITY = Number(process.env.IMAGE_DENSITY) || 300;
+import markdownMath from './markdownMath.js';
+import footnote from 'markdown-it-footnote';
+import sub from 'markdown-it-sub';
+import sup from 'markdown-it-sup';
+import deflist from 'markdown-it-deflist';
 
-// Optional output format: 'png' (default) or 'svg'
-const LATEX_IMAGE_FORMAT = process.env.LATEX_IMAGE_FORMAT || 'png';
-
-// In‑memory cache to avoid re‑rendering identical LaTeX expressions
+const IMAGE_DENSITY = Math.min(600, Math.max(96, Number(process.env.IMAGE_DENSITY) || 300));
 const latexCache = new Map();
+const md = markdownit({ html: true, linkify: true, typographer: true })
+  .use(markdownMath).use(footnote).use(sub).use(sup).use(deflist);
+let mathJaxPromise;
+const getMathJax = () => mathJaxPromise ||= init({
+  loader: { load: ['input/tex', 'output/svg'] },
+  // Keep the entire inline expression in one SVG; MathJax 4 splits it by default.
+  svg: { fontCache: 'none', linebreaks: { inline: false } },
+  tex: { maxBuffer: 20 * 1024, maxMacros: 1000 },
+}).catch(error => { mathJaxPromise = undefined; throw error; });
 
-const md = markdownit({
-  html: true,
-  linkify: true,
-  typographer: true,
-});
-
-let MathJaxInstance = null;
-
-const getMathJax = async () => {
-  if (!MathJaxInstance) {
-    MathJaxInstance = await init({
-      loader: { load: ['input/tex', 'output/svg'] },
-    });
+const latexToImage = async (latex, display) => {
+  const key = `${display}:${latex}`;
+  if (latexCache.has(key)) return latexCache.get(key);
+  const mathJax = await getMathJax();
+  // MathJax 4 may load font ranges asynchronously (matrices, Greek, accents).
+  const result = await mathJax.tex2svgPromise(latex, { display, em: 16, ex: 8, containerWidth: 620 });
+  const output = mathJax.startup.adaptor.outerHTML(result);
+  if (output.includes('data-mml-node="merror"')) {
+    throw new Error('Invalid or unsupported LaTeX equation. Check its commands and braces.');
   }
-  return MathJaxInstance;
-};
-
-const latexToImageBase64 = async (latex, isDisplay) => {
-  const cacheKey = `${latex}::${isDisplay}`;
-  if (latexCache.has(cacheKey)) {
-    return latexCache.get(cacheKey);
+  const svgNode = mathJax.startup.adaptor.tags(result, 'svg')[0];
+  if (!svgNode) throw new Error('Could not render LaTeX equation');
+  let svg = mathJax.startup.adaptor.outerHTML(svgNode);
+  // Give both Word and Chromium explicit layout dimensions, independent of PNG DPI.
+  const root = svg.match(/^<svg[^>]*>/)[0];
+  const widthEx = Number(root.match(/width="([\d.]+)ex"/)?.[1]);
+  const heightEx = Number(root.match(/height="([\d.]+)ex"/)?.[1]);
+  const fullWidth = /width="100%"/.test(root);
+  if ((!widthEx && !fullWidth) || !heightEx) throw new Error('Invalid equation dimensions');
+  const naturalWidth = fullWidth ? 620 : widthEx * 8;
+  const naturalHeight = heightEx * 8;
+  const scale = Math.min(1, 620 / naturalWidth, 900 / naturalHeight);
+  const width = Math.max(1, Math.ceil(naturalWidth * scale));
+  const height = Math.max(1, Math.ceil(naturalHeight * scale));
+  if (fullWidth) {
+    // Tagged equations use a percentage viewport with transforms in pixel units.
+    // Freeze that viewport so the equation and its right-hand label survive rasterization.
+    svg = svg.replace('<svg ', `<svg viewBox="0 0 ${naturalWidth} ${naturalHeight}" `);
   }
-
-  const MathJax = await getMathJax();
-  const svg = MathJax.tex2svg(latex, { display: isDisplay });
-  const svgString = MathJax.startup.adaptor.outerHTML(svg);
-
-  const svgMatch = svgString.match(/<svg[^]*?<\/svg>/);
-  if (!svgMatch) {
-    throw new Error('No SVG element found in MathJax output');
-  }
-  const svgElement = svgMatch[0];
-
-  // Decide output format
-  if (LATEX_IMAGE_FORMAT === 'svg') {
-    const base64Url = `data:image/svg+xml;base64,${Buffer.from(svgElement).toString('base64')}`;
-    if (latexCache.size >= 100) latexCache.delete(latexCache.keys().next().value);
-    latexCache.set(cacheKey, base64Url);
-    return base64Url;
-  }
-
-  // Default to PNG using sharp
-  const pngBuffer = await sharp(Buffer.from(svgElement), { density: IMAGE_DENSITY })
-    .png()
-    .toBuffer();
-  const base64Url = `data:image/png;base64,${pngBuffer.toString('base64')}`;
-  latexCache.set(cacheKey, base64Url);
-  return base64Url;
+  svg = svg.replace(/width="(?:[\d.]+ex|100%)"/, `width="${width}px"`)
+    .replace(/height="[\d.]+ex"/, `height="${height}px"`);
+  // PNG is embedded reliably in DOCX and requires no browser scripts or external fonts.
+  const png = await sharp(Buffer.from(svg), { density: IMAGE_DENSITY }).png().toBuffer();
+  const image = { src: `data:image/png;base64,${png.toString('base64')}`, width, height };
+  if (latexCache.size >= 100) latexCache.delete(latexCache.keys().next().value);
+  latexCache.set(key, image);
+  return image;
 };
 
 export const processLaTeX = async (markdownContent) => {
-  const codeBlocks = [];
-  let placeholderIndex = 0;
-
-  // Protect block code blocks: ```code```
-  let shieldedContent = markdownContent.replace(/```[\s\S]*?```/g, (match) => {
-    const placeholder = `__CODE_BLOCK_PLACEHOLDER_${placeholderIndex++}__`;
-    codeBlocks.push({ placeholder, content: match });
-    return placeholder;
-  });
-
-  // Protect inline code blocks: `code`
-  shieldedContent = shieldedContent.replace(/`[^`\n]+`/g, (match) => {
-    const placeholder = `__CODE_BLOCK_PLACEHOLDER_${placeholderIndex++}__`;
-    codeBlocks.push({ placeholder, content: match });
-    return placeholder;
-  });
-
-  // 1. Block Math: $$ ... $$
-  const blockMathRegex = /\$\$([\s\S]+?)\$\$/g;
-  let match;
-  const blockMatches = [];
-  while ((match = blockMathRegex.exec(shieldedContent)) !== null) {
-    blockMatches.push({ matchStr: match[0], latex: match[1].trim() });
-  }
-
-  for (const block of blockMatches) {
-    try {
-      const base64Url = await latexToImageBase64(block.latex, true);
-      shieldedContent = shieldedContent.replace(block.matchStr, () => `<div style="text-align: center; margin: 12px 0;"><img src="${base64Url}" alt="display-equation" /></div>`);
-    } catch (err) {
-      console.error(`Failed to render block LaTeX: ${block.latex}`, err);
+  const tokens = md.parse(markdownContent.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'), {});
+  const renderMath = async tokens => {
+    for (const token of tokens) {
+      if (token.type === 'math_inline' || token.type === 'math_block') {
+        const image = await latexToImage(token.content, token.meta.display);
+        const alt = md.utils.escapeHtml(token.content);
+        token.meta.html = `<img src="${image.src}" alt="${alt}" width="${image.width}" height="${image.height}" style="vertical-align: middle;" />`;
+      }
+      if (token.children) await renderMath(token.children);
     }
-  }
-
-  // 2. Block LaTeX: \[ ... \]
-  const blockDelimRegex = /\\\[([\s\S]+?)\\\]/g;
-  const blockDelimMatches = [];
-  while ((match = blockDelimRegex.exec(shieldedContent)) !== null) {
-    blockDelimMatches.push({ matchStr: match[0], latex: match[1].trim() });
-  }
-  for (const block of blockDelimMatches) {
-    try {
-      const base64Url = await latexToImageBase64(block.latex, true);
-      shieldedContent = shieldedContent.replace(block.matchStr, () => `<div style="text-align: center; margin: 12px 0;"><img src="${base64Url}" alt="display-equation" /></div>`);
-    } catch (err) {
-      console.error(`Failed to render block LaTeX: ${block.latex}`, err);
-    }
-  }
-
-  // 3. Inline Math: $ ... $
-  const inlineMathRegex = /\$([^\$\s](?:[^\$]*?[^\$\s])?)\$/g;
-  const inlineMatches = [];
-  inlineMathRegex.lastIndex = 0;
-  while ((match = inlineMathRegex.exec(shieldedContent)) !== null) {
-    inlineMatches.push({ matchStr: match[0], latex: match[1].trim() });
-  }
-
-  for (const inline of inlineMatches) {
-    try {
-const base64Url = await latexToImageBase64(inline.latex, false);
-      shieldedContent = shieldedContent.replace(inline.matchStr, () => `<img src="${base64Url}" alt="inline-equation" style="vertical-align: middle; margin: 0 4px;" />`);
-    } catch (err) {
-      console.error(`Failed to render inline LaTeX: ${inline.latex}`, err);
-    }
-  }
-
-  // 4. Inline LaTeX: \( ... \)
-  const inlineDelimRegex = /\\\(([\s\S]+?)\\\)/g;
-  const inlineDelimMatches = [];
-  while ((match = inlineDelimRegex.exec(shieldedContent)) !== null) {
-    inlineDelimMatches.push({ matchStr: match[0], latex: match[1].trim() });
-  }
-  for (const inline of inlineDelimMatches) {
-    try {
-      const base64Url = await latexToImageBase64(inline.latex, false);
-      shieldedContent = shieldedContent.replace(inline.matchStr, () => `<img src="${base64Url}" alt="inline-equation" style="vertical-align: middle; margin: 0 4px;" />`);
-    } catch (err) {
-      console.error(`Failed to render inline LaTeX: ${inline.latex}`, err);
-    }
-  }
-
-  // 5. Restore shielded code blocks
-  for (const block of codeBlocks) {
-    shieldedContent = shieldedContent.replace(block.placeholder, () => block.content);
-  }
-
-  return shieldedContent;
+  };
+  await renderMath(tokens);
+  return md.renderer.render(tokens, md.options, {});
 };
+
+export const renderMarkdownHtml = async markdownContent => sanitizeHtml(await processLaTeX(markdownContent), {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+  allowedAttributes: {
+    a: ['href', 'title', 'id'], sup: ['id'], li: ['id'], ol: ['start'],
+    img: ['src', 'alt', 'width', 'height', 'style'],
+    p: ['style'], th: ['style'], td: ['style'],
+  },
+  allowedStyles: {
+    '*': { 'text-align': [/^(left|right|center)$/], 'vertical-align': [/^(middle|top|bottom)$/], margin: [/^12px 0$/] },
+  },
+  allowedSchemes: ['https', 'http', 'mailto'],
+  allowedSchemesByTag: { img: ['data'] },
+  allowProtocolRelative: false,
+  transformTags: {
+    img: (tagName, attribs) => /^data:image\/(?:png|jpeg);base64,[a-z0-9+/=]+$/i.test(attribs.src || '')
+      ? { tagName, attribs }
+      : { tagName: 'span', attribs: {}, text: `[Image: ${attribs.alt || 'external image omitted'}]` },
+  },
+});
 
 const buildDocumentHtml = (bodyHtml) => `<!doctype html>
 <html>
@@ -259,20 +203,7 @@ export const convertMarkdownContentToDocx = async (markdownContent, sourceLabel 
 
     console.log(`📝 Processing Markdown content: ${sourceLabel}`);
 
-    // 1. Preprocess LaTeX equations to base64 images
-    const processedContent = await processLaTeX(markdownContent);
-    console.log('✅ LaTeX equations preprocessed');
-
-    // 2. Convert Markdown to styled HTML
-    const renderedHtml = sanitizeHtml(md.render(processedContent), {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
-      allowedAttributes: { a: ['href', 'title'], img: ['src', 'alt', 'width', 'height'] },
-      allowedSchemes: ['https', 'http', 'mailto'],
-      allowedSchemesByTag: { img: ['data'] },
-      allowProtocolRelative: false,
-      exclusiveFilter: frame => frame.tag === 'img' && !/^data:image\/(?:png|jpeg);base64,/i.test(frame.attribs.src || ''),
-      transformTags: { img: (tagName, attribs) => ({ tagName, attribs: /^data:image\/(?:png|jpeg);base64,[a-z0-9+/=]+$/i.test(attribs.src || '') ? attribs : { alt: attribs.alt || 'External image omitted' } }) },
-    });
+    const renderedHtml = await renderMarkdownHtml(markdownContent);
     const htmlContent = buildDocumentHtml(renderedHtml);
     console.log('✅ Markdown converted to styled HTML');
 

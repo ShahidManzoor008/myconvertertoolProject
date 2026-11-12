@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +11,7 @@ import { statsApi } from "../../utils/apiClient";
 import { encodeText, decodeText } from '../../utils/encoding';
 
 const UrlTool = () => {
+  const workspaceRef = useToolWorkspace();
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
@@ -148,7 +150,7 @@ const UrlTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">link</span>
           Protocol Suite
@@ -161,7 +163,7 @@ const UrlTool = () => {
         </p>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-6xl mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

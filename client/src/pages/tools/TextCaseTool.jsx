@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
@@ -9,6 +10,7 @@ import { statsApi } from "../../utils/apiClient";
 import { capitalizeWords, sentenceCase } from '../../utils/textAnalysis';
 
 const TextCaseTool = () => {
+  const workspaceRef = useToolWorkspace();
   const [text, setText] = useState("");
   const [convertedText, setConvertedText] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
@@ -70,7 +72,7 @@ const TextCaseTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-600/10 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-600/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">text_fields</span>
           Content Refiner
@@ -83,7 +85,7 @@ const TextCaseTool = () => {
         </p>
       </section>
 
-      <div className="max-w-4xl mx-auto px-4">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-4xl mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

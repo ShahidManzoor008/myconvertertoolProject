@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useMemo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +11,7 @@ import ConversionProgressBar from '../../components/common/ConversionProgressBar
 import { useConversionProgress } from '../../hooks/useConversionProgress';
 
 const MarkdownToDocx = () => {
+  const workspaceRef = useToolWorkspace();
   const [inputMode, setInputMode] = useState('paste');
   const [markdownText, setMarkdownText] = useState('');
   const [textFilename, setTextFilename] = useState('markdown-document');
@@ -135,7 +137,7 @@ const MarkdownToDocx = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">article</span>
           Document Production
@@ -144,17 +146,17 @@ const MarkdownToDocx = () => {
           MD <span className="text-indigo-600">to DOCX</span>
         </h1>
         <p className="text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-medium">
-          Paste up to 2 MB of Markdown or upload a .md/.markdown file under 75 MB. Generate Word documents with tables, code blocks, and math. Processing uses our servers; remote images are omitted for safety.
+          Paste up to 2 MB of Markdown or upload a .md/.markdown file under 75 MB. Generate Word documents with equations, matrices, tables, code blocks, footnotes, and task lists. Processing uses our servers; remote images are omitted for safety.
         </p>
       </section>
 
-      <div className="max-w-5xl mx-auto px-4">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-5xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card p-1 overflow-hidden"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 sm:p-10 shadow-inner">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-8">
             {!convertedFile ? (
               <div className="space-y-8">
                 <div className="inline-flex w-full rounded-2xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950">
@@ -165,6 +167,7 @@ const MarkdownToDocx = () => {
                     <button
                       key={key}
                       type="button"
+                      aria-label={label}
                       onClick={() => handleModeChange(key)}
                       className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-black transition-all ${
                         inputMode === key
@@ -173,6 +176,7 @@ const MarkdownToDocx = () => {
                       }`}
                     >
                       <Icon size={18} />
+                      <span className="sm:hidden">{key === 'paste' ? 'Paste text' : 'Upload file'}</span>
                       <span className="hidden sm:inline">{label}</span>
                     </button>
                   ))}
@@ -216,7 +220,7 @@ const MarkdownToDocx = () => {
                         setMarkdownText(event.target.value);
                         setConvertedFile(null);
                       }}
-                      className="min-h-[360px] w-full resize-y rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 font-mono text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
+                      className="min-h-[280px] sm:min-h-[360px] w-full resize-y rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 font-mono text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-900"
                       spellCheck="false"
                       placeholder={`# Project Notes\n\nPaste copied Markdown here.\n\n| Feature | Status |\n| --- | --- |\n| Tables | Supported |\n| Math | $E = mc^2$ |\n\n$$\n\\int_0^1 x^2 dx = \\frac{1}{3}\n$$`}
                     />
@@ -242,18 +246,18 @@ const MarkdownToDocx = () => {
                     <motion.div
                       {...getRootProps()}
                       whileHover={{ y: -2 }}
-                      className={`group relative border-2 border-dashed p-16 text-center cursor-pointer rounded-[2.5rem] transition-all duration-300 ${
+                      className={`group relative border-2 border-dashed p-8 sm:p-12 text-center cursor-pointer rounded-2xl transition-all duration-300 ${
                         isDragActive
                           ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/10'
                           : 'border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
                       }`}
                     >
-                      <input {...getInputProps()} />
+                      <input aria-label="Choose Markdown file" {...getInputProps()} />
                       <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
                         <Upload className="w-8 h-8" />
                       </div>
                       <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                        {isDragActive ? 'Release to upload' : 'Drop Markdown file'}
+                        {isDragActive ? 'Release to upload' : 'Choose or drop a Markdown file'}
                       </h4>
                       <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                         Supports .md and .markdown formats
@@ -292,7 +296,7 @@ const MarkdownToDocx = () => {
                   <button
                     onClick={handleConvert}
                     disabled={!canConvert || loading}
-                    className="btn-primary w-full sm:w-auto px-12 py-5 text-lg shadow-indigo-500/25"
+                    className="btn-primary w-full sm:w-auto px-6 sm:px-12 py-3 sm:py-5 text-base sm:text-lg shadow-indigo-500/25 disabled:opacity-50 disabled:shadow-none"
                   >
                     <FileText size={20} />
                     {loading ? 'Processing...' : 'Generate Word Document'}

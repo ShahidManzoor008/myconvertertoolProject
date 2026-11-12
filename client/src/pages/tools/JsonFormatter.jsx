@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +11,7 @@ import { parse, stringify, isLosslessNumber } from 'lossless-json';
 import { jsonrepair } from 'jsonrepair';
 
 const JsonFormatter = () => {
+  const workspaceRef = useToolWorkspace();
   const [jsonInput, setJsonInput] = useState("");
   const [formattedJson, setFormattedJson] = useState("");
   const [error, setError] = useState("");
@@ -431,7 +433,7 @@ const JsonFormatter = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">settings_ethernet</span>
           Developer Essential
@@ -444,7 +446,7 @@ const JsonFormatter = () => {
         </p>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-6xl mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

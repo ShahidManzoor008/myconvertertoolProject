@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useMemo, useState } from "react";
 import { ClipboardCopy, Eye, RotateCcw, Search } from "lucide-react";
 import PropTypes from "prop-types";
@@ -22,6 +23,7 @@ const getStatus = (value, min, max) => {
 };
 
 const MetaTagPreview = () => {
+  const workspaceRef = useToolWorkspace();
   const [form, setForm] = useState(initialState);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +60,7 @@ const MetaTagPreview = () => {
         }}
       />
 
-      <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+      <section className="tool-intro mx-auto max-w-6xl px-4 py-12 md:py-16">
         <div className="max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
             <Search size={14} />
@@ -73,7 +75,7 @@ const MetaTagPreview = () => {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Meta Inputs</h2>

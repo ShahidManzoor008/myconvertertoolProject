@@ -23,5 +23,6 @@ jobs:
       - run: npm test --workspace client
       - run: npm run lint --workspace client
       - run: npx puppeteer browsers install chrome
+      - run: npm run test:markdown --workspace server
       - run: npm run build --workspace client
       - run: npm audit

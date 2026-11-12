@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import PageNavigation from "./PageNavigation";
 import ScrollToTop from "./ScrollToTop";
 import NavBar from "./NavBar";
 import MobileMenu from "./MobileMenu";
@@ -39,6 +40,7 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <PageNavigation />
       <SEO metadataOnly />
       <a className="skip-link" href="#main-content">Skip to content</a>
       {/* Navbar */}

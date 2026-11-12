@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useMemo, useState } from "react";
 import { ClipboardCopy, Download, Eraser, FileText, RotateCcw } from "lucide-react";
 import PropTypes from "prop-types";
@@ -10,6 +11,7 @@ const sampleText = `Paste your draft, article, essay, caption, or product descri
 import { analyzeText } from '../../utils/textAnalysis';
 
 const WordCounterTool = () => {
+  const workspaceRef = useToolWorkspace();
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +71,7 @@ const WordCounterTool = () => {
         }}
       />
 
-      <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+      <section className="tool-intro mx-auto max-w-6xl px-4 py-12 md:py-16">
         <div className="max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-300">
             <FileText size={14} />
@@ -84,7 +86,7 @@ const WordCounterTool = () => {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Text Workspace</h2>

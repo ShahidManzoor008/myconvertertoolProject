@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
@@ -19,6 +20,7 @@ import { useConversionProgress } from '../../hooks/useConversionProgress';
 import { downloadFile, getFileBlob } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
+  const workspaceRef = useToolWorkspace();
   const [selectedOperation, setSelectedOperation] = useState("convert");
   const [currentOperation, setCurrentOperation] = useState("convert");
   const [, setRecentFiles] = useState([]);
@@ -372,7 +374,7 @@ const PdfConverter = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">description</span>
           Pro Document Suite
@@ -385,7 +387,7 @@ const PdfConverter = () => {
         </p>
       </section>
 
-      <div className="max-w-5xl mx-auto px-4">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-5xl mx-auto px-4">
         <div className="mb-6 flex justify-center">
           <div className="inline-flex rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg w-full sm:w-auto">
             <button
@@ -412,7 +414,7 @@ const PdfConverter = () => {
             className="glass-card p-1 sm:p-2"
           >
             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 sm:p-10 shadow-inner">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg">
                     <span aria-hidden="true" className="material-icons text-sm">settings</span>
@@ -439,18 +441,21 @@ const PdfConverter = () => {
               <motion.div
                 {...getRootProps()}
                 whileHover={{ y: -2 }}
-                className="group relative border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center cursor-pointer rounded-[2rem] mb-10 hover:border-red-500/50 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all"
+                className="group relative border-2 border-dashed border-slate-200 dark:border-slate-800 p-6 sm:p-10 text-center cursor-pointer rounded-2xl mb-6 hover:border-red-500/50 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all"
               >
                 <input aria-label="Choose files to convert" {...getInputProps()} />
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-red-500 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-red-500 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
                   <Upload className="w-8 h-8" />
                 </div>
                 <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                  Drop your files here
+                  Choose files or drop them here
                 </h4>
+                <span className="mb-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm">
+                  <Upload size={16} /> Choose files
+                </span>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                   {selectedOperation === 'convert'
-                    ? 'DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG, MD and TXT. Up to 5 files, 75 MB each, 95 MB combined. Files are processed on our servers.'
+                    ? 'DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG, Markdown and TXT. Up to 5 files, 75 MB each, 95 MB combined. Files are processed on our servers.'
                     : 'Select PDF files to begin editing'}
                 </p>
               </motion.div>

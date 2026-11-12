@@ -1,3 +1,4 @@
+import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useState, useRef, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
@@ -31,6 +32,7 @@ const contentFields = {
   contact: [['name', 'Full name', 'text', 'Ada Lovelace'], ['phone', 'Phone number', 'tel', '+15551234567'], ['email', 'Email address', 'email', 'ada@example.com'], ['address', 'Address', 'text', 'Street and city'], ['website', 'Website', 'url', 'https://example.com']],
 };
 const QrCodeTool = () => {
+  const workspaceRef = useToolWorkspace();
   const [error, setError] = useState('');
   const qrContainerRef = useRef(null);
   // Main content state
@@ -198,7 +200,7 @@ const QrCodeTool = () => {
       />
 
       {/* Header */}
-      <section className="text-center py-12 md:py-16">
+      <section className="tool-intro text-center py-12 md:py-16">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/20 mb-6">
           <span aria-hidden="true" className="material-icons text-xs">qr_code_2</span>
           Instant Connectivity
@@ -211,7 +213,7 @@ const QrCodeTool = () => {
         </p>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div ref={workspaceRef} id="tool-workspace" tabIndex={-1} role="region" aria-label="Tool workspace" className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Configuration Panel */}
         <div className="lg:col-span-8 space-y-6">
           <motion.div 

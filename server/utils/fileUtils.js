@@ -26,7 +26,12 @@ export const validateUploadedFile = async (filePath, originalName, allowedExtens
     // Fallback for file types that file-type may not recognize (like plain text/markdown)
     if (!type) {
       if (['md', 'markdown', 'txt'].includes(ext)) {
-        if (allowedExtensions && !allowedExtensions.includes(ext)) {
+        const textTypes = {
+          md: ['md', 'text/markdown'],
+          markdown: ['markdown', 'text/markdown'],
+          txt: ['txt', 'text/plain'],
+        };
+        if (allowedExtensions && !allowedExtensions.some(value => textTypes[ext].includes(value.replace(/^\./, '')))) {
           console.warn(`❌ Fallback extension ${ext} not in allowed list`);
           return false;
         }

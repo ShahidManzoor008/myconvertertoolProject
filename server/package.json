@@ -10,7 +10,8 @@
     "seed:blogs": "node scripts/seedBlogs.js",
     "clear:blogs": "node scripts/clearBlogs.js",
     "reset:blogs": "npm run clear:blogs && npm run seed:blogs",
-    "manage:blogs": "node scripts/manageBlog.js"
+    "manage:blogs": "node scripts/manageBlog.js",
+    "test:markdown": "node --test tests/markdown.node-test.mjs"
   },
   "keywords": [],
   "author": "Shahid Manzoor",
@@ -34,6 +35,10 @@
     "ipaddr.js": "^2.2.0",
     "jsonwebtoken": "^9.0.2",
     "markdown-it": "^15.0.3",
+    "markdown-it-deflist": "^4.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-sub": "^2.0.0",
+    "markdown-it-sup": "^2.0.0",
     "mathjax": "^4.1.2",
     "mongoose": "^9.12.0",
     "morgan": "^1.12.1",
@@ -53,6 +58,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
     "jest": "^30.5.2",
+    "jszip": "^3.10.2",
     "mongodb-memory-server": "^10.2.1",
     "nodemon": "^3.1.10",
     "pino-pretty": "^13.1.3",
