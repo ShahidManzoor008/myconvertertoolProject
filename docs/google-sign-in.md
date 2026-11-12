@@ -30,3 +30,13 @@ Configuration changes require a backend restart. Deploy the backend config endpo
 The development build and prerender completed without frontend OAuth environment files. All 43 frontend tests, 11 Google/password authentication integration tests against a temporary MongoDB, and both production middleware tests passed. Frontend lint passed. Google credentials in automated integration tests were mocked; no real account was signed in.
 
 The production backend's current Google setting is not a valid web OAuth client ID. Google's native button request rejected the previously configured frontend ID with `[GSI_LOGGER]: The given origin is not allowed for the given client ID.` The Google Cloud client's Authorized JavaScript origins must include `https://myconvertertool.com`. Obtain a client ID from the site's Google Cloud project and confirm its authorized origins before configuring/releasing this change. The public configuration endpoint deliberately refuses malformed IDs rather than passing them to Google. Production configuration and services have not been modified by this development work.
+
+## Client ID supplied by the site owner
+
+The site owner supplied the following public OAuth client ID for this release:
+
+```
+GOOGLE_CLIENT_ID=263869884621-3h5g3kelclmco9h5r41t6glti30iq32p.apps.googleusercontent.com
+```
+
+This value is configured in the development worktree's ignored `server/.env`. The development configuration endpoint returned HTTP 200 with this exact client ID and `Cache-Control: no-store`. The staged browser check on `https://myconvertertool.com` received HTTP 400 from Google's native button and `[GSI_LOGGER]: The given origin is not allowed for the given client ID.` Add `https://myconvertertool.com` to this client's Authorized JavaScript origins in Google Cloud, save, and repeat the check. The production environment value must be updated to this client ID as part of an authorized release; it has not been changed yet.
