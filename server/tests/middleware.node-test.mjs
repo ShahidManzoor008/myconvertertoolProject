@@ -18,6 +18,7 @@ test('production rate limits API requests while allowing assets, fonts, and appr
     const response = await fetch(base + '/asset');
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-security-policy'), /fonts.googleapis.com/);
+    assert.equal(response.headers.get('referrer-policy'), 'strict-origin-when-cross-origin');
     assert.match(response.headers.get('content-security-policy'), /fonts.gstatic.com/);
     assert.match(response.headers.get('content-security-policy'), /https:\/\/accounts.google.com\/gsi\/style/);
     await response.text();

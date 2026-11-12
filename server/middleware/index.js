@@ -31,6 +31,8 @@ export const setupMiddleware = (app, allowedOrigins) => {
     helmet({
       contentSecurityPolicy: false, // Disabled because we handle it in securityMiddleware
       crossOriginOpenerPolicy: false, // Explicitly disable Helmet's COOP management
+      // GIS must receive the site origin when loading its cross-origin button.
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     })
   );
 

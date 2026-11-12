@@ -12,7 +12,7 @@ The frontend no longer uses `VITE_GOOGLE_CLIENT_ID`. Existing copies of that set
 
 In Google Cloud Console, select this OAuth client, ensure its type is Web application, and configure Authorized JavaScript origins for each origin actually serving sign-in (production: `https://myconvertertool.com`; add a `www` origin only if it serves sign-in rather than redirecting). Local development needs its exact origin and port. Check consent-screen audience/publishing status and test-user restrictions. This is a JavaScript callback/popup ID-token flow; it does not require an authorization-code redirect endpoint or a browser client secret.
 
-The site CSP permits Google's sign-in script, iframe, connection and `https://accounts.google.com/gsi/style` stylesheet.
+The site CSP permits Google's sign-in script, iframe, connection and `https://accounts.google.com/gsi/style` stylesheet. Helmet sets `Referrer-Policy: strict-origin-when-cross-origin`, as recommended in [Google's setup guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid). Do not use `no-referrer` on the sign-in page: the button can report an origin authorization failure even with the correct Cloud Console origins.
 
 The SDK is loaded from Google's official URL, shared between mounts, and can be retried after a network failure. The native Google button is used instead of treating the optional One Tap prompt as a sign-in button. Authentication errors are displayed inline. Failed credential exchange never triggers a success redirect.
 
@@ -40,3 +40,9 @@ GOOGLE_CLIENT_ID=263869884621-3h5g3kelclmco9h5r41t6glti30iq32p.apps.googleuserco
 ```
 
 This value is configured in the development worktree's ignored `server/.env`. The development configuration endpoint returned HTTP 200 with this exact client ID and `Cache-Control: no-store`. The staged browser check on `https://myconvertertool.com` received HTTP 400 from Google's native button and `[GSI_LOGGER]: The given origin is not allowed for the given client ID.` Add `https://myconvertertool.com` to this client's Authorized JavaScript origins in Google Cloud, save, and repeat the check. The production environment value must be updated to this client ID as part of an authorized release; it has not been changed yet.
+
+## Origin-check resolution
+
+The owner confirmed both `https://myconvertertool.com` and `https://www.myconvertertool.com` are authorized. A staged browser comparison using the supplied client ID found that both origins returned HTTP 400 under the existing `no-referrer` policy and HTTP 200 after changing to `strict-origin-when-cross-origin`. The middleware now uses the working policy, and both middleware tests pass with an explicit header assertion. This supersedes the earlier assumption that the Cloud Console origin entries themselves were missing. No origin changes are currently required based on these checks.
+
+The browser check served development assets and configuration through local request interception on the production origins; it did not deploy files or change production configuration. Google's native button loaded successfully, but an interactive real-account credential exchange remains untested. Production still requires the approved client ID and this branch's code in an authorized release.
