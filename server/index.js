@@ -28,6 +28,7 @@ import logger from './utils/logger.js';
 // Import helper functions
 import pdfEditorRouter from './routes/pdfEditor.js';
 import fileConversionRouter from './routes/fileConversion.js';
+import spreadsheetConversionRouter from './routes/spreadsheetConversion.js';
 import { setupMiddleware } from './middleware/index.js';
 import dashboardRouter from './routes/dashboard.js';
 import notificationsRouter from './routes/notifications.js';
@@ -83,6 +84,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/batch', batchDownloadRouter);
 app.use('/api/editor', pdfEditorRouter);
 app.use('/api/convert', fileConversionRouter);
+app.use('/api/convert', spreadsheetConversionRouter);
 app.use('/api/dashboard', auth, dashboardRouter);
 app.use('/api/notifications', auth, notificationsRouter);
 app.use('/api/stats', statsRouter);

@@ -43,3 +43,5 @@ temp.md
 # Build caches
 .turbo/
 **/.turbo/
+.venv-spreadsheet/
+__pycache__/

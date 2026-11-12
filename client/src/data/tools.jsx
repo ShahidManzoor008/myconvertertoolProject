@@ -1,6 +1,15 @@
-import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt, FaRegFileAlt, FaSearch } from "react-icons/fa";
+import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaFileExcel, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt, FaRegFileAlt, FaSearch } from "react-icons/fa";
 
 export const tools = [
+  {
+    name: "Excel ↔ PDF",
+    path: "/tools/excel-pdf",
+    icon: <FaFileExcel />,
+    color: "green",
+    category: "PDF Tools",
+    description: "Convert Excel workbooks to PDF and extract PDF tables into Excel.",
+    keywords: ["excel", "spreadsheet", "xlsx", "xls", "pdf to excel", "excel to pdf", "tables"]
+  },
   {
     name: "PDF Converter",
     path: "/tools/pdf-converter",

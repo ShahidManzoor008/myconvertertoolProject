@@ -92,7 +92,16 @@ FRONTEND_BUILD_DIR=/tmp/myconvertertool-audit-build node scripts/verify-tool-nav
 ```
 
 This browser check serves the candidate on loopback and mocks API responses;
-it does not contact production APIs. It checks all ten tool links at desktop
+it does not contact production APIs. It checks all registered tool links at desktop
 and phone widths, direct navigation at 320 px, file selection, search, section
 order, and dark mode. Screenshots and results are saved under
 `/tmp/myconvertertool-ui-checks` (override with `UI_CHECK_OUTPUT`).
+
+## Spreadsheet converter
+
+Install the isolated Python dependencies with
+`python3 -m venv .venv-spreadsheet` and
+`.venv-spreadsheet/bin/pip install -r server/requirements-spreadsheet-test.txt`.
+Run `npm run test:spreadsheet --workspace server` with Node 24 and LibreOffice.
+See [spreadsheet conversion](docs/spreadsheet-conversion.md) for the development
+API, limits and browser checks. These checks do not require production deployment.

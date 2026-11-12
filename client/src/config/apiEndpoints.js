@@ -19,6 +19,10 @@ export const API_ENDPOINTS = {
     editor: `${API_BASE_URL}/api/editor`,
     converter: `${API_BASE_URL}/api/convert/upload`,
   },
+  spreadsheet: {
+    toPdf: `${API_BASE_URL}/api/convert/excel-to-pdf`,
+    toExcel: `${API_BASE_URL}/api/convert/pdf-to-excel`,
+  },
   markdown: {
     toDocx: `${API_BASE_URL}/api/convert/md-to-docx`,
     textToDocx: `${API_BASE_URL}/api/convert/md-to-docx/text`,

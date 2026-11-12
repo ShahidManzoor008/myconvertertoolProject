@@ -10,6 +10,7 @@ const build = path.resolve(process.env.FRONTEND_BUILD_DIR || '/tmp/myconverterto
 const output = path.resolve(process.env.UI_CHECK_OUTPUT || '/tmp/myconvertertool-ui-checks');
 await fs.mkdir(output, { recursive: true });
 const app = await fs.readFile(path.join(build, 'index.html'));
+const toolCount = JSON.parse(await fs.readFile(path.join(root, 'client/src/data/publicRoutes.json'), 'utf8')).filter(route => route.type === 'tool').length;
 const routes = JSON.parse(await fs.readFile(path.join(root, 'client/src/data/publicRoutes.json'), 'utf8')).filter(route => route.type === 'tool' && !process.env.UI_HOME_ONLY && (!process.env.UI_ROUTE_FILTER || route.path.includes(process.env.UI_ROUTE_FILTER)));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json' };
 const server = createServer(async (req, res) => {
@@ -107,7 +108,7 @@ try {
     await page.type('#tool-search', 'markdown');
     assert.equal(await page.$$eval('#all-tools .tool-card', elements => elements.length), 1);
     await page.$eval('#tool-search', input => { const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(input, ''); input.dispatchEvent(new Event('input', { bubbles: true })); });
-    await page.waitForFunction(() => document.querySelectorAll('#all-tools .tool-card').length === 10);
+    await page.waitForFunction(count => document.querySelectorAll('#all-tools .tool-card').length === count, {}, toolCount);
     await page.evaluate(() => scrollTo(0, 0));
     await page.screenshot({ path: path.join(output, `home-${width}.png`), fullPage: true });
   }
