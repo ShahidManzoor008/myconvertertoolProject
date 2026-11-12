@@ -20,6 +20,52 @@ export default function markdownMath(md) {
     return index;
   };
 
+  // Some pasted notes omit math delimiters and double-escape TeX commands.
+  // Recognize only equation-shaped paragraphs, before Markdown treats \[ as
+  // a display delimiter or consumes the backslashes. Code and prose stay literal.
+  md.block.ruler.before('paragraph', 'bare_equation', (state, startLine, endLine, silent) => {
+    if (state.sCount[startLine] - state.blkIndent >= 4) return false;
+    const first = state.src.slice(state.bMarks[startLine] + state.tShift[startLine], state.eMarks[startLine]);
+    if (!/^[A-Za-z](?:_\{[^\n]+\}|_[A-Za-z0-9]+)?\s*(?:=|\\{1,2}(?:propto|approx|equiv)\b)/.test(first)) return false;
+    let end = startLine + 1;
+    while (end < endLine && !state.isEmpty(end)) {
+      const next = state.src.slice(state.bMarks[end] + state.tShift[end], state.eMarks[end]);
+      if (!/^\s*(?:\\{1,2}[A-Za-z]+|[=+\-({\d]|[A-Za-z](?:_\{[^}]+\})?\s*=)/.test(next)) break;
+      end++;
+    }
+    const source = state.getLines(startLine, end, state.blkIndent, false).trim();
+    // An assignment alone could be code or ordinary prose. Require a known
+    // mathematical command, and leave explicitly delimited equations alone.
+    if (!/\\{1,2}(?:frac|propto|left|right|times|sqrt|sum|int|approx|equiv)\b/.test(source)
+      || /[`$]|\\(?:\(|begin\{)/.test(source)) return false;
+    const answerAt = source.search(/Answer\s*:/i);
+    let equation = answerAt < 0 ? source : source.slice(0, answerAt);
+    equation = equation
+      .replace(/\\\\(?=[A-Za-z])/g, '\\')
+      .replace(/\\([\[\]])/g, '$1')
+      .replace(/\\\\%/g, '\\%');
+    // Do not turn words in a prose paragraph into implicit mathematical text.
+    const withoutCommands = equation.replace(/\\text\{[^}]*\}/g, '').replace(/\\[A-Za-z]+/g, '');
+    if (/[A-Za-z]{3,}/.test(withoutCommands)) return false;
+    if (silent) return true;
+    const steps = equation.replace(/([\d)}\]])(?=[A-Za-z]=)/g, '$1\n').split(/\n(?=[A-Za-z]=)/);
+    for (const step of steps) {
+      const token = state.push('math_block', '', 0);
+      token.content = step.trim();
+      token.meta = { display: true };
+      token.map = [startLine, end];
+    }
+    if (answerAt >= 0) {
+      state.push('paragraph_open', 'p', 1);
+      const answer = state.push('inline', '', 0);
+      answer.content = source.slice(answerAt);
+      answer.children = [];
+      state.push('paragraph_close', 'p', -1);
+    }
+    state.line = end;
+    return true;
+  });
+
   md.inline.ruler.before('backticks', 'pandoc_tex', (state, silent) => {
     const start = state.pos;
     if (state.src[start] !== '`') return false;
