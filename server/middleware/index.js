@@ -56,7 +56,8 @@ export const setupMiddleware = (app, allowedOrigins) => {
     message: { error: "Too many requests, please try again later." },
   });
   const authLimiter = rateLimit({
-    skip: () => process.env.NODE_ENV === 'test',
+    // Loading a public sign-in setting is not a login attempt.
+    skip: (req) => process.env.NODE_ENV === 'test' || (req.method === 'GET' && req.path === '/config'),
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // Stricter limit for auth endpoints
     message: { error: "Too many auth requests, please try again later." },

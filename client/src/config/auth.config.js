@@ -1,10 +1,11 @@
-// Google Identity Services (GIS) Configuration
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+import { authApi } from '../utils/apiClient';
 
-// No redirect URIs needed for GIS
-// The flow is:
-// 1. User clicks sign-in button
-// 2. GIS shows popup/prompt
-// 3. On success, we get ID token in the callback
-// 4. Send ID token to backend for verification
-// 5. Backend verifies with Google and issues our app's JWT
+// Fetch the same public client ID the server uses to verify credentials.
+// No build-time VITE_GOOGLE_CLIENT_ID is required.
+export async function getGoogleClientId() {
+  const { googleClientId } = await authApi.getConfig();
+  if (!/^\d+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(googleClientId || '')) {
+    throw new Error('Google sign-in is temporarily unavailable.');
+  }
+  return googleClientId;
+}

@@ -6,7 +6,19 @@ import User from '../models/User.js';
 import Session from '../models/Session.js';
 import { sendEmail } from '../utils/email.js';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Read configuration at request time: dotenv is loaded after ESM imports.
+const googleClient = new OAuth2Client();
+const configuredGoogleClientId = () => {
+  const value = process.env.GOOGLE_CLIENT_ID?.trim();
+  return /^\d+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(value || '') ? value : null;
+};
+
+export const getAuthConfig = (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const clientId = configuredGoogleClientId();
+  if (!clientId) return res.status(503).json({ error: 'Google sign-in is temporarily unavailable.' });
+  return res.json({ googleClientId: clientId });
+};
 
 // User Registration (non-OAuth)
 export const registerUser = async (req, res) => {
@@ -144,13 +156,24 @@ export const verifyToken = async (req, res) => {
 // Google OAuth Login/Signup
 export const googleAuth = async (req, res) => {
   try {
+    const clientId = configuredGoogleClientId();
+    if (!clientId) return res.status(503).json({ error: 'Google sign-in is temporarily unavailable.' });
     const { token } = req.body;
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
+    if (typeof token !== 'string' || !token || token.length > 16384) {
+      return res.status(400).json({ error: 'A valid Google credential is required.' });
+    }
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({ idToken: token, audience: clientId });
+    } catch (error) {
+      console.error('Google credential verification failed:', error.message);
+      return res.status(401).json({ error: 'Google sign-in failed. Please try signing in again.' });
+    }
 
-    const { email, name, picture } = ticket.getPayload();
+    const { email, name, picture, sub, email_verified } = ticket.getPayload();
+    if (!sub || !email || email_verified !== true) {
+      return res.status(401).json({ error: 'Please use a Google account with a verified email address.' });
+    }
 
     // Find or create user
     let user = await User.findOne({ email });
@@ -200,8 +223,8 @@ export const googleAuth = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('googleAuth error:', error);
-    res.status(401).json({ error: 'Invalid token' });
+    console.error('googleAuth error:', error.message);
+    res.status(500).json({ error: 'Google sign-in is temporarily unavailable. Please try again.' });
   }
 };
 

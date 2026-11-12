@@ -1,152 +1,91 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { GOOGLE_CLIENT_ID } from '../config/auth.config';
-import { GOOGLE_AUTH_ERROR_MESSAGES } from '../utils/googleAuthErrors';
-import GoogleSignInDebug from './GoogleSignInDebug';
-import useToast from '../hooks/useToast';
+import { getGoogleClientId } from '../config/auth.config';
+import { loadGoogleIdentityScript } from '../utils/googleIdentity';
 
-
-const loadGoogleIdentityScript = () => {
-  if (window.google?.accounts?.id) {
-    return Promise.resolve();
-  }
-
-  const existingScript = document.querySelector('script[data-google-identity]');
-  if (existingScript) {
-    return new Promise((resolve, reject) => {
-      existingScript.addEventListener('load', resolve, { once: true });
-      existingScript.addEventListener('error', reject, { once: true });
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.dataset.googleIdentity = 'true';
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-};
-
-const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', className = '', renderNative = true, onSuccess }) => {
+const GoogleSignIn = ({ redirectTo = '/', buttonText = 'Continue with Google', className = '', disabled = false, onSuccess }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const container = useRef(null);
+  const handlers = useRef({ login, navigate, redirectTo, onSuccess });
   const [loading, setLoading] = useState(false);
-  const toast = useToast();
-  const [containerId] = useState(() => `gsi-button-${Math.random().toString(36).slice(2)}`);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const init = () => {
-      if (!window.google) {
-        console.warn('[GSI] Google script not loaded yet');
-        return;
-      }
+    handlers.current = { login, navigate, redirectTo, onSuccess };
+  }, [login, navigate, redirectTo, onSuccess]);
 
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        auto_select: true,
-        use_cookies: true,
-        callback: async (res) => {
-          if (!res?.credential) {
-            return;
-          }
-
-          setLoading(true);
-          try {
-            const ok = await login({ tokenId: res.credential });
-            if (ok) {
-              onSuccess?.();
-              if (redirectTo) navigate(redirectTo);
-            }
-          } catch (err) {
-            const errorMessage = GOOGLE_AUTH_ERROR_MESSAGES[err.code] || err.message || 'An unexpected error occurred';
-            toast?.push?.(errorMessage, { type: 'error' });
-          } finally {
-            setLoading(false);
-          }
-        }
-      });
-
-      if (renderNative) {
-        const container = document.getElementById(containerId);
-        if (container) {
-          window.google.accounts.id.renderButton(container, { theme: 'outline', size: 'large' });
-        }
-      }
-
-      window.googleSignIn = () => {
-        try {
-          window.google.accounts.id.prompt();
-        } catch (e) {
-          console.warn('googleSignIn prompt failed', e);
-        }
-      };
-    };
-
+  useEffect(() => {
     let disposed = false;
-    loadGoogleIdentityScript()
-      .then(() => {
-        if (!disposed) init();
-      })
-      .catch(() => {
-        toast?.push?.('Failed to load Google sign-in. Please try again.', { type: 'error' });
-      });
-
-    return () => {
-      disposed = true;
-      try { delete window.googleSignIn; } catch (e) { console.warn('cleanup googleSignIn failed', e); }
+    setReady(false);
+    setError('');
+    const initialize = async () => {
+      try {
+        const clientId = await getGoogleClientId();
+        await loadGoogleIdentityScript();
+        if (disposed) return;
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          auto_select: false,
+          callback: async (response) => {
+            if (disposed) return;
+            if (!response?.credential) {
+              setError('Google did not return a credential. Please try again.');
+              return;
+            }
+            setLoading(true);
+            setError('');
+            try {
+              const ok = await handlers.current.login({ tokenId: response.credential });
+              if (!ok) throw new Error('Google sign-in failed. Please try again.');
+              if (disposed) return;
+              handlers.current.onSuccess?.();
+              if (handlers.current.redirectTo) handlers.current.navigate(handlers.current.redirectTo);
+            } catch (err) {
+              if (!disposed) setError(err.message || 'Google sign-in failed. Please try again.');
+            } finally {
+              if (!disposed) setLoading(false);
+            }
+          }
+        });
+        container.current.replaceChildren();
+        window.google.accounts.id.renderButton(container.current, { theme: 'outline', size: 'large' });
+        setReady(true);
+      } catch (err) {
+        if (!disposed) setError(err.message || 'Google sign-in is temporarily unavailable.');
+      }
     };
-  }, [login, navigate, redirectTo, onSuccess, containerId, renderNative, toast]);
-
-  const handleClick = () => {
-    // Prefer the programmatic prompt; if not available, attempt to open the GSI prompt
-    if (window.googleSignIn) {
-      window.googleSignIn();
-      return;
-    }
-    // As a fallback, call prompt if available
-    try {
-      window.google?.accounts?.id?.prompt();
-    } catch (e) {
-      console.warn('Google prompt not available', e);
-      toast?.push?.('Failed to show Google sign-in prompt. Please try again.', { type: 'error' });
-    }
-  };
-
-  if (renderNative) {
-    // If callers want the native button rendered by Google, provide a container and let GSI render into it.
-    return (
-      <div className={className}>
-        <div id={containerId} />
-        {import.meta.env.DEV && <GoogleSignInDebug className={className} />}
-      </div>
-    );
-  }
+    initialize();
+    return () => { disposed = true; };
+  }, [attempt]);
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={loading}
-      className={`w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 p-2 rounded hover:bg-gray-50 transition-colors ${className}`}
-    >
-      <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
-      {loading ? 'Signing in...' : buttonText}
-    </button>
+    <div className={className} aria-label={buttonText} aria-busy={loading || (!ready && !error)}>
+      {!ready && !error && <p role="status">Loading Google sign-in…</p>}
+      <div inert={disabled || loading ? true : undefined} className={disabled || loading ? 'opacity-60 pointer-events-none' : ''}>
+        <div ref={container} />
+      </div>
+      {loading && <p role="status">Signing in…</p>}
+      {error && (
+        <div className="mt-3 text-sm text-red-600 dark:text-red-400">
+          <p role="alert">{error}</p>
+          {!ready && <button type="button" onClick={() => setAttempt(value => value + 1)} className="mt-2 underline">Try again</button>}
+        </div>
+      )}
+    </div>
   );
 };
-
-export default GoogleSignIn;
 
 GoogleSignIn.propTypes = {
   redirectTo: PropTypes.string,
   buttonText: PropTypes.string,
   className: PropTypes.string,
-  renderNative: PropTypes.bool,
+  disabled: PropTypes.bool,
   onSuccess: PropTypes.func,
 };
+
+export default GoogleSignIn;

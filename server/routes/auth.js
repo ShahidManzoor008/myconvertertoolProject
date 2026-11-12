@@ -9,6 +9,7 @@ import {
   resetPasswordSchema
 } from '../utils/validation.js';
 import {
+  getAuthConfig,
   registerUser,
   loginUser,
   updateProfile,
@@ -22,6 +23,9 @@ import {
 } from '../controllers/authController.js';
 
 const router = express.Router();
+
+// Public configuration contains only the OAuth client ID, never credentials.
+router.get('/config', getAuthConfig);
 
 // User Registration (non-OAuth)
 router.post(

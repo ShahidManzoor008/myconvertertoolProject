@@ -270,6 +270,7 @@ export const apiClient = {
 
 // API service functions
 export const authApi = {
+  getConfig: () => apiClient.get(API_ENDPOINTS.auth.config),
   verify: () => apiClient.get(API_ENDPOINTS.auth.verify),
   login: (credentials) => apiClient.post(API_ENDPOINTS.auth.login, credentials),
   register: (userData) => apiClient.post(API_ENDPOINTS.auth.register, userData),

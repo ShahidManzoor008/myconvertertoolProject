@@ -2,6 +2,7 @@ const API_BASE_URL = '';
 
 export const API_ENDPOINTS = {
   auth: {
+    config: `${API_BASE_URL}/api/auth/config`,
     verify: `${API_BASE_URL}/api/auth/verify`,
     google: `${API_BASE_URL}/api/auth/google`,
     register: `${API_BASE_URL}/api/auth/register`,
