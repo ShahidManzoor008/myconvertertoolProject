@@ -9,6 +9,8 @@ import PropTypes from "prop-types";
 import { useAuth } from "../hooks/useAuth"; // Changed from default to named import
 import ConversionTrustBadge from "./ConversionTrustBadge";
 import SEO from "../utils/SEO";
+import PwaInstallPrompt from "./PwaInstallPrompt";
+import { getPwaInstallState, subscribeToPwaInstall } from "../utils/pwaInstall";
 
 const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,6 +23,9 @@ const Layout = ({ children }) => {
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   const { user, logout } = useAuth();
+  const [pwaInstallState, setPwaInstallState] = useState(getPwaInstallState);
+
+  useEffect(() => subscribeToPwaInstall(setPwaInstallState), []);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1280px)');
     const closeAtDesktop = () => { if (media.matches) setIsMobileMenuOpen(false); };
@@ -52,7 +57,10 @@ const Layout = ({ children }) => {
         isMobileMenuOpen={isMobileMenuOpen}
         onMobileMenuToggle={setIsMobileMenuOpen}
         navigation={navigation}
+        showInstallAction={!pwaInstallState.installed}
+        onInstallApp={() => window.dispatchEvent(new Event('myconvertertool:open-install'))}
       />
+      <PwaInstallPrompt />
 
       {isMobileMenuOpen && (
           <MobileMenu

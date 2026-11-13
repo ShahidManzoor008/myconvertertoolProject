@@ -1,9 +1,12 @@
 {
-  "name": "MyConverterTool",
-  "short_name": "Converter Tools",
-  "description": "PDF, text and developer tools for everyday work.",
+  "id": "/",
+  "name": "MyConverterTool - Free Online Tools",
+  "short_name": "ConverterTool",
+  "description": "Convert documents and spreadsheets, work with PDFs, and use practical text and developer tools.",
   "start_url": "/",
   "scope": "/",
+  "display_override": ["standalone", "minimal-ui"],
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/assets/android-chrome-192x192.png",
@@ -14,6 +17,32 @@
       "src": "/assets/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/assets/pwa-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Convert files to PDF",
+      "short_name": "PDF Converter",
+      "url": "/tools/pdf-converter",
+      "icons": [{ "src": "/assets/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Convert Excel and PDF",
+      "short_name": "Excel ↔ PDF",
+      "url": "/tools/excel-pdf",
+      "icons": [{ "src": "/assets/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Convert Markdown to Word",
+      "short_name": "Markdown to DOCX",
+      "url": "/tools/markdown-to-docx",
+      "icons": [{ "src": "/assets/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "theme_color": "#2563eb",

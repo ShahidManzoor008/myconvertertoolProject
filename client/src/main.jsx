@@ -6,8 +6,10 @@ import App from './App.jsx'
 import { AuthProvider } from './providers/AuthProvider.jsx' // Import AuthProvider
 import ToastProvider from './components/Toast.jsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { initializePwa } from './utils/pwaInstall';
 
 const queryClient = new QueryClient()
+initializePwa();
 
 async function startApp() {
   await initialPageLoader(window.location.pathname)();

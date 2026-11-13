@@ -1,8 +1,9 @@
 import { Link, NavLink } from 'react-router-dom';
 import { Bars3Icon, MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 import PropTypes from 'prop-types';
+import { Download } from 'lucide-react';
 
-const NavBar = ({ darkMode, onDarkModeToggle, user, onLogout, isMobileMenuOpen, onMobileMenuToggle, navigation }) => (
+const NavBar = ({ darkMode, onDarkModeToggle, user, onLogout, isMobileMenuOpen, onMobileMenuToggle, navigation, showInstallAction, onInstallApp }) => (
   <header className="site-header" inert={isMobileMenuOpen}>
     <nav aria-label="Main navigation" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
       <Link to="/" aria-label="MyConverterTool home" className="flex shrink-0 items-center gap-2.5">
@@ -23,6 +24,7 @@ const NavBar = ({ darkMode, onDarkModeToggle, user, onLogout, isMobileMenuOpen, 
           <Link to="/profile" className="hidden rounded-lg bg-slate-100 px-3 py-3 text-sm font-semibold dark:bg-slate-800 sm:block">My account</Link>
           <button onClick={onLogout} className="hidden rounded-lg px-3 py-3 text-sm font-semibold xl:block">Sign out</button>
         </>}
+        {showInstallAction && <button type="button" onClick={onInstallApp} aria-label="Install MyConverterTool" title="Install MyConverterTool" className="flex h-11 w-11 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/50"><Download aria-hidden="true" className="h-5 w-5" /></button>}
         <button type="button" onClick={onDarkModeToggle} aria-label={darkMode ? 'Use light theme' : 'Use dark theme'} aria-pressed={darkMode} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
           {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
         </button>
@@ -31,5 +33,5 @@ const NavBar = ({ darkMode, onDarkModeToggle, user, onLogout, isMobileMenuOpen, 
     </nav>
   </header>
 );
-NavBar.propTypes = { darkMode: PropTypes.bool.isRequired, onDarkModeToggle: PropTypes.func.isRequired, user: PropTypes.object, onLogout: PropTypes.func.isRequired, isMobileMenuOpen: PropTypes.bool.isRequired, onMobileMenuToggle: PropTypes.func.isRequired, navigation: PropTypes.array.isRequired };
+NavBar.propTypes = { darkMode: PropTypes.bool.isRequired, onDarkModeToggle: PropTypes.func.isRequired, user: PropTypes.object, onLogout: PropTypes.func.isRequired, isMobileMenuOpen: PropTypes.bool.isRequired, onMobileMenuToggle: PropTypes.func.isRequired, navigation: PropTypes.array.isRequired, showInstallAction: PropTypes.bool.isRequired, onInstallApp: PropTypes.func.isRequired };
 export default NavBar;
