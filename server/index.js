@@ -62,7 +62,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined)
 // 🛡️ Enable CORS and Security Middleware
 // ============================
 setupMiddleware(app, allowedOrigins);
-app.use(['/api/convert', '/api/editor', '/api/pdf', '/api/batch'], conversionCapacity);
+app.use(['/api/convert', '/api/batch'], conversionCapacity);
 
 // ============================
 // Routes
@@ -72,17 +72,15 @@ app.use(['/api/convert', '/api/editor', '/api/pdf', '/api/batch'], conversionCap
 // When running tests, skip auth middleware to exercise endpoints directly
 if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
   app.use('/api/pdf', pdfOperationsRouter);
+  app.use('/api/editor', pdfEditorRouter);
   // simple health endpoint for tests
   app.get('/health', (req, res) => res.send('OK'));
-} else {
-  app.use('/api/pdf', auth, pdfOperationsRouter);
 }
 app.use('/api/blog', blogRouter);
 app.use('/api/auth', authRouter);
 
 // Then mount the more generic routes with specific prefixes
 app.use('/api/batch', batchDownloadRouter);
-app.use('/api/editor', pdfEditorRouter);
 app.use('/api/convert', fileConversionRouter);
 app.use('/api/convert', spreadsheetConversionRouter);
 app.use('/api/dashboard', auth, dashboardRouter);

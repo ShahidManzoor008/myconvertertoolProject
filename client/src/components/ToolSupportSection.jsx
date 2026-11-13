@@ -21,7 +21,7 @@ const toolFaqs = {
   "/tools/pdf-converter": [
     {
       question: "What PDF tasks can I do here?",
-      answer: "Convert supported documents and images to PDF without registration. Sign in to merge, split, rotate, watermark, or optimize a PDF. Compression optimizes structure and may not reduce file size. PDF-to-Word is not supported.",
+      answer: "Convert supported documents and images to PDF, or use View PDF to read a file in your browser. The viewer does not change the source document. PDF-to-Word is not supported.",
     },
     {
       question: "Can I convert images or documents to PDF?",

@@ -16,8 +16,8 @@ export const tools = [
     icon: <FaFilePdf />,
     color: "red",
     category: "PDF Tools",
-    description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF, then merge, split, rotate, compress, or watermark PDF files.",
-    keywords: ["pdf converter", "word to pdf", "excel to pdf", "powerpoint to pdf", "markdown to pdf", "image to pdf", "merge pdf", "split pdf", "compress pdf"]
+    description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF, or view a PDF in your browser.",
+    keywords: ["pdf converter", "word to pdf", "excel to pdf", "powerpoint to pdf", "markdown to pdf", "image to pdf", "online pdf viewer"]
   },
   {
     name: "Markdown to DOCX",

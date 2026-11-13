@@ -19,7 +19,7 @@ export const useFileUpload = (selectedOperation) => {
           'image/jpeg': ['.jpg', '.jpeg'],
           'image/png': ['.png'],
         };
-      case 'edit':
+      case 'view':
         return {
           'application/pdf': ['.pdf'],
         };
@@ -36,13 +36,13 @@ export const useFileUpload = (selectedOperation) => {
 
   // Configure dropzone for file uploads
   const { getRootProps, getInputProps } = useDropzone({
-    multiple: true,
-    maxFiles: 5,
+    multiple: selectedOperation !== 'view',
+    maxFiles: selectedOperation === 'view' ? 1 : 5,
     maxSize: 75 * 1024 * 1024,
     accept: getAcceptForOperation(selectedOperation || 'convert'),
     onDrop: (acceptedFiles, rejectedFiles) => {
       if (rejectedFiles.length > 0) {
-        showPopup("Choose up to 5 supported files, each under 75 MB.");
+        showPopup(selectedOperation === 'view' ? 'Choose one PDF file under 75 MB.' : 'Choose up to 5 supported files, each under 75 MB.');
       }
 
       const allowedMimeTypes = getAcceptForOperation(selectedOperation || 'convert');
@@ -58,7 +58,7 @@ export const useFileUpload = (selectedOperation) => {
         return;
       }
 
-      if (filteredFiles.reduce((total, file) => total + file.size, 0) > 95 * 1024 * 1024) {
+      if (selectedOperation !== 'view' && filteredFiles.reduce((total, file) => total + file.size, 0) > 95 * 1024 * 1024) {
         showPopup("Combined files must be under 95 MB.");
         return;
       }

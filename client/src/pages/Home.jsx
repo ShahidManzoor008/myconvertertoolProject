@@ -10,7 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { blogApi } from '../utils/apiClient';
 
 const categories = [
-  { name: 'PDF Tools', label: 'Documents', title: 'PDF & documents', path: '/tools/pdf-converter', icon: FileText, description: 'Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF, or work with PDF pages.', color: 'red' },
+  { name: 'PDF Tools', label: 'Documents', title: 'PDF & documents', path: '/tools/pdf-converter', icon: FileText, description: 'Convert documents and images to PDF, or view a PDF in your browser.', color: 'red' },
   { name: 'Dev Tools', label: 'Developer', title: 'Developer tools', path: '/tools/dev', icon: Code2, description: 'Format JSON and source code, and encode or decode URL and Base64 data.', color: 'blue' },
   { name: 'Text Tools', label: 'Text', title: 'Writing & text', path: '/tools/text', icon: Type, description: 'Count and transform text, and convert Markdown documents to Word.', color: 'green' },
   { name: 'SEO Tools', label: 'SEO & sharing', title: 'SEO & sharing', path: '/tools/seo', icon: ScanLine, description: 'Preview SEO metadata and create QR codes for links, contacts, Wi-Fi, and more.', color: 'yellow' },
