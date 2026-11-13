@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from "react";
 import { ClipboardCopy, Download, Eraser, FileText, RotateCcw } from "lucide-react";
 import PropTypes from "prop-types";
@@ -12,6 +13,8 @@ import { analyzeText } from '../../utils/textAnalysis';
 
 const WordCounterTool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const [preferredAction, setPreferredAction] = useState(searchParams.get('mode') === 'clean' ? 'clean' : 'count');
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +59,7 @@ const WordCounterTool = () => {
   };
 
   const cleanExtraSpaces = () => {
+    setPreferredAction('clean');
     setAndTrackText(text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim());
   };
 
@@ -92,7 +96,7 @@ const WordCounterTool = () => {
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Text Workspace</h2>
             <div className="flex flex-wrap gap-2">
               <IconButton onClick={() => setAndTrackText(sampleText)} icon={<FileText size={16} />} label="Sample" />
-              <IconButton onClick={cleanExtraSpaces} icon={<Eraser size={16} />} label="Clean" disabled={!text} />
+              <IconButton onClick={cleanExtraSpaces} icon={<Eraser size={16} />} label="Clean" disabled={!text} highlighted={preferredAction === 'clean'} />
               <IconButton onClick={() => setAndTrackText("")} icon={<RotateCcw size={16} />} label="Reset" disabled={!text} />
             </div>
           </div>
@@ -165,12 +169,12 @@ const WordCounterTool = () => {
   );
 };
 
-const IconButton = ({ onClick, icon, label, disabled = false }) => (
+const IconButton = ({ onClick, icon, label, disabled = false, highlighted = false }) => (
   <button
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-teal-500 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-300"
+    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition hover:border-teal-500 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-300 ${highlighted ? 'border-teal-500 bg-teal-50 text-teal-800 ring-2 ring-teal-500/20 dark:bg-teal-950/40 dark:text-teal-200' : 'border-slate-200 text-slate-600'}`}
   >
     {icon}
     {label}
@@ -182,6 +186,7 @@ IconButton.propTypes = {
   icon: PropTypes.node.isRequired,
   label: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
+  highlighted: PropTypes.bool,
 };
 
 const StatCard = ({ label, value }) => (

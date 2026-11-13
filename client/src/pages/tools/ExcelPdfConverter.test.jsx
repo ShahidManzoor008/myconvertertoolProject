@@ -8,11 +8,18 @@ import { downloadFile } from '../../utils/fileDownloadUtils';
 
 vi.mock('../../utils/apiClient', () => ({ apiClient: { upload: vi.fn() } }));
 vi.mock('../../utils/fileDownloadUtils', () => ({ downloadFile: vi.fn() }));
-const mount = () => render(<MemoryRouter><HelmetProvider><ExcelPdfConverter /></HelmetProvider></MemoryRouter>);
+const mount = (initialEntry = '/tools/excel-pdf') => render(<MemoryRouter initialEntries={[initialEntry]}><HelmetProvider><ExcelPdfConverter /></HelmetProvider></MemoryRouter>);
 const choose = (name, type, label) => fireEvent.change(screen.getByLabelText(label), {
   target: { files: [new File(['fixture'], name, { type })] },
 });
 beforeEach(() => { vi.clearAllMocks(); });
+
+test('a PDF-to-Excel card link opens the converter in PDF upload mode', () => {
+  mount('/tools/excel-pdf?mode=pdf-to-excel');
+  expect(screen.getByLabelText('Upload PDF document')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'PDF to Excel' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'Convert to Excel' })).toBeDisabled();
+});
 
 test('Excel conversion submits layout options and offers the returned PDF download', async () => {
   apiClient.upload.mockResolvedValue({ filename: 'sales.pdf', mimeType: 'application/pdf', base64: btoa('pdf'), preview: [], warnings: [] });

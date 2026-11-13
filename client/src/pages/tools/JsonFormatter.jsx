@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,12 +13,16 @@ import { jsonrepair } from 'jsonrepair';
 
 const JsonFormatter = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get('mode');
+  const initialTab = requestedMode === 'analyze' ? 'analyze' : requestedMode === 'settings' ? 'settings' : 'format';
+  const [preferredAction, setPreferredAction] = useState(requestedMode === 'minify' ? 'minify' : 'format');
   const [jsonInput, setJsonInput] = useState("");
   const [formattedJson, setFormattedJson] = useState("");
   const [error, setError] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
   const [indentSize, setIndentSize] = useState(2);
-  const [activeTab, setActiveTab] = useState("format");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [jsonStats, setJsonStats] = useState(null);
   const [validationResults, setValidationResults] = useState(null);
   const [recentUploads, setRecentUploads] = useState([]);
@@ -36,6 +41,7 @@ const JsonFormatter = () => {
   };
 
   const handleFormatJson = () => {
+    setPreferredAction('format');
     try {
       const parsedJson = parse(jsonInput);
       setFormattedJson(stringify(parsedJson, null, indentSize));
@@ -51,6 +57,7 @@ const JsonFormatter = () => {
   };
 
   const handleMinifyJson = () => {
+    setPreferredAction('minify');
     try {
       const parsedJson = parse(jsonInput);
       setFormattedJson(stringify(parsedJson));
@@ -502,15 +509,17 @@ const JsonFormatter = () => {
               {/* Quick Actions */}
               <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
                 <button
+                  type="button"
                   onClick={handleFormatJson}
-                  className="btn-primary w-full sm:w-auto px-10 py-4 !bg-indigo-600 shadow-indigo-500/25"
+                  className={`btn-primary w-full sm:w-auto px-10 py-4 !bg-indigo-600 shadow-indigo-500/25 ${preferredAction === 'format' ? 'ring-4 ring-indigo-300/40' : 'opacity-80'}`}
                 >
                   <span aria-hidden="true" className="material-icons text-sm">auto_fix_high</span>
                   Format Code
                 </button>
                 <button
+                  type="button"
                   onClick={handleMinifyJson}
-                  className="px-8 py-4 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all w-full sm:w-auto"
+                  className={`px-8 py-4 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all w-full sm:w-auto ${preferredAction === 'minify' ? 'ring-4 ring-slate-400/40' : 'opacity-80'}`}
                 >
                   Minify Output
                 </button>

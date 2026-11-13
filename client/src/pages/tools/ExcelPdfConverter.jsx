@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowRightLeft, CheckCircle2, Download, FileSpreadsheet, FileUp, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import SEO from '../../utils/SEO';
@@ -13,7 +14,9 @@ const fieldClass = 'mt-2 w-full rounded-xl border border-slate-300 bg-white px-3
 
 export default function ExcelPdfConverter() {
   const workspaceRef = useToolWorkspace();
-  const [mode, setMode] = useState('excel-to-pdf');
+  const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get('mode') === 'pdf-to-excel' ? 'pdf-to-excel' : 'excel-to-pdf';
+  const [mode, setMode] = useState(requestedMode);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
@@ -15,6 +16,9 @@ import { parse, stringify } from 'lossless-json';
 
 const MinifyBeautifyTool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const requestedAction = searchParams.get('mode') === 'minify' ? 'minify' : 'beautify';
+  const [selectedAction, setSelectedAction] = useState(requestedAction);
   const [processing, setProcessing] = useState(false);
   const [code, setCode] = useState("");
   const [result, setResult] = useState("");
@@ -73,6 +77,7 @@ const MinifyBeautifyTool = () => {
   }, [result, language, updatePreview]);
 
   const handleBeautify = async () => {
+    setSelectedAction('beautify');
     if (!code.trim()) { setResult(""); showPopup("Enter source code first."); return; }
     try {
       const options = { indent_size: indentSize, preserve_newlines: preserveNewlines, max_preserve_newlines: 2 };
@@ -91,6 +96,7 @@ const MinifyBeautifyTool = () => {
   };
 
   const handleMinify = async () => {
+    setSelectedAction('minify');
     if (!code.trim() || processing) return;
     setProcessing(true);
     setResult("");
@@ -205,10 +211,10 @@ const MinifyBeautifyTool = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <button disabled={processing} onClick={handleBeautify} className="btn-primary flex-1 !bg-pink-600 shadow-pink-500/25 py-4">
+                <button type="button" disabled={processing} onClick={handleBeautify} className={`btn-primary flex-1 !bg-pink-600 shadow-pink-500/25 py-4 ${selectedAction === 'beautify' ? 'ring-4 ring-pink-300/40' : 'opacity-80'}`}>
                   <Zap size={18} /> Beautify Code
                 </button>
-                <button disabled={processing} onClick={handleMinify} className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all flex-1">
+                <button type="button" disabled={processing} onClick={handleMinify} className={`px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all flex-1 ${selectedAction === 'minify' ? 'ring-4 ring-slate-400/40' : 'opacity-80'}`}>
                   {processing ? "Processing…" : "Minify Code"}
                 </button>
               </div>

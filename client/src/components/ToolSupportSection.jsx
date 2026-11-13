@@ -175,6 +175,8 @@ const ToolSupportSection = ({ currentPath, category }) => {
               icon={tool.icon}
               color={tool.color}
               description={tool.description}
+              category={tool.category}
+              actions={tool.actions}
             />
           ))}
         </div>

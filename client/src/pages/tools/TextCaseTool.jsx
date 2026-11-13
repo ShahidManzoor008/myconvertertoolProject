@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
@@ -11,6 +12,9 @@ import { capitalizeWords, sentenceCase } from '../../utils/textAnalysis';
 
 const TextCaseTool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const requestedMode = ['uppercase', 'lowercase', 'title', 'sentence'].includes(searchParams.get('mode')) ? searchParams.get('mode') : '';
+  const [selectedMode, setSelectedMode] = useState(requestedMode);
   const [text, setText] = useState("");
   const [convertedText, setConvertedText] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
@@ -22,6 +26,7 @@ const TextCaseTool = () => {
   };
 
   const handleTransform = (transformFn, label) => {
+    setSelectedMode({ upper: 'uppercase', lower: 'lowercase', capitalize: 'title', sentence: 'sentence' }[label]);
     if (!text.trim()) { setConvertedText(""); showPopup("Enter text to transform."); return; }
     const result = transformFn(text);
     setConvertedText(result);
@@ -109,29 +114,33 @@ const TextCaseTool = () => {
               {/* Transformation Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <button
+                  type="button"
                   onClick={toUpperCase}
-                  className="flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group"
+                  className={`flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group ${selectedMode === 'uppercase' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-transparent'}`}
                 >
                   <span className="text-lg font-black group-hover:scale-110 transition-transform">AA</span>
                   <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Uppercase</span>
                 </button>
                 <button
+                  type="button"
                   onClick={toLowerCase}
-                  className="flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group"
+                  className={`flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group ${selectedMode === 'lowercase' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-transparent'}`}
                 >
                   <span className="text-lg font-black group-hover:scale-110 transition-transform">aa</span>
                   <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Lowercase</span>
                 </button>
                 <button
+                  type="button"
                   onClick={toCapitalize}
-                  className="flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group"
+                  className={`flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group ${selectedMode === 'title' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-transparent'}`}
                 >
                   <span className="text-lg font-black group-hover:scale-110 transition-transform">Aa Bb</span>
                   <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Capitalize</span>
                 </button>
                 <button
+                  type="button"
                   onClick={toSentenceCase}
-                  className="flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group"
+                  className={`flex flex-col items-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 hover:border-green-500/50 hover:bg-white dark:hover:bg-slate-700 transition-all group ${selectedMode === 'sentence' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-transparent'}`}
                 >
                   <span className="text-lg font-black group-hover:scale-110 transition-transform">Aa aa</span>
                   <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Sentence</span>

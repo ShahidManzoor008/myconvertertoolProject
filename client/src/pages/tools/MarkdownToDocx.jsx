@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +13,9 @@ import { useConversionProgress } from '../../hooks/useConversionProgress';
 
 const MarkdownToDocx = () => {
   const workspaceRef = useToolWorkspace();
-  const [inputMode, setInputMode] = useState('paste');
+  const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get('mode') === 'upload' ? 'upload' : 'paste';
+  const [inputMode, setInputMode] = useState(requestedMode);
   const [markdownText, setMarkdownText] = useState('');
   const [textFilename, setTextFilename] = useState('markdown-document');
   const [uploadedFile, setUploadedFile] = useState(null);

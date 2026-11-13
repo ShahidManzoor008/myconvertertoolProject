@@ -44,25 +44,25 @@ const Home = () => {
     <div className="home-page pb-12">
       <SEO {...seoData.home} />
 
-      <section className="home-hero mt-4 sm:mt-6" aria-labelledby="home-heading">
-        <div className="relative grid items-center gap-8 px-5 py-8 sm:px-9 sm:py-10 lg:grid-cols-[1.25fr_1fr] lg:gap-14 lg:px-12 lg:py-12">
+      <section className="home-hero mt-2 sm:mt-6" aria-labelledby="home-heading">
+        <div className="relative grid items-center gap-5 px-4 py-4 sm:gap-8 sm:px-9 sm:py-10 lg:grid-cols-[1.25fr_1fr] lg:gap-14 lg:px-12 lg:py-12">
           <div>
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-300">
+            <span className="mb-5 hidden items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-300 sm:inline-flex">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> A little less busywork
             </span>
-            <h1 id="home-heading" className="max-w-xl text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-              Everyday tools.<br /><span className="text-blue-600 dark:text-blue-400">Ready when you are.</span>
+            <h1 id="home-heading" className="max-w-xl text-2xl font-extrabold leading-tight tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+              Everyday tools.<br className="hidden sm:block" /><span className="text-blue-600 dark:text-blue-400">Ready when you are.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+            <p className="mt-2 max-w-lg text-sm leading-5 text-slate-600 dark:text-slate-300 sm:mt-5 sm:text-lg sm:leading-7">
               Convert a document, tidy your code, or work with text. Pick a tool and get straight to work.
             </p>
-            <div className="home-actions mt-7 flex flex-wrap items-center gap-3">
+            <div className="home-actions mt-7 hidden flex-wrap items-center gap-3 sm:flex">
               <a href="#all-tools" className="btn-primary rounded-xl px-5">Find your tool <ArrowRight size={17} /></a>
               <Link to="/tools/pdf-converter" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                 Convert to PDF
               </Link>
             </div>
-            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="mt-6 hidden flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-slate-500 dark:text-slate-400 sm:flex">
               {['Free to use', `${primaryTools.length} focused tools`, 'No installation'].map(label => <span key={label} className="inline-flex items-center gap-1.5"><Check size={14} className="text-blue-600 dark:text-blue-400" />{label}</span>)}
             </div>
           </div>
@@ -90,28 +90,28 @@ const Home = () => {
         </div>
       </section>
 
-      <section id="all-tools" aria-labelledby="tools-heading" className="scroll-mt-4 py-10 sm:py-14">
-        <div className="mb-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <section id="all-tools" aria-labelledby="tools-heading" className="scroll-mt-4 py-5 sm:py-14">
+        <div className="mb-4 flex flex-col justify-between gap-3 sm:mb-6 sm:gap-5 lg:flex-row lg:items-end">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Your everyday toolkit</p>
-            <h2 id="tools-heading" className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">Find the right tool</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">Everything you need, one click away.</p>
+            <p className="mb-1 hidden text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 sm:block sm:mb-2">Your everyday toolkit</p>
+            <h2 id="tools-heading" className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">Find the right tool</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400 sm:mt-2 sm:text-sm sm:leading-6">Choose a task or search by file type.</p>
           </div>
           <div className="relative w-full lg:max-w-sm">
             <label htmlFor="tool-search" className="sr-only">Search tools</label>
             <Search aria-hidden="true" size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input id="tool-search" type="search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Search tools, formats, or tasks…" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+            <input id="tool-search" type="search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Search tools, formats, or tasks…" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 sm:py-3 sm:pl-11 dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
           </div>
         </div>
-        <div className="mb-6 flex flex-wrap items-center gap-2" role="group" aria-label="Filter tools by category">
+        <div className="mb-4 flex flex-wrap items-center gap-1.5 sm:mb-6 sm:gap-2" role="group" aria-label="Filter tools by category">
           {[{ name: 'all', label: 'All tools' }, ...categories].map(category => (
-            <button key={category.name} type="button" aria-pressed={selectedCategory === category.name} onClick={() => setSelectedCategory(category.name)} className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${selectedCategory === category.name ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-600'}`}>{category.label}</button>
+            <button key={category.name} type="button" aria-pressed={selectedCategory === category.name} onClick={() => setSelectedCategory(category.name)} className={`min-h-9 rounded-full border px-3 py-1.5 text-xs font-semibold transition sm:min-h-10 sm:px-4 sm:py-2 sm:text-sm ${selectedCategory === category.name ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-600'}`}>{category.label}</button>
           ))}
           <span role="status" className="ml-auto text-xs text-slate-500 dark:text-slate-400">{matchingTools.length} {matchingTools.length === 1 ? 'tool' : 'tools'}</span>
         </div>
         {matchingTools.length ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {matchingTools.map(tool => <ToolCard key={tool.path} title={tool.name} link={tool.path} icon={tool.icon} color={tool.color} description={tool.description} category={tool.category} />)}
+            {matchingTools.map(tool => <ToolCard key={tool.path} title={tool.name} link={tool.path} icon={tool.icon} color={tool.color} description={tool.description} category={tool.category} actions={tool.actions} />)}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-900">

@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
@@ -11,6 +12,8 @@ import { encodeText, decodeText, decodeBytes, encodeBytes } from '../../utils/en
 
 const Base64Tool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get('mode') === 'decode' ? 'decode' : 'encode';
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +22,7 @@ const Base64Tool = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [statistics, setStatistics] = useState({ original: 0, converted: 0 });
-  const [mode, setMode] = useState("encode"); // encode or decode
+  const [mode, setMode] = useState(requestedMode); // encode or decode
 
   useEffect(() => {
     // Update statistics whenever text or result changes

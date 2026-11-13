@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { useState, useRef, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
@@ -33,11 +34,14 @@ const contentFields = {
 };
 const QrCodeTool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const qrType = searchParams.get('type');
+  const initialQrType = ['text', 'url', 'email', 'phone', 'sms', 'location', 'wifi', 'event', 'contact'].includes(qrType) ? qrType : 'text';
   const [error, setError] = useState('');
   const qrContainerRef = useRef(null);
   // Main content state
   const [content, setContent] = useState("");
-  const [contentType, setContentType] = useState("text");
+  const [contentType, setContentType] = useState(initialQrType);
   const [title, setTitle] = useState("");
   
   // QR code appearance settings

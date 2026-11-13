@@ -7,7 +7,11 @@ export const tools = [
     icon: <FaFileExcel />,
     color: "green",
     category: "PDF Tools",
-    description: "Convert XLS and XLSX spreadsheets to PDF, or export tables from text-based PDFs to Excel.",
+    description: "Convert spreadsheets to PDF or extract tables from text-based PDFs into Excel.",
+    actions: [
+      { label: "Excel → PDF", href: "/tools/excel-pdf?mode=excel-to-pdf" },
+      { label: "PDF → Excel", href: "/tools/excel-pdf?mode=pdf-to-excel" },
+    ],
     keywords: ["excel", "spreadsheet", "xlsx", "xls", "pdf to excel", "excel to pdf", "tables"]
   },
   {
@@ -17,6 +21,10 @@ export const tools = [
     color: "red",
     category: "PDF Tools",
     description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF, or view a PDF in your browser.",
+    actions: [
+      { label: "Convert files to PDF", href: "/tools/pdf-converter?mode=convert" },
+      { label: "View a PDF", href: "/tools/pdf-converter?mode=view" },
+    ],
     keywords: ["pdf converter", "word to pdf", "excel to pdf", "powerpoint to pdf", "markdown to pdf", "image to pdf", "online pdf viewer"]
   },
   {
@@ -26,6 +34,10 @@ export const tools = [
     color: "indigo",
     category: "Text Tools",
     description: "Convert Markdown files or pasted notes into Word DOCX, preserving equations, tables, lists, and code blocks.",
+    actions: [
+      { label: "Paste Markdown → DOCX", href: "/tools/markdown-to-docx?mode=paste" },
+      { label: "Upload .md → DOCX", href: "/tools/markdown-to-docx?mode=upload" },
+    ],
     keywords: ["markdown", "docx", "word", "document"]
   },
   {
@@ -35,6 +47,11 @@ export const tools = [
     color: "pink",
     category: "SEO Tools",
     description: "Generate downloadable QR codes for URLs, plain text, Wi-Fi, contact details, and events.",
+    actions: [
+      { label: "Create URL QR", href: "/tools/qr-code-generator?type=url" },
+      { label: "Create Wi-Fi QR", href: "/tools/qr-code-generator?type=wifi" },
+      { label: "Create contact QR", href: "/tools/qr-code-generator?type=contact" },
+    ],
     keywords: ["qr", "qr code", "marketing", "link"]
   },
   {
@@ -44,6 +61,7 @@ export const tools = [
     color: "yellow",
     category: "SEO Tools",
     description: "Write and preview SEO titles, meta descriptions, canonical URLs, and Open Graph tags.",
+    actions: [{ label: "Edit & preview SEO tags", href: "/tools/meta-tag-preview" }],
     keywords: ["meta tags", "seo title", "meta description", "serp preview"]
   },
   {
@@ -53,6 +71,11 @@ export const tools = [
     color: "blue",
     category: "Dev Tools",
     description: "Format, validate, minify, and inspect JSON in your browser, with no upload required.",
+    actions: [
+      { label: "Format & validate JSON", href: "/tools/json-formatter?mode=format" },
+      { label: "Minify JSON", href: "/tools/json-formatter?mode=minify" },
+      { label: "Analyze JSON", href: "/tools/json-formatter?mode=analyze" },
+    ],
     keywords: ["json", "formatter", "beautify", "validator"]
   },
   {
@@ -62,6 +85,10 @@ export const tools = [
     color: "yellow",
     category: "Dev Tools",
     description: "Encode text as Base64 or decode Base64 strings back to readable text.",
+    actions: [
+      { label: "Encode to Base64", href: "/tools/base64-encoder?mode=encode" },
+      { label: "Decode Base64", href: "/tools/base64-encoder?mode=decode" },
+    ],
     keywords: ["base64", "encode", "decode", "developer"]
   },
   {
@@ -71,6 +98,12 @@ export const tools = [
     color: "pink",
     category: "Dev Tools",
     description: "Percent-encode or decode URLs and query values, with Base64 encode and decode modes too.",
+    actions: [
+      { label: "Encode URL", href: "/tools/url-encoder?mode=encode" },
+      { label: "Decode URL", href: "/tools/url-encoder?mode=decode" },
+      { label: "Encode Base64", href: "/tools/url-encoder?mode=base64encode" },
+      { label: "Decode Base64", href: "/tools/url-encoder?mode=base64decode" },
+    ],
     keywords: ["url", "encode", "decode", "query string"]
   },
   {
@@ -80,6 +113,10 @@ export const tools = [
     color: "indigo",
     category: "Dev Tools",
     description: "Minify or format HTML, CSS, JavaScript, and JSON directly in your browser.",
+    actions: [
+      { label: "Beautify code", href: "/tools/minify-beautify?mode=beautify" },
+      { label: "Minify code", href: "/tools/minify-beautify?mode=minify" },
+    ],
     keywords: ["minify", "beautify", "html", "css", "javascript"]
   },
   {
@@ -89,6 +126,12 @@ export const tools = [
     color: "purple",
     category: "Text Tools",
     description: "Change text to uppercase, lowercase, title case, sentence case, and other common styles.",
+    actions: [
+      { label: "UPPERCASE", href: "/tools/text-case-converter?mode=uppercase" },
+      { label: "lowercase", href: "/tools/text-case-converter?mode=lowercase" },
+      { label: "Title Case", href: "/tools/text-case-converter?mode=title" },
+      { label: "Sentence case", href: "/tools/text-case-converter?mode=sentence" },
+    ],
     keywords: ["case", "uppercase", "lowercase", "title case"]
   },
   {
@@ -98,6 +141,10 @@ export const tools = [
     color: "teal",
     category: "Text Tools",
     description: "Count words, characters, sentences, and paragraphs, and estimate reading and speaking time.",
+    actions: [
+      { label: "Count & analyze text", href: "/tools/word-counter?mode=count" },
+      { label: "Clean extra spaces", href: "/tools/word-counter?mode=clean" },
+    ],
     keywords: ["word counter", "character counter", "reading time", "text analysis"]
   },
   {

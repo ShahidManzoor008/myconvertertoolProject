@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
@@ -20,7 +21,9 @@ import { downloadFile, getFileBlob } from '../../utils/fileDownloadUtils';
 
 const PdfConverter = () => {
   const workspaceRef = useToolWorkspace();
-  const [selectedMode, setSelectedMode] = useState("convert");
+  const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get('mode') === 'view' ? 'view' : 'convert';
+  const [selectedMode, setSelectedMode] = useState(requestedMode);
   const [, setRecentFiles] = useState([]);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [downloadData, setDownloadData] = useState(null);

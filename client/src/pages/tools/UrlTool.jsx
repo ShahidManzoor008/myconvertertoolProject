@@ -1,4 +1,5 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
+import { useSearchParams } from 'react-router-dom';
 import { safeStorage } from '../../utils/storage';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +13,13 @@ import { encodeText, decodeText } from '../../utils/encoding';
 
 const UrlTool = () => {
   const workspaceRef = useToolWorkspace();
+  const [searchParams] = useSearchParams();
+  const requestedMode = ['encode', 'decode', 'base64encode', 'base64decode'].includes(searchParams.get('mode')) ? searchParams.get('mode') : 'encode';
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
-  const [mode, setMode] = useState("encode"); // encode, decode, or base64
+  const [mode, setMode] = useState(requestedMode);
   const [history, setHistory] = useState([]);
   const [showHelp, setShowHelp] = useState(false);
   const [showStats, setShowStats] = useState(false);

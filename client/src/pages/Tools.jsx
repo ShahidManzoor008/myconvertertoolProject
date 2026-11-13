@@ -71,6 +71,8 @@ const Tools = () => {
                   icon={tool.icon}
                   color={tool.color}
                   description={tool.description}
+                  category={tool.category}
+                  actions={tool.actions}
                 />
               ))}
             </ToolSection>
