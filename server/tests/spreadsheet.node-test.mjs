@@ -25,6 +25,8 @@ const upload = async (mode, filename, fields = {}) => {
 before(async () => {
   fixtures = await fs.mkdtemp(path.join(os.tmpdir(), 'spreadsheet-test-'));
   await run(python, [fileURLToPath(new URL('./fixtures/generate_spreadsheet_fixtures.py', import.meta.url)), fixtures]);
+  await fs.copyFile(fileURLToPath(new URL('./fixtures/pdf-table-layout-regression.pdf', import.meta.url)),
+    path.join(fixtures, 'pdf-table-layout-regression.pdf'));
 });
 after(async () => { await fs.rm(fixtures, { recursive: true, force: true }); });
 
@@ -91,6 +93,35 @@ test('automatic detection extracts borderless aligned text tables', async () => 
   assert.equal(response.status, 200, JSON.stringify(response.body));
   assert.equal(response.body.preview.length, 2);
   assert.ok(response.body.preview[0].sample.flat().includes('Widget'));
+});
+
+test('automatic detection preserves complex aligned tables and page continuations', async () => {
+  const response = await upload('pdf-to-excel', 'pdf-table-layout-regression.pdf');
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  assert.equal(response.body.preview.length, 6);
+  assert.deepEqual(response.body.preview.map(sheet => [sheet.rows, sheet.columns]), [
+    [7, 6], [6, 6], [6, 6], [6, 7], [6, 6], [7, 4],
+  ]);
+  assert.deepEqual(response.body.preview[0].sample[1], [
+    'EMP-1001', 'Ayesha Khan', 'Electrical', '2021-03-15', '125,000', 'Active',
+  ]);
+  assert.deepEqual(response.body.preview[1].sample[1], [
+    'INV-24001', 'North Star Traders', '2026-10-02', '250,000.00', '45,000.00', '295,000.00',
+  ]);
+  assert.deepEqual(response.body.preview[2].sample[1], [
+    'MTR-001', 'Digital Multimeter', 12, '8,500.00', '5%', '96,900.00',
+  ]);
+  assert.deepEqual(response.body.preview[3].sample[0], ['', 'Q1', null, null, 'Q2', null, null]);
+  assert.deepEqual(response.body.preview[4].sample[2], [
+    'AST-002', 'Loom Machine 14', 'Production Hall', '2026-02-05', '', 'Pending schedule',
+  ]);
+  assert.deepEqual(response.body.preview[5].sample[3], [
+    'Accounts Payable', '90,000', '240,000', '-150,000',
+  ]);
+  const zip = await JSZip.loadAsync(Buffer.from(response.body.base64, 'base64'));
+  const quarterSheet = await zip.file('xl/worksheets/sheet4.xml').async('string');
+  assert.ok(quarterSheet.includes('ref="B1:D1"'));
+  assert.ok(quarterSheet.includes('ref="E1:G1"'));
 });
 
 test('scanned, locked, prose-only and oversized-page PDFs have actionable errors', async () => {

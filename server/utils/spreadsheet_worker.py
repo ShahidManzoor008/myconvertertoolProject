@@ -8,6 +8,7 @@ import sys
 import zipfile
 
 import openpyxl
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.properties import PageSetupProperties
 import pdfplumber
@@ -95,8 +96,111 @@ def table_quality(table):
     return len(table) * width * density * (0.75 + 0.25 * consistent_width)
 
 
+def extract_word_position_tables(page):
+    """Rebuild tables from aligned PDF words when page-wide text detection fragments them."""
+    words = sorted(page.extract_words(x_tolerance=3, y_tolerance=3),
+                   key=lambda word: (word['top'], word['x0']))
+    lines = []
+    for word in words:
+        line = next((candidate for candidate in reversed(lines[-2:])
+                     if abs(candidate['top'] - word['top']) <= 3), None)
+        if line is None:
+            lines.append({'top': word['top'], 'words': [word]})
+        else:
+            line['words'].append(word)
+
+    for line in lines:
+        cells = []
+        for word in sorted(line['words'], key=lambda item: item['x0']):
+            if cells and word['x0'] - cells[-1]['x1'] <= 8:
+                cells[-1]['text'] += ' ' + word['text']
+                cells[-1]['x1'] = word['x1']
+            else:
+                cells.append({'text': word['text'], 'x0': word['x0'], 'x1': word['x1']})
+        line['cells'] = cells
+
+    # Separate tables with larger whitespace gaps while keeping normal row spacing together.
+    regions = []
+    for line in lines:
+        if not regions or line['top'] - regions[-1][-1]['top'] > 32:
+            regions.append([line])
+        else:
+            regions[-1].append(line)
+
+    tables = []
+    number_pattern = re.compile(r'^[+-]?(?:\d[\d,]*(?:\.\d+)?|\.\d+)%?$')
+    for region in regions:
+        if len(region) < 2:
+            continue
+
+        # Text columns align on their left edge; numeric columns are often right aligned.
+        positions = []
+        for row_index, line in enumerate(region):
+            for cell in line['cells']:
+                numeric = bool(number_pattern.fullmatch(cell['text']))
+                edge = cell['x1'] if numeric else cell['x0']
+                positions.append((edge, row_index, numeric))
+
+        clusters = []
+        for edge, row_index, numeric in sorted(positions):
+            cluster = min((item for item in clusters if item['numeric'] == numeric),
+                          key=lambda item: abs(item['center'] - edge), default=None)
+            if cluster and abs(cluster['center'] - edge) <= 20:
+                cluster['edges'].append(edge)
+                cluster['rows'].add(row_index)
+                cluster['center'] = sorted(cluster['edges'])[len(cluster['edges']) // 2]
+            else:
+                clusters.append({'center': edge, 'edges': [edge], 'rows': {row_index},
+                                 'numeric': numeric})
+
+        minimum_support = max(2, (len(region) + 1) // 2)
+        anchors = sorted(cluster['center'] for cluster in clusters
+                         if len(cluster['rows']) >= minimum_support)
+        if len(anchors) < 2:
+            continue
+        header_index = max(range(len(region)), key=lambda index: len(region[index]['cells']))
+        matrix = []
+        for row_index, line in enumerate(region):
+            row = [''] * len(anchors)
+            cells = line['cells']
+            # When the header has one cell per column, its reading order is more reliable
+            # than its alignment (headers are commonly centered above right-aligned values).
+            if row_index == header_index and len(cells) == len(anchors):
+                for column, cell in enumerate(cells):
+                    row[column] = cell['text']
+            elif row_index < header_index and len(cells) >= 2 and len(cells) < len(anchors) \
+                    and all(not number_pattern.fullmatch(cell['text']) for cell in cells):
+                # Sparse grouped headers are centered across the columns they label.
+                for cell in cells:
+                    center = (cell['x0'] + cell['x1']) / 2
+                    column = min(range(len(anchors)), key=lambda index: abs(anchors[index] - center))
+                    row[column] = (row[column] + ' ' + cell['text']).strip()
+            else:
+                for cell in cells:
+                    numeric = bool(number_pattern.fullmatch(cell['text']))
+                    edge = cell['x1'] if numeric else cell['x0']
+                    column = min(range(len(anchors)), key=lambda index: abs(anchors[index] - edge))
+                    row[column] = (row[column] + ' ' + cell['text']).strip()
+
+            if sum(bool(value) for value in row) >= 2:
+                matrix.append(row)
+
+        # Drop columns that contain no values anywhere, without shifting genuine blank cells.
+        populated_columns = [column for column in range(len(anchors))
+                             if any(row[column] for row in matrix)]
+        matrix = [[row[column] for column in populated_columns] for row in matrix]
+        if len(matrix) >= 2 and table_quality(matrix):
+            tables.append(matrix)
+    return tables
+
+
 def extract_page_tables(page, mode):
     """Try complementary rule and whitespace strategies and keep the strongest parse."""
+    if mode == 'auto':
+        word_tables = extract_word_position_tables(page)
+        if word_tables:
+            return word_tables
+
     strategies = {
         'lines': [{}],
         'text': [
@@ -126,10 +230,66 @@ def extract_page_tables(page, mode):
     return best_tables
 
 
+def merge_continued_tables(page_tables):
+    """Join a table continued on the next page when its repeated header matches."""
+    merged = []
+    last_by_header = {}
+    for page_number, table in page_tables:
+        header = tuple(str(value or '').strip().casefold() for value in table[0])
+        previous = last_by_header.get(header)
+        if previous and previous['last_page'] == page_number - 1 \
+                and len(previous['rows']) < len(table) and len(table) > 1:
+            previous['rows'].extend(table[1:])
+            previous['last_page'] = page_number
+            continue
+        item = {'page': page_number, 'last_page': page_number,
+                'table_number': 1, 'rows': table}
+        merged.append(item)
+        last_by_header[header] = item
+    counters = {}
+    for item in merged:
+        page = item['page']
+        counters[page] = counters.get(page, 0) + 1
+        item['table_number'] = counters[page]
+    return merged
+
+
+def restore_grouped_headers(sheet):
+    """Recreate simple group headers, such as Q1 above Jan–Mar, as merged cells."""
+    if sheet.max_row < 2:
+        return
+    for row_index in (1,):
+        parent = [sheet.cell(row_index, column).value for column in range(1, sheet.max_column + 1)]
+        child = [sheet.cell(row_index + 1, column).value for column in range(1, sheet.max_column + 1)]
+        groups = [column for column, value in enumerate(parent, 1) if value not in (None, '')]
+        child_columns = [column for column, value in enumerate(child, 1) if value not in (None, '')]
+        if len(groups) < 2 or len(child_columns) < 5:
+            continue
+        if not all(isinstance(child[column - 1], str) for column in child_columns):
+            continue
+        first_child, last_child = child_columns[0] + 1, child_columns[-1]
+        for group_index, column in enumerate(groups):
+            if group_index:
+                start = (groups[group_index - 1] + column) // 2 + 1
+            else:
+                start = first_child
+            if group_index + 1 < len(groups):
+                end = (column + groups[group_index + 1]) // 2
+            else:
+                end = last_child
+            if end <= start or column < start or column > end:
+                continue
+            value = sheet.cell(row_index, column).value
+            sheet.cell(row_index, start).value = value
+            sheet.merge_cells(start_row=row_index, start_column=start,
+                              end_row=row_index, end_column=end)
+
+
 def pdf_to_excel(source, root, options):
     workbook = openpyxl.Workbook()
     workbook.remove(workbook.active)
     preview, skipped, cells = [], [], 0
+    page_tables = []
     with pdfplumber.open(source) as pdf:
         if len(pdf.pages) > 50:
             raise ValueError('PDFs may contain at most 50 pages. Split this PDF first.')
@@ -139,32 +299,39 @@ def pdf_to_excel(source, root, options):
             tables = extract_page_tables(page, options['tableMode'])
             if not tables:
                 skipped.append(page_number)
-            for table_number, table in enumerate(tables, 1):
-                if len(workbook.worksheets) >= 100:
-                    raise ValueError('PDF contains more than 100 tables. Split this PDF first.')
-                cells += sum(len(row) for row in table)
-                if cells > MAX_CELLS or max(map(len, table)) > 256:
-                    raise ValueError('Extracted tables exceed the 200,000 cell or 256 column limit.')
-                sheet = workbook.create_sheet(f'Page {page_number} Table {table_number}')
-                for row in table:
-                    sheet.append([cell_value(value) for value in row])
-                # PDF text must never become a formula or hyperlink in the output workbook.
-                for row in sheet:
-                    for cell in row:
-                        if isinstance(cell.value, str):
-                            cell.data_type = 's'
-                        cell.alignment = Alignment(vertical='top', wrap_text=True)
-                for cell in sheet[1]:
-                    cell.font = Font(bold=True, color='FFFFFF')
-                    cell.fill = PatternFill('solid', fgColor='047857')
-                sheet.freeze_panes = 'A2'
-                for column in sheet.columns:
-                    width = min(45, max(12, max(len(str(c.value or '')) for c in column) + 2))
-                    sheet.column_dimensions[column[0].column_letter].width = width
-                preview.append({'name': sheet.title, 'rows': sheet.max_row,
-                                'columns': sheet.max_column,
-                                'sample': [[cell.value for cell in row[:12]] for row in list(sheet.rows)[:8]]})
+            for table in tables:
+                page_tables.append((page_number, table))
             page.close()
+
+    tables = merge_continued_tables(page_tables)
+    for table_info in tables:
+        table_number, table = table_info['table_number'], table_info['rows']
+        page_number = table_info['page']
+        if len(workbook.worksheets) >= 100:
+            raise ValueError('PDF contains more than 100 tables. Split this PDF first.')
+        cells += sum(len(row) for row in table)
+        if cells > MAX_CELLS or max(map(len, table)) > 256:
+            raise ValueError('Extracted tables exceed the 200,000 cell or 256 column limit.')
+        sheet = workbook.create_sheet(f'Page {page_number} Table {table_number}')
+        for row in table:
+            sheet.append([cell_value(value) for value in row])
+        # PDF text must never become a formula or hyperlink in the output workbook.
+        for row in sheet:
+            for cell in row:
+                if isinstance(cell.value, str):
+                    cell.data_type = 's'
+                cell.alignment = Alignment(vertical='top', wrap_text=True)
+        for cell in sheet[1]:
+            cell.font = Font(bold=True, color='FFFFFF')
+            cell.fill = PatternFill('solid', fgColor='047857')
+        sheet.freeze_panes = 'A2'
+        restore_grouped_headers(sheet)
+        for column_index, column in enumerate(sheet.columns, 1):
+            width = min(45, max(12, max(len(str(c.value or '')) for c in column) + 2))
+            sheet.column_dimensions[get_column_letter(column_index)].width = width
+        preview.append({'name': sheet.title, 'rows': sheet.max_row,
+                        'columns': sheet.max_column,
+                        'sample': [[cell.value for cell in row[:12]] for row in list(sheet.rows)[:8]]})
     if not workbook.worksheets:
         if not has_text:
             raise ValueError('This PDF contains no selectable text. Scanned PDFs require OCR before conversion.')
