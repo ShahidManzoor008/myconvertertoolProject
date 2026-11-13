@@ -355,15 +355,15 @@ const PdfConverter = () => {
   return (
     <div className="pb-20">
       <SEO
-        title={'Free PDF Converter | Convert Word, Excel, Images to PDF Online - MyConverterTool'}
-        description={'Use our free PDF converter to convert Word to PDF, Excel to PDF, images to PDF, and more. Merge, split, compress PDFs online instantly.'}
-        keywords={'pdf converter, word to pdf, excel to pdf, image to pdf, merge pdf, split pdf, compress pdf, online pdf tools'}
+        title={'Free PDF Converter | Convert Word, Excel, PowerPoint & More to PDF'}
+        description={'Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF. Merge, split, rotate, compress, or watermark PDFs online.'}
+        keywords={'free pdf converter, convert Word to PDF, Excel to PDF, PowerPoint to PDF, Markdown to PDF, text to PDF, image to PDF, merge PDF, split PDF, rotate PDF, compress PDF, watermark PDF'}
         canonicalUrl={'/tools/pdf-converter'}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'WebApplication',
           name: 'PDF Converter',
-          description: 'Free online PDF converter tool with support for multiple file formats',
+          description: 'Convert Word, Excel, PowerPoint, Markdown, text, and image files to PDF, and merge, split, rotate, compress, or watermark PDFs online.',
           applicationCategory: 'DocumentManagement',
           offers: {
             '@type': 'Offer',

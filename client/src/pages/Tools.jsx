@@ -5,8 +5,8 @@ import PropTypes from "prop-types";
 
 const sections = [
   {
-    title: "PDF Management",
-    subtitle: "Convert, edit, and organize PDF documents.",
+    title: "PDF Conversion & Document Tools",
+    subtitle: "Convert common document, spreadsheet, Markdown, text, and image files to PDF, or export PDF tables to Excel.",
     category: "PDF Tools",
   },
   {
@@ -29,7 +29,7 @@ const sections = [
 const Tools = () => {
   const seoData = {
     title: "Free Online Tools | PDF, Developer, Text & SEO Tools - MyConverterTool",
-    description: "Access free online tools for PDFs, JSON formatting, QR code generation, Base64 encoding, URL encoding, text conversion, and more.",
+    description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF; export PDF tables to Excel; and use free tools for JSON, QR codes, SEO tags, and text.",
     keywords: "online tools, developer tools, PDF tools, JSON formatter, QR code generator, text converter, base64 encoder",
     canonicalUrl: "/tools",
     ogType: "website",

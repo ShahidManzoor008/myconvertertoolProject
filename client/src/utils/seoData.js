@@ -1,8 +1,8 @@
 export const seoData = {
   home: {
-    title: "MyConverterTool - Free PDF, JSON, QR Code & Text Tools",
-    description: "Use free online tools to convert PDFs, format JSON, generate QR codes, preview meta tags, count words, encode URLs, and create DOCX files from Markdown.",
-    keywords: "free online tools, pdf converter, json formatter, qr code generator, meta tag preview, word counter, base64 encoder, url encoder, text case converter, markdown to docx",
+    title: "Free PDF Converter & Online Tools | MyConverterTool",
+    description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF. Export PDF tables to Excel, format JSON, create QR codes, and more.",
+    keywords: "free online tools, convert Word to PDF, Excel to PDF, PowerPoint to PDF, Markdown to PDF, image to PDF, PDF converter, PDF to Excel, Excel to PDF, JSON formatter, QR code generator, meta tag preview, word counter, Base64 encoder, URL encoder, Markdown to DOCX",
     canonicalUrl: "/",
     ogType: "website",
     jsonLd: [
@@ -18,7 +18,7 @@ export const seoData = {
         "@type": "WebSite",
         "name": "MyConverterTool",
         "url": "https://myconvertertool.com",
-        "description": "Free browser-based tools for PDFs, JSON, QR codes, meta tags, word counts, Base64, URLs, text case conversion, and Markdown documents."
+        "description": "Online file conversion tools for PDF and spreadsheets, plus browser utilities for JSON, QR codes, SEO metadata, text, URLs, Base64, and Markdown documents."
       },
       {
         "@context": "https://schema.org",

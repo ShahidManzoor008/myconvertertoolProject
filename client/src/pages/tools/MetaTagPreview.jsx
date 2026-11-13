@@ -10,7 +10,7 @@ import { buildMetaTags } from '../../utils/metaTags';
 
 const initialState = {
   title: "Free Online PDF, JSON, QR Code & Text Tools",
-  description: "Use free online tools to convert PDFs, format JSON, generate QR codes, encode Base64, encode URLs, convert text case, and create DOCX files from Markdown.",
+  description: "Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF; export PDF tables to Excel; and use free tools for JSON, QR codes, SEO tags, and text.",
   url: "https://myconvertertool.com/tools",
 };
 

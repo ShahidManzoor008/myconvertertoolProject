@@ -10,10 +10,10 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { blogApi } from '../utils/apiClient';
 
 const categories = [
-  { name: 'PDF Tools', label: 'Documents', title: 'PDF & documents', path: '/tools/pdf-converter', icon: FileText, description: 'Convert, combine, and prepare your files.', color: 'red' },
-  { name: 'Dev Tools', label: 'Developer', title: 'Developer tools', path: '/tools/dev', icon: Code2, description: 'Make sense of data and clean up your code.', color: 'blue' },
-  { name: 'Text Tools', label: 'Text', title: 'Writing & text', path: '/tools/text', icon: Type, description: 'Count, transform, and export your words.', color: 'green' },
-  { name: 'SEO Tools', label: 'SEO & sharing', title: 'SEO & sharing', path: '/tools/seo', icon: ScanLine, description: 'Preview search results and create QR codes.', color: 'yellow' },
+  { name: 'PDF Tools', label: 'Documents', title: 'PDF & documents', path: '/tools/pdf-converter', icon: FileText, description: 'Convert Word, Excel, PowerPoint, Markdown, text, and images to PDF, or work with PDF pages.', color: 'red' },
+  { name: 'Dev Tools', label: 'Developer', title: 'Developer tools', path: '/tools/dev', icon: Code2, description: 'Format JSON and source code, and encode or decode URL and Base64 data.', color: 'blue' },
+  { name: 'Text Tools', label: 'Text', title: 'Writing & text', path: '/tools/text', icon: Type, description: 'Count and transform text, and convert Markdown documents to Word.', color: 'green' },
+  { name: 'SEO Tools', label: 'SEO & sharing', title: 'SEO & sharing', path: '/tools/seo', icon: ScanLine, description: 'Preview SEO metadata and create QR codes for links, contacts, Wi-Fi, and more.', color: 'yellow' },
 ];
 
 const Home = () => {
@@ -74,8 +74,8 @@ const Home = () => {
             </div>
             <div className="space-y-3">
               {[
-                { title: 'A document to convert', detail: 'Word, images, Markdown → PDF', path: '/tools/pdf-converter', icon: FileText, color: 'text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-300' },
-                { title: 'Notes to turn into Word', detail: 'Markdown → DOCX, with equations', path: '/tools/markdown-to-docx', icon: Type, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300' },
+                { title: 'Convert a file to PDF', detail: 'Word, Excel, PowerPoint, Markdown, text, or images', path: '/tools/pdf-converter', icon: FileText, color: 'text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-300' },
+                { title: 'Turn notes into a Word file', detail: 'Markdown → DOCX, with equations, tables, and code', path: '/tools/markdown-to-docx', icon: Type, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300' },
                 { title: 'Data to clean up', detail: 'Format and validate your JSON', path: '/tools/json-formatter', icon: Code2, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300' },
               ].map(({ title, detail, path, icon: Icon, color }) => (
                 <Link key={path} to={path} className="group flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-blue-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-blue-700 dark:hover:bg-slate-800/60">
