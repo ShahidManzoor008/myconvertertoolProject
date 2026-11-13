@@ -27,8 +27,10 @@ Both endpoints accept one multipart `file` (20 MB maximum) and return JSON with
 - `POST /api/convert/excel-to-pdf`: `.xlsx` or `.xls`; `orientation` is `landscape`
   (default) or `portrait`; `paperSize` is `A4` (default) or `Letter`;
   `fitToWidth` is `true` (default) or `false`.
-- `POST /api/convert/pdf-to-excel`: `.pdf`; `tableMode` is `lines` (default)
-  or `text` for borderless aligned columns. Returns `.xlsx`; preview includes
+- `POST /api/convert/pdf-to-excel`: `.pdf`; `tableMode` is `auto` (default),
+  `lines`, or `text`. Automatic mode compares bordered, borderless, and mixed
+  line/text extraction strategies and keeps the strongest table parse per page.
+  Returns `.xlsx`; preview includes
   the first 8 rows and 12 columns of every table, up to 100 tables.
 
 PDFs are limited to 50 pages. Workbooks are limited to 50 sheets and 200,000

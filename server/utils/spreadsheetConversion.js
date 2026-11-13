@@ -44,8 +44,8 @@ export class SpreadsheetError extends Error {
 
 export function spreadsheetOptions(mode, body = {}) {
   if (mode === 'pdf-to-excel') {
-    const tableMode = body.tableMode || 'lines';
-    if (!['lines', 'text'].includes(tableMode)) throw new SpreadsheetError('Choose a valid table detection mode.', 400);
+    const tableMode = body.tableMode || 'auto';
+    if (!['auto', 'lines', 'text'].includes(tableMode)) throw new SpreadsheetError('Choose a valid table detection mode.', 400);
     return { tableMode };
   }
   const orientation = body.orientation || 'landscape';

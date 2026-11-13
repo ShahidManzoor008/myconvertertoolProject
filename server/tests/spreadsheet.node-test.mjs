@@ -86,15 +86,15 @@ test('multipage PDF tables become worksheets with numeric cells and formula text
   assert.equal(response.body.mimeType, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 });
 
-test('borderless detection extracts aligned text tables', async () => {
-  const response = await upload('pdf-to-excel', 'borderless.pdf', { tableMode: 'text' });
+test('automatic detection extracts borderless aligned text tables', async () => {
+  const response = await upload('pdf-to-excel', 'borderless.pdf');
   assert.equal(response.status, 200, JSON.stringify(response.body));
   assert.equal(response.body.preview.length, 2);
   assert.ok(response.body.preview[0].sample.flat().includes('Widget'));
 });
 
 test('scanned, locked, prose-only and oversized-page PDFs have actionable errors', async () => {
-  for (const [filename, message] of [['scanned.pdf', /OCR/], ['locked.pdf', /password/], ['prose.pdf', /No tables/], ['too-many-pages.pdf', /50 pages/]]) {
+  for (const [filename, message] of [['scanned.pdf', /OCR/], ['locked.pdf', /password/], ['prose.pdf', /No table structure/], ['too-many-pages.pdf', /50 pages/]]) {
     const response = await upload('pdf-to-excel', filename);
     assert.equal(response.status, 422, JSON.stringify(response.body));
     assert.match(response.body.error, message);

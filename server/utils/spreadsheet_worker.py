@@ -83,6 +83,49 @@ def cell_value(value):
     return value
 
 
+def table_quality(table):
+    """Prefer complete, dense tables over fragments and isolated aligned text."""
+    width = max(map(len, table), default=0)
+    if len(table) < 2 or width < 2:
+        return 0
+    filled = sum(bool(str(cell or '').strip()) for row in table for cell in row)
+    total = sum(len(row) for row in table)
+    density = filled / max(total, 1)
+    consistent_width = sum(len(row) == width for row in table) / len(table)
+    return len(table) * width * density * (0.75 + 0.25 * consistent_width)
+
+
+def extract_page_tables(page, mode):
+    """Try complementary rule and whitespace strategies and keep the strongest parse."""
+    strategies = {
+        'lines': [{}],
+        'text': [
+            {'vertical_strategy': 'text', 'horizontal_strategy': 'text', 'min_words_vertical': 2},
+            {'vertical_strategy': 'text', 'horizontal_strategy': 'text', 'min_words_vertical': 3},
+        ],
+        'auto': [
+            {},
+            {'vertical_strategy': 'text', 'horizontal_strategy': 'text', 'min_words_vertical': 2},
+            {'vertical_strategy': 'text', 'horizontal_strategy': 'text', 'min_words_vertical': 3},
+            {'vertical_strategy': 'lines', 'horizontal_strategy': 'text', 'min_words_vertical': 2},
+            {'vertical_strategy': 'text', 'horizontal_strategy': 'lines', 'min_words_vertical': 2},
+        ],
+    }
+    best_tables, best_score = [], 0
+    for settings in strategies[mode]:
+        found = page.extract_tables(settings)
+        cleaned = []
+        for table in found:
+            rows = [[str(cell).strip() if cell is not None else None for cell in row] for row in table]
+            rows = [row for row in rows if any(cell for cell in row)]
+            if table_quality(rows):
+                cleaned.append(rows)
+        score = sum(table_quality(table) for table in cleaned)
+        if score > best_score:
+            best_tables, best_score = cleaned, score
+    return best_tables
+
+
 def pdf_to_excel(source, root, options):
     workbook = openpyxl.Workbook()
     workbook.remove(workbook.active)
@@ -93,13 +136,7 @@ def pdf_to_excel(source, root, options):
         has_text = False
         for page_number, page in enumerate(pdf.pages, 1):
             has_text = has_text or bool(page.chars)
-            settings = {} if options['tableMode'] == 'lines' else {
-                'vertical_strategy': 'text', 'horizontal_strategy': 'text',
-                'min_words_vertical': 3,
-            }
-            tables = page.extract_tables(settings)
-            tables = [[row for row in table if any(str(cell or '').strip() for cell in row)] for table in tables]
-            tables = [t for t in tables if len(t) >= 2 and max(map(len, t), default=0) >= 2]
+            tables = extract_page_tables(page, options['tableMode'])
             if not tables:
                 skipped.append(page_number)
             for table_number, table in enumerate(tables, 1):
@@ -131,7 +168,7 @@ def pdf_to_excel(source, root, options):
     if not workbook.worksheets:
         if not has_text:
             raise ValueError('This PDF contains no selectable text. Scanned PDFs require OCR before conversion.')
-        raise ValueError('No tables found. Try the borderless table option or upload a PDF containing tables.')
+        raise ValueError('No table structure could be detected in this PDF. Try “Borderless / aligned text” for columns separated by spacing, or “Border lines” if the table has clear grid lines. If the page is a scan or photo, run OCR first and upload the searchable PDF.')
     output = root / 'tables.xlsx'
     workbook.save(output)
     warnings = ['Table extraction cannot restore original formulas or exact spreadsheet formatting.']

@@ -47,10 +47,9 @@ test('PDF mode clears the previous upload and previews extracted table cells', a
   expect(screen.queryByText('sales.xlsx')).not.toBeInTheDocument();
   choose('tables.pdf', 'application/pdf', 'Upload PDF document');
   await screen.findByText('tables.pdf');
-  fireEvent.change(screen.getByLabelText('Table detection'), { target: { value: 'text' } });
   fireEvent.click(screen.getByRole('button', { name: 'Convert to Excel' }));
   expect(await screen.findByRole('cell', { name: 'Widget' })).toBeInTheDocument();
-  expect(apiClient.upload.mock.calls[0][1].get('tableMode')).toBe('text');
+  expect(apiClient.upload.mock.calls[0][1].get('tableMode')).toBe('auto');
   expect(screen.getByRole('button', { name: 'Download Excel' })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Table detection'), { target: { value: 'lines' } });
   expect(screen.queryByRole('button', { name: 'Download Excel' })).not.toBeInTheDocument();

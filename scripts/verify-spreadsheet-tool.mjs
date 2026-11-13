@@ -36,7 +36,7 @@ try {
   for (const width of [1440, 390, 320]) {
     await page.setViewport({ width, height: width === 1440 ? 1000 : 844 });
     await page.goto(base, { waitUntil: 'domcontentloaded' });
-    const card = '#all-tools a[href="/tools/excel-pdf"]';
+    const card = '#all-tools a[href="/tools/excel-pdf?mode=excel-to-pdf"]';
     await page.waitForSelector(card);
     await page.$eval(card, element => element.scrollIntoView({ block: 'center' }));
     await page.click(card);

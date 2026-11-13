@@ -25,7 +25,7 @@ export default function ExcelPdfConverter() {
   const [orientation, setOrientation] = useState('landscape');
   const [paperSize, setPaperSize] = useState('A4');
   const [fitToWidth, setFitToWidth] = useState(true);
-  const [tableMode, setTableMode] = useState('lines');
+  const [tableMode, setTableMode] = useState('auto');
   const requestRef = useRef(null);
   const toPdf = mode === 'excel-to-pdf';
 
@@ -95,7 +95,7 @@ export default function ExcelPdfConverter() {
             <span className="mb-4 rounded-2xl bg-emerald-100 p-4 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"><FileUp size={30} /></span>
             <p className="text-lg font-bold text-slate-900 dark:text-white">{isDragActive ? 'Drop your file here' : `Drop your ${toPdf ? 'Excel workbook' : 'PDF'} here`}</p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">or click to choose a file</p>
-            <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{toPdf ? 'XLSX or XLS' : 'PDF with selectable text'} · Up to 20 MB</p>
+            <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{toPdf ? 'XLSX or XLS' : 'Searchable PDF · bordered or borderless tables'} · Up to 20 MB</p>
           </div>
           {file && <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
             <FileSpreadsheet className="shrink-0 text-emerald-600" />
@@ -111,8 +111,9 @@ export default function ExcelPdfConverter() {
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Paper size<select value={paperSize} onChange={e => { setPaperSize(e.target.value); clearResult(); }} className={fieldClass}><option>A4</option><option>Letter</option></select></label>
               <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300"><input type="checkbox" checked={fitToWidth} onChange={e => { setFitToWidth(e.target.checked); clearResult(); }} className="h-4 w-4 accent-emerald-600" />Fit all columns to page width</label>
             </> : <>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Table detection<select value={tableMode} onChange={e => { setTableMode(e.target.value); clearResult(); }} className={fieldClass}><option value="lines">Tables with borders</option><option value="text">Borderless tables (aligned text)</option></select></label>
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">Each detected table becomes a worksheet. Review the preview before downloading. Scanned PDFs need OCR first.</p>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Table detection<select value={tableMode} onChange={e => { setTableMode(e.target.value); clearResult(); }} className={fieldClass}><option value="auto">Automatic (recommended)</option><option value="lines">Border lines</option><option value="text">Borderless / aligned text</option></select></label>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100"><p className="font-semibold">Automatic tries several table layouts</p><p className="mt-1 text-emerald-900/80 dark:text-emerald-200/80">It checks for grid lines and aligned text using multiple extraction passes. Each detected table becomes a worksheet; check the preview before downloading.</p></div>
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">Scanned pages are images and need OCR before their tables can be extracted. PDFs with selectable text work best.</p>
             </>}
           </fieldset>
           <button type="submit" disabled={!file || busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-4 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"><ArrowRightLeft size={18} />{busy ? 'Converting…' : `Convert to ${toPdf ? 'PDF' : 'Excel'}`}</button>
