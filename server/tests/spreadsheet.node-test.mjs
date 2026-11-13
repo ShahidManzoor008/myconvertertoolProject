@@ -25,8 +25,6 @@ const upload = async (mode, filename, fields = {}) => {
 before(async () => {
   fixtures = await fs.mkdtemp(path.join(os.tmpdir(), 'spreadsheet-test-'));
   await run(python, [fileURLToPath(new URL('./fixtures/generate_spreadsheet_fixtures.py', import.meta.url)), fixtures]);
-  await fs.copyFile(fileURLToPath(new URL('./fixtures/pdf-table-layout-regression.pdf', import.meta.url)),
-    path.join(fixtures, 'pdf-table-layout-regression.pdf'));
 });
 after(async () => { await fs.rm(fixtures, { recursive: true, force: true }); });
 
