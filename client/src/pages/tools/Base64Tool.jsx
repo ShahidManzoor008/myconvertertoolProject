@@ -51,6 +51,7 @@ const Base64Tool = () => {
         fileSize: text.length
       }).catch(err => console.error('Failed to log stats:', err));
     } catch {
+      statsApi.increment({ toolName: 'base64-encode', status: 'failure', reason: 'invalid-input' }).catch(() => {});
       setError("Encoding failed. Please check your input.");
       setResult("");
     }
@@ -70,6 +71,7 @@ const Base64Tool = () => {
         fileSize: text.length
       }).catch(err => console.error('Failed to log stats:', err));
     } catch {
+      statsApi.increment({ toolName: 'base64-decode', status: 'failure', reason: 'invalid-input' }).catch(() => {});
       setError("Invalid Base64 or non-UTF-8 data. Use File mode to export binary data.");
       setResult("");
     }

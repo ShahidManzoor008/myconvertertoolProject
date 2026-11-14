@@ -24,22 +24,29 @@ function safeDownloadName(name, ext) {
   return `${base}-compressed.${ext}`;
 }
 
+const logCompressionFailure = (req, toolName, reason) => logConversion({
+  toolName, userId: req.user?._id,
+  analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
+  status: 'failure', reason,
+});
+
 router.post('/image', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Choose a JPEG, PNG, or WebP image.' });
+    if (!req.file) { await logCompressionFailure(req, 'image-compress', 'invalid file'); return res.status(400).json({ error: 'Choose a JPEG, PNG, or WebP image.' }); }
     const valid = await validateUploadedFile(req.file.path, req.file.originalname, imageTypes);
-    if (!valid) return res.status(400).json({ error: 'The uploaded file is not a supported JPEG, PNG, or WebP image.' });
+    if (!valid) { await logCompressionFailure(req, 'image-compress', 'invalid file'); return res.status(400).json({ error: 'The uploaded file is not a supported JPEG, PNG, or WebP image.' }); }
 
     const preset = req.body.preset || 'balanced';
     const qualities = { smaller: 62, balanced: 78, quality: 90 };
-    if (!Object.hasOwn(qualities, preset)) return res.status(400).json({ error: 'Choose a valid image quality preset.' });
+    if (!Object.hasOwn(qualities, preset)) { await logCompressionFailure(req, 'image-compress', 'invalid input'); return res.status(400).json({ error: 'Choose a valid image quality preset.' }); }
     const requestedFormat = req.body.format || 'original';
     const inputFormat = path.extname(req.file.originalname).slice(1).toLowerCase();
     const outputFormat = requestedFormat === 'original' ? (inputFormat === 'jpg' ? 'jpeg' : inputFormat) : requestedFormat;
-    if (!Object.hasOwn(imageMimeTypes, outputFormat)) return res.status(400).json({ error: 'Choose JPEG, PNG, or WebP as the output format.' });
+    if (!Object.hasOwn(imageMimeTypes, outputFormat)) { await logCompressionFailure(req, 'image-compress', 'invalid input'); return res.status(400).json({ error: 'Choose JPEG, PNG, or WebP as the output format.' }); }
 
     const requestedWidth = req.body.width ? Number(req.body.width) : undefined;
     if (requestedWidth !== undefined && (!Number.isInteger(requestedWidth) || requestedWidth < 100 || requestedWidth > 8000)) {
+      await logCompressionFailure(req, 'image-compress', 'invalid input');
       return res.status(400).json({ error: 'Resize width must be a whole number from 100 to 8000 pixels.' });
     }
 
@@ -61,10 +68,11 @@ router.post('/image', upload.single('file'), async (req, res) => {
     setCompressionHeaders(res, req.file.size, output.length);
     res.type(imageMimeTypes[finalFormat]);
     res.set('Content-Disposition', `attachment; filename="${safeDownloadName(req.file.originalname, ext)}"`);
-    await logConversion({ toolName: 'image-compress', userId: req.user?._id, fileName: req.file.originalname, fileSize: output.length });
+    await logConversion({ toolName: 'image-compress', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted' });
     res.send(output);
   } catch (error) {
     console.error('Image compression error:', error);
+    await logConversion({ toolName: 'image-compress', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode || 400).json({ error: error.statusCode ? error.message : 'This image could not be compressed. Check that it is a valid JPEG, PNG, or WebP file.' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -73,17 +81,18 @@ router.post('/image', upload.single('file'), async (req, res) => {
 
 router.post('/pdf', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Choose a PDF file to compress.' });
+    if (!req.file) { await logCompressionFailure(req, 'pdf-compress', 'invalid file'); return res.status(400).json({ error: 'Choose a PDF file to compress.' }); }
     const valid = await validateUploadedFile(req.file.path, req.file.originalname, ['pdf']);
-    if (!valid) return res.status(400).json({ error: 'The uploaded file is not a valid PDF.' });
+    if (!valid) { await logCompressionFailure(req, 'pdf-compress', 'invalid file'); return res.status(400).json({ error: 'The uploaded file is not a valid PDF.' }); }
     const output = await pdfOperations.compressPDF(req.file, req.body.preset || 'balanced');
     setCompressionHeaders(res, req.file.size, output.length);
     res.type('application/pdf');
     res.set('Content-Disposition', `attachment; filename="${safeDownloadName(req.file.originalname, 'pdf')}"`);
-    await logConversion({ toolName: 'pdf-compress', userId: req.user?._id, fileName: req.file.originalname, fileSize: output.length });
+    await logConversion({ toolName: 'pdf-compress', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted' });
     res.send(Buffer.from(output));
   } catch (error) {
     console.error('PDF compression error:', error);
+    await logConversion({ toolName: 'pdf-compress', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode || 400).json({ error: error.statusCode ? error.message : 'This PDF could not be compressed. It may be encrypted or unsupported.' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);

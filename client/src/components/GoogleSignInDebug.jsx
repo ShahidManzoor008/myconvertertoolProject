@@ -29,7 +29,7 @@ const GoogleSignInDebug = ({ className }) => {
         console.log('Manual exchange attempt', attempt, 'result:', res.ok, data);
 
         if (res.ok) {
-          toast?.push?.('Manual exchange succeeded - check localStorage for auth_token', {
+          toast?.push?.('Manual exchange succeeded - the session is stored in a secure cookie.', {
             type: 'success'
           });
           return true;

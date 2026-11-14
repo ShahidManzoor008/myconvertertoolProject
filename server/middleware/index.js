@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { pinoHttp } from 'pino-http';
 import logger from '../utils/logger.js';
+import { AUTH_COOKIE_NAME } from '../utils/authCookies.js';
 
 export const setupMiddleware = (app, allowedOrigins) => {
   // Enhanced security middleware configuration
@@ -22,6 +23,14 @@ export const setupMiddleware = (app, allowedOrigins) => {
     credentials: true,
   };
   app.use(cors(corsOptions));
+
+  // API responses may include account or conversion data. Keep browsers and
+  // intermediary caches from retaining them. Public immutable blog images get
+  // their explicit long-lived cache policy in the route handler.
+  app.use('/api', (req, res, next) => {
+    if (!req.path.startsWith('/blog/images/')) res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
 
   // Import and use enhanced security middleware
   app.use(securityMiddleware);
@@ -43,6 +52,18 @@ export const setupMiddleware = (app, allowedOrigins) => {
   app.use(cookieParser());
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Cookie-authenticated state changes must originate from an approved site.
+  app.use('/api', (req, res, next) => {
+    const safeMethod = ['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+    if (!safeMethod) {
+      const origin = req.get('origin');
+      if ((origin && !allowedOrigins.includes(origin)) || (req.cookies?.[AUTH_COOKIE_NAME] && !origin)) {
+        return res.status(403).json({ error: 'Request origin is not allowed.' });
+      }
+    }
+    next();
+  });
 
   // Structured HTTP logging
   app.use(pinoHttp({ logger }));

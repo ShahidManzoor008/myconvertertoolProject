@@ -1,6 +1,7 @@
 // One conversion request at a time on the 1 GB host. Reject excess work before
 // accepting uploads, instead of letting multiple Chrome processes exhaust RAM.
 let active = false;
+export const getConversionCapacityStatus = () => ({ active, limit: 1 });
 export const conversionCapacity = (req, res, next) => {
   if (active) return res.status(503).set('Retry-After', '5').json({ error: 'Converter is busy. Please try again shortly.' });
   if (Number(req.headers['content-length']) > 100 * 1024 * 1024) {

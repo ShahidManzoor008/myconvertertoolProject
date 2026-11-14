@@ -9,6 +9,7 @@ const BlogManagement = lazy(() => import('../pages/admin/BlogManagement'));
 const EditBlogPost = lazy(() => import('../pages/admin/EditBlogPost'));
 const Settings = lazy(() => import('../pages/admin/Settings'));
 const Users = lazy(() => import('../pages/admin/Users'));
+const Analytics = lazy(() => import('../pages/admin/Analytics'));
 
 const adminRoutes = (
   <Route path="admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -21,6 +22,7 @@ const adminRoutes = (
     </Route>
     <Route path="settings" element={<Settings />} />
     <Route path="users" element={<Users />} />
+    <Route path="analytics" element={<Analytics />} />
   </Route>
 );
 

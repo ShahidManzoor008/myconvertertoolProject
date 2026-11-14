@@ -1,6 +1,7 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
 import Conversion from '../models/Conversion.js';
+import UserDailyUsage from '../models/UserDailyUsage.js';
 
 const router = express.Router();
 
@@ -9,12 +10,16 @@ router.get('/stats', auth, async (req, res) => {
   try {
     const userId = req.user._id;
     
-    const [totalConversions, recentActivity] = await Promise.all([
+    const [legacyConversions, totalConversions, recentActivity] = await Promise.all([
       Conversion.countDocuments({ userId, status: 'success' }),
-      Conversion.find({ userId })
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .select('toolName fileName status createdAt')
+      UserDailyUsage.aggregate([
+        { $match: { userId, action: 'conversion', outcome: 'success' } },
+        { $group: { _id: '$toolName', count: { $sum: '$count' } } },
+      ]),
+      UserDailyUsage.find({ userId, action: 'conversion' })
+        .sort({ day: -1 })
+        .limit(30)
+        .select('toolName outcome reason count day -_id')
     ]);
 
     res.json({
@@ -25,7 +30,7 @@ router.get('/stats', auth, async (req, res) => {
         role: req.user.role
       },
       stats: {
-        totalConversions,
+        totalConversions: legacyConversions + totalConversions.reduce((sum, row) => sum + row.count, 0),
         recentActivity
       }
     });

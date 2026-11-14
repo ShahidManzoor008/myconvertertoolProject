@@ -5,6 +5,7 @@ import { authApi } from '../utils/apiClient';
 import { AppError, AuthenticationError, AuthorizationError } from '../utils/AppError';
 
 const TOKEN_STORAGE_KEY = 'auth_token';
+const LEGACY_TOKEN_STORAGE_KEY = 'token';
 const USER_STORAGE_KEY = 'auth_user';
 const CHANNEL_NAME = 'auth_sync';
 
@@ -54,31 +55,29 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = storage.get(TOKEN_STORAGE_KEY);
-        const userData = storage.get(USER_STORAGE_KEY);
+        const token = storage.get(TOKEN_STORAGE_KEY) || storage.get(LEGACY_TOKEN_STORAGE_KEY);
 
-        if (token && userData) {
-          try {
-            // Verify token with backend
-            const { user: verifiedUser } = await authApi.verify();
-            const parsedUser = JSON.parse(userData);
-            setUser({ ...parsedUser, ...verifiedUser, isAdmin: verifiedUser.role === 'admin' });
-          } catch (verifyError) {
-            // Handle 401/403 errors silently - just clear the session
-            if (verifyError instanceof AuthenticationError || 
-                verifyError instanceof AuthorizationError) {
-              storage.remove(TOKEN_STORAGE_KEY);
-              storage.remove(USER_STORAGE_KEY);
-              channel?.postMessage({ type: 'logout' });
-              // Don't set error for normal session expiration
-              console.debug('Session expired, cleared auth data');
-            } else {
-              // For other errors, might be temporary server issues
-              console.error('Token verification failed:', verifyError);
-              setError('Unable to verify session. Please try again later.');
-            }
+        try {
+          // One-time migration for existing localStorage JWTs, then cookie-only verification.
+          const response = token
+            ? await authApi.migrateSession(token)
+            : await authApi.verify();
+          const verifiedUser = response.user;
+          setUser({ ...verifiedUser, isAdmin: verifiedUser.role === 'admin' });
+          storage.remove(TOKEN_STORAGE_KEY);
+          storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+        } catch (verifyError) {
+          if (verifyError instanceof AuthenticationError || verifyError instanceof AuthorizationError) {
+            storage.remove(TOKEN_STORAGE_KEY);
+            storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+            channel?.postMessage({ type: 'logout' });
+          } else {
+            console.error('Session verification failed:', verifyError);
+            setError('Unable to verify session. Please try again later.');
           }
         }
+        // Do not persist account profile data in browser storage.
+        storage.remove(USER_STORAGE_KEY);
       } catch (err) {
         // Handle initialization errors (like localStorage access)
         console.error('Auth initialization failed:', err);
@@ -90,14 +89,13 @@ export const AuthProvider = ({ children }) => {
 
     initAuth();
 
-    // Listen for storage changes from other tabs
+    // Keep compatibility with tabs clearing legacy token storage. Profile data
+    // is intentionally never restored from localStorage.
     const handleStorage = (e) => {
       if (e.key === TOKEN_STORAGE_KEY) {
         if (!e.newValue) {
           setUser(null); // Token cleared in another tab
         }
-      } else if (e.key === USER_STORAGE_KEY) {
-        setUser(e.newValue ? JSON.parse(e.newValue) : null);
       }
     };
 
@@ -135,8 +133,8 @@ export const AuthProvider = ({ children }) => {
 
       let data = null;
 
-      // If payload already contains a server token, use it directly
-      if (payload && payload.token && payload.user) {
+      // Password login already set an HttpOnly cookie; Google credentials are exchanged first.
+      if (payload && payload.user) {
         data = payload;
       } else if (payload && (payload.tokenId || payload.credential || payload.token)) {
         // Normalize various shapes for Google credential
@@ -147,16 +145,14 @@ export const AuthProvider = ({ children }) => {
         throw new AppError('Invalid login payload', 400);
       }
 
-      // Store in localStorage
-      if (storage.set(TOKEN_STORAGE_KEY, data.token) &&
-          storage.set(USER_STORAGE_KEY, JSON.stringify(data.user))) {
-        setUser({ ...data.user, isAdmin: data.user.role === 'admin' });
-        // Notify other tabs
-        channel?.postMessage({ type: 'login', user: { ...data.user, isAdmin: data.user.role === 'admin' } });
-        return true;
-      } else {
-        throw new AppError('Failed to store auth data', 500);
-      }
+      if (!data?.user) throw new AppError('Sign-in did not return account information.', 500);
+      storage.remove(TOKEN_STORAGE_KEY);
+      storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+      storage.remove(USER_STORAGE_KEY);
+      const signedInUser = { ...data.user, isAdmin: data.user.role === 'admin' };
+      setUser(signedInUser);
+      channel?.postMessage({ type: 'login', user: signedInUser });
+      return true;
     } catch (err) {
       setError(err.message);
       console.error('Login failed:', err);
@@ -177,13 +173,10 @@ export const AuthProvider = ({ children }) => {
       // Auto-login after successful registration
       const data = await authApi.login({ email, password });
 
-      if (storage.set(TOKEN_STORAGE_KEY, data.token) && storage.set(USER_STORAGE_KEY, JSON.stringify(data.user))) {
-        setUser({ ...data.user, isAdmin: data.user.role === 'admin' });
-        channel?.postMessage({ type: 'login', user: { ...data.user, isAdmin: data.user.role === 'admin' } });
-        return true;
-      } else {
-        throw new AppError('Failed to store auth data', 500);
-      }
+      const signedInUser = { ...data.user, isAdmin: data.user.role === 'admin' };
+      setUser(signedInUser);
+      channel?.postMessage({ type: 'login', user: signedInUser });
+      return true;
     } catch (err) {
       setError(err.message);
       console.error('Registration failed:', err);
@@ -196,13 +189,9 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      const token = storage.get(TOKEN_STORAGE_KEY);
-
-      if (token) {
-        await authApi.logout();
-      }
-
+      await authApi.logout();
       storage.remove(TOKEN_STORAGE_KEY);
+      storage.remove(LEGACY_TOKEN_STORAGE_KEY);
       storage.remove(USER_STORAGE_KEY);
       // Notify other tabs
       channel?.postMessage({ type: 'logout' });
@@ -210,6 +199,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       setError(err.message);
       console.error('Logout failed:', err);
+      setUser(null);
     } finally {
       setLoading(false);
     }

@@ -41,6 +41,7 @@ export const convertMdToDocx = async (req, res) => {
     const ok = ['.md', '.markdown', '.txt'].includes(path.extname(req.file.originalname).toLowerCase()) && await validateUploadedFile(req.file.path, req.file.originalname, ['md', 'markdown', 'txt']);
     if (!ok) {
       cleanupFiles(req.file.path);
+      await logConversion({ toolName: 'markdown-to-docx', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: 'invalid file' });
       return res.status(400).json({ error: 'Invalid or unsupported Markdown file.' });
     }
     console.log('📝 Received Markdown file:', req.file.originalname);
@@ -51,6 +52,7 @@ export const convertMdToDocx = async (req, res) => {
     logConversion({
       toolName: 'markdown-to-docx',
       userId: req.user?._id,
+      analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
       fileName: req.file.originalname,
       fileSize: docxBuffer.length
     });
@@ -60,6 +62,7 @@ export const convertMdToDocx = async (req, res) => {
     res.send(docxBuffer);
   } catch (error) {
     console.error('❌ Markdown to DOCX Error:', error.stack);
+    await logConversion({ toolName: 'markdown-to-docx', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(500).json({ error: `Failed to convert Markdown to DOCX: ${error.message}` });
   } finally {
     if (req.file && req.file.path) {
@@ -94,6 +97,7 @@ export const convertMarkdownTextToDocx = async (req, res) => {
     logConversion({
       toolName: 'markdown-to-docx',
       userId: req.user?._id,
+      analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
       fileName: `${safeBaseName}.md`,
       fileSize: docxBuffer.length
     });
@@ -103,6 +107,7 @@ export const convertMarkdownTextToDocx = async (req, res) => {
     res.send(docxBuffer);
   } catch (error) {
     console.error('❌ Markdown text to DOCX Error:', error.stack);
+    await logConversion({ toolName: 'markdown-to-docx', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(500).json({ error: `Failed to convert Markdown to DOCX: ${error.message}` });
   }
 };
@@ -122,6 +127,7 @@ export const batchConvert = async (req, res) => {
       const ok = await validateUploadedFile(f.path, f.originalname, allowedConversionMimeTypes);
       if (!ok) {
         cleanupFiles(req.files.map(file => file.path));
+        await logConversion({ toolName: 'batch-to-pdf', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: 'invalid file' });
         return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });
       }
     }
@@ -140,6 +146,7 @@ export const batchConvert = async (req, res) => {
       logConversion({
         toolName: 'images-to-pdf',
         userId: req.user?._id,
+        analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
         fileName: 'combined_images.pdf',
         fileSize: pdfBuffer.length
       });
@@ -176,6 +183,7 @@ export const batchConvert = async (req, res) => {
         logConversion({
           toolName: 'file-to-pdf',
           userId: req.user?._id,
+          analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
           fileName: convertedFiles[0].name,
           fileSize: pdfBuffer.length
         });
@@ -191,6 +199,7 @@ export const batchConvert = async (req, res) => {
         logConversion({
           toolName: 'batch-to-pdf',
           userId: req.user?._id,
+          analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
           fileName: 'converted_files.zip'
         });
 
@@ -207,6 +216,7 @@ export const batchConvert = async (req, res) => {
 
   } catch (error) {
     console.error("Batch Conversion Error:", error.message);
+    await logConversion({ toolName: 'batch-to-pdf', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     if (!res.headersSent) {
       res.status(500).json({ error: `Batch conversion failed: ${error.message}` });
     }
@@ -236,16 +246,20 @@ export const uploadFiles = async (req, res) => {
       const ok = await validateUploadedFile(f.path, f.originalname);
       if (!ok) {
         cleanupFiles(req.files.map(file => file.path));
+        await logConversion({ toolName: 'file-to-pdf', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: 'invalid file' });
         return res.status(400).json({ error: `Invalid or unsupported file in upload: ${f.originalname}` });
       }
     }
 
     const convertedResults = await processFileConversion(req.files);
 
+    await logConversion({ toolName: 'file-to-pdf', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted' });
+
     res.json(convertedResults);
 
   } catch (error) {
     console.error("Error in /api/files/upload:", error);
+    await logConversion({ toolName: 'file-to-pdf', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(422).json({ error: "Conversion failed", files: error.conversionFailures || [] });
   }
 };

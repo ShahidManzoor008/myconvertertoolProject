@@ -3,13 +3,16 @@ import multer from 'multer';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { fileTypeFromFile } from 'file-type';
 import mongoose from 'mongoose';
 import { logConversion } from '../utils/statsUtils.js';
 import logger from '../utils/logger.js';
 import { convertSpreadsheet, SpreadsheetError, spreadsheetOptions } from '../utils/spreadsheetConversion.js';
 
-const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 20 * 1024 * 1024, files: 1, fields: 4, parts: 5 } });
+const uploadDirectory = path.join(os.tmpdir(), 'myconvertertool-uploads');
+mkdirSync(uploadDirectory, { recursive: true });
+const upload = multer({ dest: uploadDirectory, limits: { fileSize: 20 * 1024 * 1024, files: 1, fields: 4, parts: 5 } });
 const router = express.Router();
 
 for (const mode of ['excel-to-pdf', 'pdf-to-excel']) {
@@ -32,13 +35,15 @@ for (const mode of ['excel-to-pdf', 'pdf-to-excel']) {
         const result = await convertSpreadsheet(mode, req.file.path, extension, spreadsheetOptions(mode, req.body));
         if (mongoose.connection.readyState === 1) {
           void logConversion({ toolName: mode, userId: req.user?._id,
-            fileName: req.file.originalname, fileSize: result.buffer.length });
+            analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted' });
         }
         const outputExtension = mode === 'excel-to-pdf' ? 'pdf' : 'xlsx';
         const filename = `${path.basename(req.file.originalname, path.extname(req.file.originalname)).replace(/[^a-zA-Z0-9_ -]/g, '').slice(0, 80) || 'converted'}.${outputExtension}`;
         res.json({ filename, mimeType: outputExtension === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           base64: result.buffer.toString('base64'), preview: result.preview, warnings: result.warnings });
       } catch (error) {
+        await logConversion({ toolName: mode, userId: req.user?._id,
+          analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
         if (!error.status || error.status >= 422) {
           logger.warn({ mode, reason: error.message }, 'Spreadsheet conversion failed');
         }

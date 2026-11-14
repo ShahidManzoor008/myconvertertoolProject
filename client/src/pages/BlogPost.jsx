@@ -167,6 +167,11 @@ const BlogPost = () => {
             <img 
               src={post.coverImage} 
               alt={post.title}
+              width="1400"
+              height="600"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>

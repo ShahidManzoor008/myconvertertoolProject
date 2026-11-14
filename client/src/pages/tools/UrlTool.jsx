@@ -79,6 +79,7 @@ const UrlTool = () => {
         return newHistory;
       });
     } catch (err) {
+      statsApi.increment({ toolName: `url-${mode}`, status: 'failure', reason: 'invalid-input' }).catch(() => {});
       setError(`Processing failed: ${err.message}`);
       setResult("");
     }

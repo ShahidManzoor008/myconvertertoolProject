@@ -91,6 +91,7 @@ const MinifyBeautifyTool = () => {
       showPopup("Formatted successfully");
       statsApi.increment({ toolName: `beautify-${language}`, fileSize: code.length }).catch(() => {});
     } catch {
+      statsApi.increment({ toolName: `beautify-${language}`, status: 'failure', reason: 'invalid-input' }).catch(() => {});
       showPopup("Formatting failed");
     }
   };
@@ -105,7 +106,10 @@ const MinifyBeautifyTool = () => {
       setResult(minified);
       showPopup("Minified successfully");
       statsApi.increment({ toolName: `minify-${language}`, fileSize: code.length }).catch(() => {});
-    } catch (error) { showPopup(`Minification failed: ${error.message}`); }
+    } catch (error) {
+      statsApi.increment({ toolName: `minify-${language}`, status: 'failure', reason: 'conversion-error' }).catch(() => {});
+      showPopup(`Minification failed: ${error.message}`);
+    }
     finally { setProcessing(false); }
   };
 

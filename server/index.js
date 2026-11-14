@@ -19,7 +19,7 @@ import path from 'path';
 import connectDB from './config/db.js';
 import pdfOperationsRouter from './routes/pdfOperations.js';
 import authRouter from './routes/auth.js'; // Import authRouter
-import { auth } from './middleware/auth.js'; // Keep auth middleware import
+import { auth, optionalAuth } from './middleware/auth.js';
 import blogRouter from './routes/blog.js';
 import batchDownloadRouter from './routes/batchDownload.js';
 import compression from 'compression';
@@ -63,6 +63,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined)
 // 🛡️ Enable CORS and Security Middleware
 // ============================
 setupMiddleware(app, allowedOrigins);
+app.use(['/api/convert', '/api/batch', '/api/compress', '/api/pdf', '/api/editor'], optionalAuth);
 app.use(['/api/convert', '/api/batch'], conversionCapacity);
 app.use('/api/compress', conversionCapacity);
 

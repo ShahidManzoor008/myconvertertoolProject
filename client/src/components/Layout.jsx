@@ -11,6 +11,7 @@ import ConversionTrustBadge from "./ConversionTrustBadge";
 import SEO from "../utils/SEO";
 import PwaInstallPrompt from "./PwaInstallPrompt";
 import { getPwaInstallState, subscribeToPwaInstall } from "../utils/pwaInstall";
+import CookieConsentNotice from './CookieConsentNotice';
 
 const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -61,6 +62,7 @@ const Layout = ({ children }) => {
         onInstallApp={() => window.dispatchEvent(new Event('myconvertertool:open-install'))}
       />
       <PwaInstallPrompt />
+      <CookieConsentNotice />
 
       {isMobileMenuOpen && (
           <MobileMenu
@@ -114,6 +116,7 @@ const Layout = ({ children }) => {
                 <Link to="/contact" className="rounded-lg px-3 py-2 text-center text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 md:text-left">Contact</Link>
                 <Link to="/privacy-policy" className="rounded-lg px-3 py-2 text-center text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 md:text-left">Privacy</Link>
                 <Link to="/terms" className="rounded-lg px-3 py-2 text-center text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 md:text-left">Terms</Link>
+                <button type="button" onClick={() => window.dispatchEvent(new Event('myconvertertool:cookie-settings'))} className="rounded-lg px-3 py-2 text-center text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 md:text-left">Cookie preferences</button>
               </div>
             </nav>
           </div>

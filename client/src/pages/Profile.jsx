@@ -35,9 +35,9 @@ const Profile = () => {
     try {
       const res = await fetch('/api/auth/profile', {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({
           name: form.name,

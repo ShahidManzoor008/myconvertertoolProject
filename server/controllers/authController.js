@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import Session from '../models/Session.js';
 import { sendEmail } from '../utils/email.js';
+import { setAuthCookie, clearAuthCookie } from '../utils/authCookies.js';
 
 // Read configuration at request time: dotenv is loaded after ESM imports.
 const googleClient = new OAuth2Client();
@@ -84,8 +85,8 @@ export const loginUser = async (req, res) => {
       return res.status(500).json({ error: 'Login failed' });
     }
 
+    setAuthCookie(res, session.token, req);
     res.json({
-      token: session.token,
       user: {
         id: user._id,
         name: user.name,
@@ -153,6 +154,12 @@ export const verifyToken = async (req, res) => {
   }
 };
 
+// Exchange a legacy localStorage bearer token for an HttpOnly session cookie.
+export const migrateLegacySession = async (req, res) => {
+  setAuthCookie(res, req.token, req);
+  res.json({ user: { id: req.user._id, name: req.user.name, email: req.user.email, role: req.user.role, avatar: req.user.avatar } });
+};
+
 // Google OAuth Login/Signup
 export const googleAuth = async (req, res) => {
   try {
@@ -212,8 +219,8 @@ export const googleAuth = async (req, res) => {
       return res.status(500).json({ error: 'OAuth login failed' });
     }
 
+    setAuthCookie(res, session.token, req);
     res.json({
-      token: session.token,
       user: {
         id: user._id,
         name: user.name,
@@ -236,8 +243,10 @@ export const logoutUser = async (req, res) => {
       { token: req.token },
       { isValid: false }
     );
+    clearAuthCookie(res, req);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
+    clearAuthCookie(res, req);
     res.status(500).json({ error: 'Logout failed' });
   }
 };

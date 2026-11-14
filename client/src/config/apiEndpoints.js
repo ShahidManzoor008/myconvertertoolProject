@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/api/auth/register`,
     login: `${API_BASE_URL}/api/auth/login`,
     logout: `${API_BASE_URL}/api/auth/logout`,
+    migrate: `${API_BASE_URL}/api/auth/migrate-session`,
     profile: `${API_BASE_URL}/api/auth/profile`,
   },
   blog: {
@@ -34,9 +35,14 @@ export const API_ENDPOINTS = {
   admin: {
     users: `${API_BASE_URL}/api/admin/users`,
     stats: `${API_BASE_URL}/api/admin/stats`,
+    analytics: `${API_BASE_URL}/api/admin/analytics`,
+    cleanupPreview: `${API_BASE_URL}/api/admin/maintenance/preview`,
+    cleanup: `${API_BASE_URL}/api/admin/maintenance/cleanup`,
   },
   stats: {
     total: `${API_BASE_URL}/api/stats/total`,
     increment: `${API_BASE_URL}/api/stats/increment`,
+    consent: `${API_BASE_URL}/api/stats/analytics/consent`,
+    visit: `${API_BASE_URL}/api/stats/analytics/visit`,
   }
 };

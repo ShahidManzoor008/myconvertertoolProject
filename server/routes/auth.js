@@ -1,5 +1,5 @@
 import express from 'express';
-import { auth } from '../middleware/auth.js';
+import { auth, legacyBearerAuth } from '../middleware/auth.js';
 import {
   validate,
   registerSchema,
@@ -10,6 +10,7 @@ import {
 } from '../utils/validation.js';
 import {
   getAuthConfig,
+  migrateLegacySession,
   registerUser,
   loginUser,
   updateProfile,
@@ -51,6 +52,8 @@ router.put(
 
 // Token Verification Endpoint
 router.get('/verify', auth, verifyToken);
+
+router.post('/migrate-session', legacyBearerAuth, migrateLegacySession);
 
 // Google OAuth Login/Signup
 router.post('/google', googleAuth);

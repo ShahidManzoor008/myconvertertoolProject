@@ -3,7 +3,6 @@ import { useDropzone } from 'react-dropzone';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowDownToLine, Check, FileImage, FileText, LoaderCircle, RefreshCw, Upload, X } from 'lucide-react';
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
-import { safeStorage } from '../../utils/storage';
 import SEO from '../../utils/SEO';
 import ToolSupportSection from '../../components/ToolSupportSection';
 
@@ -83,10 +82,8 @@ export default function FileCompressor() {
         body.append('format', format);
         if (width) body.append('width', width);
       }
-      const token = safeStorage.getItem('auth_token');
       const response = await fetch(`/api/compress/${mode}`, {
         method: 'POST', body, credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null);

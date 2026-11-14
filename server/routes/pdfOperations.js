@@ -10,6 +10,11 @@ import { validateUploadedFile, cleanupFiles } from '../utils/fileUtils.js';
 
 const router = express.Router();
 const allowedPdfExtensions = ['pdf'];
+const pdfToolForPath = routePath => ({
+  '/merge': 'pdf-merge', '/split': 'pdf-split', '/rotate': 'pdf-rotate',
+  '/reorder': 'pdf-reorder', '/extract-images': 'pdf-extract-images',
+  '/watermark': 'pdf-watermark', '/protect': 'pdf-protect', '/compress': 'pdf-compress',
+}[routePath] || 'pdf-converter');
 
 // Middleware to validate PDF files
 const validatePdf = async (req, res, next) => {
@@ -21,24 +26,29 @@ const validatePdf = async (req, res, next) => {
       const ok = await validateUploadedFile(file.path, file.originalname, allowedPdfExtensions);
       if (!ok) {
         cleanupFiles(files);
+        await logConversion({ toolName: pdfToolForPath(req.path), userId: req.user?._id,
+          analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: 'invalid file' });
         return res.status(400).json({ error: `Invalid PDF file: ${file.originalname}` });
       }
     }
     next();
   } catch (error) {
     cleanupFiles(files);
+    await logConversion({ toolName: pdfToolForPath(req.path), userId: req.user?._id,
+      analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'File validation failed' });
   }
 };
 
 // Helper function to send file response
-async function sendFileResponse(res, pdfBuffer, originalFilename, toolName, userId) {
+async function sendFileResponse(res, pdfBuffer, originalFilename, toolName, userId, analyticsAllowed) {
   const sanitizedFilename = path.basename(originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
   
   // Log conversion
-  logConversion({
+  await logConversion({
     toolName,
     userId,
+    analyticsAllowed,
     fileName: sanitizedFilename,
     fileSize: pdfBuffer.length
   });
@@ -57,9 +67,10 @@ router.post('/merge', upload.array('files'), validatePdf, async (req, res) => {
       return res.status(400).json({ error: 'At least two files are required for merge' });
     }
     const mergedPdf = await pdfOperations.mergePDFs(req.files);
-    await sendFileResponse(res, mergedPdf, 'merged.pdf', 'pdf-merge', req.user?._id);
+    await sendFileResponse(res, mergedPdf, 'merged.pdf', 'pdf-merge', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Merge PDFs error:', error);
+    await logConversion({ toolName: 'pdf-merge', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to merge PDFs' });
   } finally {
     // Cleanup uploaded files
@@ -80,7 +91,7 @@ router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
     const splitPdfs = await pdfOperations.splitPDF(req.file, ranges);
     
     if (splitPdfs.length === 1) {
-      await sendFileResponse(res, splitPdfs[0], 'split.pdf', 'pdf-split', req.user?._id);
+      await sendFileResponse(res, splitPdfs[0], 'split.pdf', 'pdf-split', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
     } else {
       const zipPath = path.join('uploads', `split_${randomUUID()}.zip`);
       const filesToZip = splitPdfs.map((pdf, i) => ({
@@ -90,9 +101,10 @@ router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
       await createZipArchive(filesToZip, zipPath);
       
       // Log conversion
-      logConversion({
+      await logConversion({
         toolName: 'pdf-split',
         userId: req.user?._id,
+        analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
         fileName: 'split_pdfs.zip'
       });
 
@@ -102,6 +114,7 @@ router.post('/split', upload.single('file'), validatePdf, async (req, res) => {
     }
   } catch (error) {
     console.error('Split PDF error:', error);
+    await logConversion({ toolName: 'pdf-split', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to split PDF' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -119,9 +132,10 @@ router.post('/rotate', upload.single('file'), validatePdf, async (req, res) => {
       return res.status(400).json({ error: 'Invalid rotations' });
     }
     const rotatedPdf = await pdfOperations.rotatePDF(req.file, rotations);
-    await sendFileResponse(res, rotatedPdf, 'rotated.pdf', 'pdf-rotate', req.user?._id);
+    await sendFileResponse(res, rotatedPdf, 'rotated.pdf', 'pdf-rotate', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Rotate PDF error:', error);
+    await logConversion({ toolName: 'pdf-rotate', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to rotate PDF pages' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -139,9 +153,10 @@ router.post('/reorder', upload.single('file'), validatePdf, async (req, res) => 
       return res.status(400).json({ error: 'Invalid order' });
     }
     const reorderedPdf = await pdfOperations.reorderPDF(req.file, order);
-    await sendFileResponse(res, reorderedPdf, 'reordered.pdf', 'pdf-reorder', req.user?._id);
+    await sendFileResponse(res, reorderedPdf, 'reordered.pdf', 'pdf-reorder', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Reorder PDF error:', error);
+    await logConversion({ toolName: 'pdf-reorder', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to reorder PDF pages' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -157,9 +172,10 @@ router.post('/extract-images', upload.single('file'), validatePdf, async (req, r
     await createZipArchive(images, zipPath);
     
     // Log conversion
-    logConversion({
+    await logConversion({
       toolName: 'pdf-extract-images',
       userId: req.user?._id,
+      analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted',
       fileName: 'extracted_images.zip'
     });
 
@@ -169,6 +185,7 @@ router.post('/extract-images', upload.single('file'), validatePdf, async (req, r
     });
   } catch (error) {
     console.error('Extract images error:', error);
+    await logConversion({ toolName: 'pdf-extract-images', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to extract images from PDF' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -186,9 +203,10 @@ router.post('/watermark', upload.single('file'), validatePdf, async (req, res) =
       watermarkText,
       parsedOptions
     );
-    await sendFileResponse(res, watermarkedPdf, 'watermarked.pdf', 'pdf-watermark', req.user?._id);
+    await sendFileResponse(res, watermarkedPdf, 'watermarked.pdf', 'pdf-watermark', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Add watermark error:', error);
+    await logConversion({ toolName: 'pdf-watermark', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to add watermark' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
@@ -201,9 +219,10 @@ router.post('/protect', upload.single('file'), validatePdf, async (req, res) => 
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const { password } = req.body;
     const protectedPdf = await pdfOperations.protectPDF(req.file, password);
-    await sendFileResponse(res, protectedPdf, 'protected.pdf', 'pdf-protect', req.user?._id);
+    await sendFileResponse(res, protectedPdf, 'protected.pdf', 'pdf-protect', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Protect PDF error:', error);
+    await logConversion({ toolName: 'pdf-protect', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     const status = error.statusCode || 500;
     const message = status === 501 ? error.message : 'Failed to protect PDF';
     res.status(status).json({ error: message });
@@ -223,9 +242,10 @@ router.post('/compress', upload.single('file'), validatePdf, async (req, res) =>
       'X-Compressed-Size': String(compressedPdf.length),
       'X-Compression-Reduced': String(compressedPdf.length < originalSize),
     });
-    await sendFileResponse(res, compressedPdf, 'compressed.pdf', 'pdf-compress', req.user?._id);
+    await sendFileResponse(res, compressedPdf, 'compressed.pdf', 'pdf-compress', req.user?._id, req.cookies?.mct_analytics_consent === 'accepted');
   } catch (error) {
     console.error('Compress PDF error:', error);
+    await logConversion({ toolName: 'pdf-compress', userId: req.user?._id, analyticsAllowed: req.cookies?.mct_analytics_consent === 'accepted', status: 'failure', reason: error.message });
     res.status(error.statusCode || (error instanceof SyntaxError ? 400 : 500)).json({ error: error.statusCode ? error.message : 'Failed to compress PDF' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);

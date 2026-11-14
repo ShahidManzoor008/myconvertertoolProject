@@ -75,23 +75,10 @@ export const processError = async (error) => {
 
 // Example interceptors
 export const setupDefaultInterceptors = () => {
-  // Add authentication token to requests
-  addRequestInterceptor(async (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-    return config;
-  });
-
   // Handle 401 responses
   addResponseInterceptor(async (response) => {
     if (response.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem('token');
+      // Session cookies are HttpOnly and can only be cleared by the server.
       window.location.href = '/login';
     }
     return response;

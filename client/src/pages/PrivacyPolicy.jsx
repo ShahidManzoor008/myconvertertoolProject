@@ -25,9 +25,9 @@ const PrivacyPolicy = () => {
       </LegalSection>
 
       <LegalSection title="Cookies, Analytics, and Advertising">
-        <p>MyConverterTool may use cookies, local storage, analytics tools, and similar technologies to remember preferences, maintain sessions, understand site performance, prevent abuse, and improve the service.</p>
-        <p>When Google AdSense is enabled, Google and its partners may use cookies or similar technologies to serve and measure ads. These technologies may use visits to this and other websites to personalize ads where allowed by law and user settings.</p>
-        <p>You can manage Google ad personalization from your Google ad settings and can control cookies through your browser settings.</p>
+        <p>We use an essential, secure, HttpOnly session cookie when you sign in. A separate preference cookie remembers whether you accepted or rejected optional analytics. These cookies are needed to provide account sessions and remember your choice.</p>
+        <p>If you accept optional analytics, a random first-party visitor cookie helps us count unique anonymous visitors for up to 30 days. We also keep compact daily usage counts by tool and outcome. Account-linked daily counts are retained for up to 90 days; non-identifying aggregate totals may be kept longer. Analytics does not include filenames, file contents, or raw error details.</p>
+        <p>You can reject optional analytics and continue using the tools. Reopen Cookie preferences from the footer at any time to change your choice. The site also uses browser storage for preferences and some local tool features.</p>
       </LegalSection>
 
       <LegalSection title="How We Use Information">

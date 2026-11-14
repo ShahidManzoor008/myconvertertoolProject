@@ -1,6 +1,6 @@
 import { useToolWorkspace } from '../../hooks/useToolWorkspace';
 import { useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ClipboardCopy, Download, Eraser, FileText, RotateCcw } from "lucide-react";
 import PropTypes from "prop-types";
 import SEO from "../../utils/SEO";
@@ -18,15 +18,14 @@ const WordCounterTool = () => {
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const trackedUse = useRef(false);
   const stats = useMemo(() => analyzeText(text), [text]);
 
   const setAndTrackText = (nextText) => {
     setText(nextText);
-    if (nextText.length > 80) {
-      statsApi.increment({
-        toolName: "word-counter",
-        fileSize: nextText.length,
-      }).catch((err) => console.error("Failed to log stats:", err));
+    if (nextText.length > 80 && !trackedUse.current) {
+      trackedUse.current = true;
+      statsApi.increment({ toolName: "word-counter" }).catch(() => {});
     }
   };
 

@@ -1,4 +1,3 @@
-import { safeStorage } from './storage';
 import { API_ENDPOINTS } from '../config/apiEndpoints';
 import { 
   AppError,
@@ -10,17 +9,7 @@ import {
   ConflictError
 } from './AppError';
 
-/**
- * Get headers with authentication token if available
- * @returns {Object} Headers object with auth token if present
- */
-const getAuthHeaders = () => {
-  const token = safeStorage.getItem('auth_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const getAuthHeaders = () => ({ 'Content-Type': 'application/json' });
 
 /**
  * Create error instance based on response status
@@ -211,12 +200,9 @@ export const apiClient = {
    */
   async upload(endpoint, formData, options = {}) {
     try {
-      const token = safeStorage.getItem('auth_token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers,
+        headers: options.headers || {},
         body: formData,
         credentials: 'include',
         ...options,
@@ -276,6 +262,7 @@ export const authApi = {
   register: (userData) => apiClient.post(API_ENDPOINTS.auth.register, userData),
   googleAuth: (token) => apiClient.post(API_ENDPOINTS.auth.google, { token }),
   logout: () => apiClient.post(API_ENDPOINTS.auth.logout),
+  migrateSession: (token) => apiClient.post(API_ENDPOINTS.auth.migrate, {}, { headers: { Authorization: `Bearer ${token}` } }),
   getProfile: () => apiClient.get(API_ENDPOINTS.auth.profile),
 };
 
@@ -326,10 +313,16 @@ export const mdToDocxApi = {
 export const statsApi = {
   getTotal: () => apiClient.get(API_ENDPOINTS.stats.total),
   increment: (data) => apiClient.post(API_ENDPOINTS.stats.increment, data),
+  getAnalyticsConsent: () => apiClient.get(API_ENDPOINTS.stats.consent),
+  setAnalyticsConsent: (analytics) => apiClient.post(API_ENDPOINTS.stats.consent, { analytics }),
+  recordVisit: (toolName) => apiClient.post(API_ENDPOINTS.stats.visit, { toolName }),
 };
 
 export const adminApi = {
   getStats: () => apiClient.get(API_ENDPOINTS.admin.stats),
+  getAnalytics: (days = 30) => apiClient.get(`${API_ENDPOINTS.admin.analytics}?days=${days}`),
+  getCleanupPreview: () => apiClient.get(API_ENDPOINTS.admin.cleanupPreview),
+  runCleanup: () => apiClient.post(API_ENDPOINTS.admin.cleanup, { confirm: true }),
   getUsers: (page = 1, limit = 20) => 
     apiClient.get(`${API_ENDPOINTS.admin.users}?page=${page}&limit=${limit}`),
   updateUser: (id, userData) => apiClient.put(`${API_ENDPOINTS.admin.users}/${id}`, userData),

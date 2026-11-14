@@ -9,4 +9,7 @@ const conversionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Legacy per-conversion rows contain filenames; expire them after 90 days.
+conversionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
 export default mongoose.model('Conversion', conversionSchema);

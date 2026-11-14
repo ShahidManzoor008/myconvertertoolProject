@@ -9,6 +9,7 @@ const AdminLayout = () => {
     { path: '/admin/dashboard', label: '📊 Dashboard', icon: 'grid_view' },
     { path: '/admin/posts', label: '📝 Blog Posts', icon: 'article' },
     { path: '/admin/users', label: '👥 Users', icon: 'people' },
+    { path: '/admin/analytics', label: '📈 Analytics', icon: 'analytics' },
     { path: '/admin/settings', label: '⚙️ Settings', icon: 'settings' },
   ];
 

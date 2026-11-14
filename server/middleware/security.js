@@ -1,4 +1,4 @@
-import { expressCspHeader, SELF, UNSAFE_INLINE, UNSAFE_EVAL } from 'express-csp-header';
+import { expressCspHeader, SELF, NONE, UNSAFE_INLINE } from 'express-csp-header';
 
 const googleDomains = [
   'https://accounts.google.com',
@@ -14,7 +14,6 @@ export const securityMiddleware = [
       'script-src': [
         SELF,
         UNSAFE_INLINE,
-        UNSAFE_EVAL,
         ...googleDomains,
         'https://accounts.google.com/gsi/client'
       ],
@@ -23,10 +22,9 @@ export const securityMiddleware = [
         ...googleDomains,
         'https://accounts.google.com/gsi/'
       ],
-      'frame-ancestors': [ // Allow Google to frame the site for Sign-In
-        SELF,
-        ...googleDomains
-      ],
+      // Google Sign-In uses its own iframe; it does not need to frame our pages.
+      'frame-ancestors': [SELF],
+      'object-src': [NONE],
       'connect-src': [
         SELF,
         ...googleDomains,
@@ -46,8 +44,6 @@ export const securityMiddleware = [
     res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
     // Disable COEP for Google Sign-In compatibility
     res.removeHeader('Cross-Origin-Embedder-Policy');
-    // Allow cross-origin resources (needed for Google services)
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     // Permissions policy allowing necessary features
     res.setHeader('Permissions-Policy', 
       'geolocation=(), camera=(), microphone=(), payment=(), usb=(), ' +
@@ -56,7 +52,8 @@ export const securityMiddleware = [
     );
     // Additional security headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // The legacy XSS auditor is obsolete and can introduce browser-specific issues.
+    res.setHeader('X-XSS-Protection', '0');
     next();
   }
 ];
