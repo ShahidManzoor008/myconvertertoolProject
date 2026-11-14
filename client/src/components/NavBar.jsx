@@ -26,7 +26,7 @@ const NavBar = ({ darkMode, onDarkModeToggle, user, onLogout, isMobileMenuOpen, 
         </>}
         {showInstallAction && <button type="button" onClick={onInstallApp} aria-label="Install MyConverterTool" title="Install MyConverterTool" className="flex h-11 w-11 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/50"><Download aria-hidden="true" className="h-5 w-5" /></button>}
         <button type="button" onClick={onDarkModeToggle} aria-label={darkMode ? 'Use light theme' : 'Use dark theme'} aria-pressed={darkMode} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-          {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          {darkMode ? <SunIcon aria-hidden="true" className="h-5 w-5" /> : <MoonIcon aria-hidden="true" className="h-5 w-5" />}
         </button>
         <button type="button" onClick={() => onMobileMenuToggle(true)} aria-label="Open menu" aria-controls="mobile-navigation" aria-expanded={isMobileMenuOpen} className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 xl:hidden"><Bars3Icon className="h-5 w-5" /></button>
       </div>

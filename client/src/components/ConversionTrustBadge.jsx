@@ -44,31 +44,17 @@ const ConversionTrustBadge = ({ className = "", variant = "default" }) => {
 
   if (isPreFooter) {
     return (
-      <section className={`mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8 ${className}`}>
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                <span aria-hidden="true" className="material-icons text-[26px]">verified</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                  Practical tools for everyday work
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  Built for clean outputs, quick downloads, and practical tools people can use without friction.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-200">
-              <p className="text-3xl font-black leading-none">
-                {total === null ? "..." : formatCount(total)}
-              </p>
-              <p className="mt-2 text-[10px] font-black uppercase tracking-widest opacity-75">
-                Recorded tool actions
-              </p>
-            </div>
+      <section aria-label="Tool usage" className={`border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 ${className}`}>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+            <span aria-hidden="true" className="material-icons text-emerald-600 dark:text-emerald-400">verified</span>
+            Practical tools for everyday work
           </div>
+          {total !== null && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCount(total)}</span> recorded tool actions
+            </p>
+          )}
         </div>
       </section>
     );

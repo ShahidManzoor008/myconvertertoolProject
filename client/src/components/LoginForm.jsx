@@ -109,18 +109,18 @@ const LoginForm = () => {
         className="glass-card p-1 overflow-hidden"
         noValidate
       >
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 sm:p-10 shadow-inner">
-          <div className="text-center mb-10">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 sm:p-8 shadow-inner">
+          <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
               <span aria-hidden="true" className="material-icons text-3xl">lock</span>
             </div>
             <h1 id="login-title" className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-slate-500 font-medium uppercase tracking-widest" id="login-description">Secure access to your workspace</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400" id="login-description">Secure access to your workspace</p>
           </div>
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1" htmlFor="email">Email Address</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300 px-1" htmlFor="email">Email Address</label>
               <input
                 id="email"
                 type="email"
@@ -142,8 +142,8 @@ const LoginForm = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400" htmlFor="password">Password</label>
-                <a href="/forgot-password" size="sm" className="text-[10px] font-black uppercase text-blue-600 hover:underline">Forgot?</a>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300" htmlFor="password">Password</label>
+                <Link to="/contact" className="inline-flex min-h-11 items-center text-xs font-semibold text-blue-700 hover:underline dark:text-blue-300">Need help signing in?</Link>
               </div>
               <input
                 id="password"
@@ -165,6 +165,15 @@ const LoginForm = () => {
             </div>
           </div>
 
+          {error && (
+            <motion.div role="alert"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="mt-5 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-xs font-bold"
+            >
+              {error}
+            </motion.div>
+          )}
+
           <button 
             type="submit" 
             className={`w-full btn-primary py-4 mt-10 relative overflow-hidden group ${loading ? 'opacity-80' : ''}`}
@@ -185,7 +194,7 @@ const LoginForm = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-100 dark:border-slate-800"></div>
             </div>
-            <span className="relative px-4 bg-white dark:bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">Standard Identity</span>
+            <span className="relative px-4 bg-white dark:bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">Or continue with Google</span>
           </div>
 
           <GoogleSignIn 
@@ -199,14 +208,7 @@ const LoginForm = () => {
             New here? <Link to="/register" className="text-blue-600 hover:underline">Create Account</Link>
           </p>
 
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="mt-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-xs font-bold"
-            >
-              {error}
-            </motion.div>
-          )}
+
         </div>
       </form>
     </div>

@@ -136,6 +136,7 @@
 .dark :focus-visible { outline-color: #93c5fd !important; }
 #main-content:focus { outline: none !important; }
 main h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+.auth-page h1, .admin-workspace h1 { font-size: 1.5rem; line-height: 1.3; letter-spacing: -.02em; text-wrap: wrap; }
 main p, main h2, main h3 { overflow-wrap: anywhere; }
 main .grid > *, main .flex > * { min-width: 0; }
 main pre { max-width: 100%; overflow-x: auto; }

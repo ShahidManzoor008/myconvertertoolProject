@@ -81,7 +81,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                 <span>Admin Dashboard</span>
               </Link>
             )}
-            {navigation.filter(item => user ? !["Register", "Login"].includes(item.name) : item.name !== "Profile").map((item) => (
+            {navigation.filter(item => !["Profile", "Register", "Login"].includes(item.name)).map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -130,7 +130,7 @@ const MobileMenu = ({ onClose, user, onLogout, navigation }) => {
                   className="flex items-center gap-3 p-3 rounded-2xl glass hover:border-blue-500/50 transition-all"
                 >
                   <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold">
-                    {user.name.charAt(0)}
+                    {(user.name || 'User').charAt(0)}
                   </div>
                   <div className="flex flex-col">
                     <span className="font-bold text-sm">{user.name}</span>

@@ -18,6 +18,7 @@ const BlogManagement = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
+      setError(null);
       // Walk through every page with cursor pagination until exhaustion,
       // collecting all posts for the admin table view.
       const allPosts = [];
@@ -43,6 +44,7 @@ const BlogManagement = () => {
     try {
       await apiClient.delete(`${API_ENDPOINTS.blog.posts}/${post.slug}`);
       setPosts(posts.filter(p => p._id !== post._id));
+      setSelectedPosts(current => current.filter(id => id !== post._id));
     } catch (err) {
       console.error('Error deleting post:', err);
       alert('Failed to delete post: ' + err.message);
@@ -67,24 +69,26 @@ const BlogManagement = () => {
   };
 
   const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
+    (post.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (post.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (error) {
     return (
       <div className="text-center text-red-600 dark:text-red-400 p-4">
-        <h2 className="text-2xl font-semibold mb-4">Error</h2>
-        <p>{error}</p>
+        <h1 className="font-semibold mb-4">Blog posts</h1>
+        <p role="alert">{error}</p>
+        <button type="button" onClick={fetchPosts} className="mt-3 min-h-11 underline">Try again</button>
       </div>
     );
   }
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+      <h1 className="px-4 pt-5 font-semibold text-gray-900 dark:text-white">Blog posts</h1>
       {/* Actions Bar */}
       <div className="p-4 border-b dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/admin/posts/new"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
@@ -103,16 +107,17 @@ const BlogManagement = () => {
           )}
         </div>
 
-        <div className="flex-1 max-w-md ml-4">
+        <div className="w-full sm:max-w-md sm:flex-1">
           <div className="relative">
             <span aria-hidden="true" className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               search
             </span>
             <input
               type="text"
+              aria-label="Search posts"
               placeholder="Search posts..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setSelectedPosts([]); }}
               className="w-full pl-10 pr-4 py-2 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -127,10 +132,11 @@ const BlogManagement = () => {
               <th className="px-4 py-3 text-left">
                 <input
                   type="checkbox"
-                  checked={selectedPosts.length === posts.length}
+                  aria-label="Select all matching posts"
+                  checked={filteredPosts.length > 0 && filteredPosts.every(post => selectedPosts.includes(post._id))}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedPosts(posts.map(post => post._id));
+                      setSelectedPosts(filteredPosts.map(post => post._id));
                     } else {
                       setSelectedPosts([]);
                     }
@@ -169,6 +175,7 @@ const BlogManagement = () => {
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"
+                      aria-label={`Select ${post.title}`}
                       checked={selectedPosts.includes(post._id)}
                       onChange={(e) => {
                         if (e.target.checked) {
@@ -214,13 +221,14 @@ const BlogManagement = () => {
                     <div className="flex items-center justify-end space-x-2">
                       <Link
                         to={`/admin/posts/${post.slug}/edit`}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:bg-blue-900/30"
+                        aria-label={`Edit ${post.title}`}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:bg-blue-900/30"
                       >
                         <span aria-hidden="true" className="material-icons">edit</span>
                       </Link>
-                      <button aria-label="Remove item"
+                      <button aria-label={`Delete ${post.title}`}
                         onClick={() => handleDelete(post)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg dark:text-red-400 dark:hover:bg-red-900/30"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-lg dark:text-red-400 dark:hover:bg-red-900/30"
                       >
                         <span aria-hidden="true" className="material-icons">delete</span>
                       </button>

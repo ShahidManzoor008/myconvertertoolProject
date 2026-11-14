@@ -25,7 +25,8 @@ const RegisterForm = ({ onSuccess }) => {
     setError(null);
     setSuccess(false);
     try {
-      await register(form.name, form.email, form.password);
+      const registered = await register(form.name, form.email, form.password);
+      if (registered === false) throw new Error('We could not create your account. Check your details and try again.');
       setSuccess(true);
       if (onSuccess) onSuccess();
       navigate('/');
@@ -42,20 +43,22 @@ const RegisterForm = ({ onSuccess }) => {
         onSubmit={handleSubmit} 
         className="glass-card p-1 overflow-hidden"
       >
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 sm:p-10 shadow-inner">
-          <div className="text-center mb-10">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 sm:p-8 shadow-inner">
+          <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg mx-auto mb-6">
               <span aria-hidden="true" className="material-icons text-3xl">person_add</span>
             </div>
-            <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2 uppercase">Create Account</h2>
-            <p className="text-sm text-slate-500 font-medium uppercase tracking-widest">Join our professional community</p>
+            <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white mb-2 uppercase">Create Account</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Save your preferences and access your account</p>
           </div>
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Full Name</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300 px-1" htmlFor="register-name">Full Name</label>
               <input
                 type="text"
+                id="register-name"
+                autoComplete="name"
                 name="name"
                 placeholder="John Doe"
                 value={form.name}
@@ -67,9 +70,11 @@ const RegisterForm = ({ onSuccess }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Email Address</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300 px-1" htmlFor="register-email">Email Address</label>
               <input
                 type="email"
+                id="register-email"
+                autoComplete="email"
                 name="email"
                 placeholder="name@company.com"
                 value={form.email}
@@ -80,9 +85,11 @@ const RegisterForm = ({ onSuccess }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Secure Password</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300 px-1" htmlFor="register-password">Secure Password</label>
               <input
                 type="password"
+                id="register-password"
+                autoComplete="new-password"
                 name="password"
                 placeholder="••••••••"
                 value={form.password}
@@ -93,6 +100,15 @@ const RegisterForm = ({ onSuccess }) => {
               />
             </div>
           </div>
+
+          {error && (
+            <motion.div role="alert"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="mt-5 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-xs font-bold"
+            >
+              {error}
+            </motion.div>
+          )}
 
           <button 
             type="submit" 
@@ -113,26 +129,20 @@ const RegisterForm = ({ onSuccess }) => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-100 dark:border-slate-800"></div>
             </div>
-            <span className="relative px-4 bg-white dark:bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rapid Onboarding</span>
+            <span className="relative px-4 bg-white dark:bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">Or continue with Google</span>
           </div>
 
-          <GoogleSignIn 
+          <GoogleSignIn
+            disabled={loading}
             redirectTo="/" 
             buttonText="Sign up with Google"
             className="w-full !rounded-xl !border-none !bg-slate-50 dark:!bg-slate-800 !shadow-none hover:!bg-slate-100 transition-colors"
           />
 
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="mt-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-xs font-bold"
-            >
-              {error}
-            </motion.div>
-          )}
+
 
           {success && (
-            <motion.div 
+            <motion.div role="status"
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="mt-8 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-center text-xs font-bold"
             >

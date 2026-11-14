@@ -1,89 +1,21 @@
+import { Link } from 'react-router-dom';
 
-
-import { useState } from 'react';
-
-const Settings = () => {
-  const [settings, setSettings] = useState({
-    siteName: 'MyConverterTool',
-    contactEmail: 'admin@myconvertertool.com',
-    maintenanceMode: false,
-    allowRegistration: true
-  });
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert('Settings saved successfully (simulated)');
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Settings</h1>
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-2xl">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium mb-1">Site Name</label>
-            <input
-              type="text"
-              name="siteName"
-              value={settings.siteName}
-              onChange={handleChange}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Contact Email</label>
-            <input
-              type="email"
-              name="contactEmail"
-              value={settings.contactEmail}
-              onChange={handleChange}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              name="maintenanceMode"
-              id="maintenanceMode"
-              checked={settings.maintenanceMode}
-              onChange={handleChange}
-              className="rounded text-blue-600"
-            />
-            <label htmlFor="maintenanceMode" className="text-sm font-medium">Maintenance Mode</label>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              name="allowRegistration"
-              id="allowRegistration"
-              checked={settings.allowRegistration}
-              onChange={handleChange}
-              className="rounded text-blue-600"
-            />
-            <label htmlFor="allowRegistration" className="text-sm font-medium">Allow New User Registration</label>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Save Settings
-          </button>
-        </div>
-      </form>
+const Settings = () => (
+  <div className="max-w-2xl space-y-5">
+    <div>
+      <h1 className="font-semibold text-gray-900 dark:text-white">Admin settings</h1>
+      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Website configuration and maintenance.</p>
     </div>
-  );
-};
+    <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+      <h2 className="text-base font-semibold text-gray-900 dark:text-white">Website configuration</h2>
+      <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">Editing the site name, contact email, registration policy, and maintenance mode from this dashboard is not available yet. Configuration changes currently require a server update.</p>
+    </section>
+    <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+      <h2 className="text-base font-semibold text-gray-900 dark:text-white">Available maintenance tools</h2>
+      <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">Review resource usage and safely clear expired analytics records and temporary conversion files.</p>
+      <Link to="/admin/analytics#maintenance" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline dark:text-blue-300">Open maintenance tools</Link>
+    </section>
+  </div>
+);
 
 export default Settings;

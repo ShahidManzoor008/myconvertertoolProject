@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi } from '../../utils/apiClient';
+import { useLocation } from 'react-router-dom';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const number = value => typeof value === 'number' ? value.toLocaleString() : (value || '0');
@@ -11,6 +12,7 @@ const reasonLabels = {
 };
 
 const Analytics = () => {
+  const { hash } = useLocation();
   const [days, setDays] = useState(30);
   const [data, setData] = useState(null);
   const [cleanup, setCleanup] = useState(null);
@@ -29,6 +31,10 @@ const Analytics = () => {
   }, [days]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!loading && hash === '#maintenance') document.getElementById('maintenance')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }, [hash, loading]);
 
   const totals = useMemo(() => (data?.byTool || []).reduce((result, row) => ({
     success: result.success + row.successes,
@@ -64,7 +70,7 @@ const Analytics = () => {
       <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">Date range <select value={days} onChange={event => setDays(Number(event.target.value))} className="ml-2 rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800"><option value={7}>7 days</option><option value={30}>30 days</option><option value={90}>90 days</option></select></label>
     </div>
 
-    {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
+    {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">{error} <button type="button" onClick={load} disabled={loading} className="ml-2 min-h-11 underline disabled:opacity-50">Try again</button></p>}
     {message && <p role="status" className="rounded-xl bg-green-50 p-4 text-sm font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">{message}</p>}
 
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Usage summary">
@@ -89,7 +95,7 @@ const Analytics = () => {
       </div>
     </section>
 
-    <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 dark:border-amber-900/60 dark:bg-amber-950/20 sm:p-6">
+    <section id="maintenance" className="scroll-mt-24 rounded-2xl border border-amber-200 bg-amber-50/70 p-5 dark:border-amber-900/60 dark:bg-amber-950/20 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div><h2 className="font-extrabold text-slate-900 dark:text-white">Analytics and temporary-file cleanup</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">Preview counts include legacy conversion records older than 90 days, expired account and anonymous markers, and app-owned temporary uploads or conversion work folders older than 6 hours. Blog images and long-term aggregate totals are retained. System logs are managed separately by server log rotation.</p>
           <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{cleanup ? `${number(cleanup.legacyConversionLogs)} old logs · ${number(cleanup.accountDailyRollups)} account rollups · ${number(cleanup.anonymousVisitorMarkers)} visitor markers · ${number(cleanup.temporaryFiles)} temporary files · ${(cleanup.temporaryBytes / 1024 / 1024).toFixed(1)} MB` : 'Cleanup preview unavailable.'}</p>
@@ -99,7 +105,7 @@ const Analytics = () => {
       <div className="mt-5 grid gap-3 border-t border-amber-200 pt-5 dark:border-amber-900/60 sm:grid-cols-2 xl:grid-cols-5">
         {[
           ['Database', cleanup?.system?.database || 'Unknown'],
-          ['Converter', cleanup?.system?.conversionCapacity?.active ? 'Busy (1 slot)' : 'Ready (1 slot)'],
+          ['Converter', !cleanup?.system?.conversionCapacity ? 'Unavailable' : cleanup.system.conversionCapacity.active ? 'Busy (1 slot)' : 'Ready (1 slot)'],
           ['Process memory', bytes(cleanup?.system?.processRssBytes)],
           ['Host memory free', bytes(cleanup?.system?.systemMemoryFreeBytes)],
           ['Disk free', cleanup?.system?.diskFreeBytes == null ? 'Unavailable' : `${bytes(cleanup.system.diskFreeBytes)} / ${bytes(cleanup.system.diskTotalBytes)}`],
