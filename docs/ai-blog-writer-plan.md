@@ -1,7 +1,8 @@
 # AI Writer delivery plan
 
-Implementation authorized on 2026-11-14. Implemented in development, not deployed
-or enabled. See [operation and release guide](ai-blog-writer.md).
+Implementation authorized and deployed on 2026-11-14. The writer remains disabled
+until an admin configures Gemini and enables writing. See the
+[operation and release guide](ai-blog-writer.md).
 
 The original research proposal used Google Search grounding. Checking the current
 Google service terms during implementation showed that permanent public automated

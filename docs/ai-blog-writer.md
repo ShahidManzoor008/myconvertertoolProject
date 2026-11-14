@@ -216,5 +216,15 @@ References: [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing),
 - Google/network generation responses were mocked. Temporary test database data,
   test media and test encryption files were removed. No real API spending occurred.
 
-Real Google credentials/requests and production deployment remain activation-time
-steps. The admin panel provides the configuration and verification actions.
+## Production release (2026-11-14)
+
+The backend, frontend and dynamic `/blog` Nginx route are deployed. All 35 live
+checks passed, including published guides, assets, structured metadata, admin
+authorization, deduplication indexes and disabled-by-default writer behavior.
+Private backups of the database, blog media, previous frontend/server and Nginx
+configuration were saved before deployment. No generation jobs or Google API
+requests were created by the release.
+
+Admins can now configure Gemini in **Admin → AI Writer**, test model access and
+write a private test draft. Real Google-key verification remains an admin setup
+step; automatic writing stays disabled until deliberately enabled.
