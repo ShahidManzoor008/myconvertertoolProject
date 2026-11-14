@@ -34,6 +34,7 @@ import dashboardRouter from './routes/dashboard.js';
 import notificationsRouter from './routes/notifications.js';
 import statsRouter from './routes/stats.js';
 import adminRouter from './routes/admin.js';
+import fileCompressorRouter from './routes/fileCompressor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,6 +64,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined)
 // ============================
 setupMiddleware(app, allowedOrigins);
 app.use(['/api/convert', '/api/batch'], conversionCapacity);
+app.use('/api/compress', conversionCapacity);
 
 // ============================
 // Routes
@@ -72,6 +74,7 @@ app.use(['/api/convert', '/api/batch'], conversionCapacity);
 // When running tests, skip auth middleware to exercise endpoints directly
 if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
   app.use('/api/pdf', pdfOperationsRouter);
+  app.use('/api/compress', fileCompressorRouter);
   app.use('/api/editor', pdfEditorRouter);
   // simple health endpoint for tests
   app.get('/health', (req, res) => res.send('OK'));
@@ -83,6 +86,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/batch', batchDownloadRouter);
 app.use('/api/convert', fileConversionRouter);
 app.use('/api/convert', spreadsheetConversionRouter);
+app.use('/api/compress', fileCompressorRouter);
 app.use('/api/dashboard', auth, dashboardRouter);
 app.use('/api/notifications', auth, notificationsRouter);
 app.use('/api/stats', statsRouter);

@@ -1,8 +1,0 @@
-.git
-**/node_modules
-**/.env*
-**/uploads
-**/dist
-**/.turbo
-.venv-spreadsheet
-**/__pycache__

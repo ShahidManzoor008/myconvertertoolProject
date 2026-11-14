@@ -18,6 +18,20 @@ const defaultFaqs = [
 ];
 
 const toolFaqs = {
+  "/tools/file-compressor": [
+    {
+      question: "Which files can I compress?",
+      answer: "The File Compressor supports PDF documents and JPEG, PNG, and WebP images up to 75 MB each.",
+    },
+    {
+      question: "Will every file get smaller?",
+      answer: "Not always. Files that are already optimized may stay the same size. The result shows the original and output sizes before you download.",
+    },
+    {
+      question: "Can I resize an image while compressing it?",
+      answer: "Yes. Set a target width in pixels; the image keeps its aspect ratio and is never enlarged. You can also choose JPEG, PNG, WebP, or keep its original format.",
+    },
+  ],
   "/tools/pdf-converter": [
     {
       question: "What PDF tasks can I do here?",

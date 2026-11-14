@@ -58,7 +58,6 @@ myconvertertool.com/
 │   ├── models/       # Data models
 │   ├── routes/       # API routes
 │   ├── uploads/      # File uploads
-│   ├── Dockerfile
 │   ├── package.json
 │   └── ...
 └── README.md         # Project documentation
@@ -71,7 +70,7 @@ myconvertertool.com/
 ### Prerequisites
 - Node.js 24.9+ (24.x)
 - npm
-- Docker (for containerized deployment)
+- Ghostscript and LibreOffice for PDF compression and document conversion features
 
 ### 1. Clone the Repository
 ```sh
@@ -109,16 +108,11 @@ npm run lint
 
 ## Deployment
 
-### Docker
-Build and run the server with Docker:
-```sh
-docker build -f server/Dockerfile -t myconvertertool-server .
-docker run -p 10000:10000 myconvertertool-server
-```
-
-### Render
-- Client: Static site deployed via Render using `render.yaml`
-- Server: Node.js service deployed via Dockerfile
+### Production host
+The production setup uses Nginx to serve `client/dist` and proxy API requests to
+the Node.js service managed by PM2. MongoDB runs as a host service. Install
+Ghostscript and LibreOffice on the host for PDF compression and document
+conversion features.
 
 ---
 

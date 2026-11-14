@@ -26,6 +26,7 @@ const MetaTagPreview = lazy(pageLoaders['/tools/meta-tag-preview']);
 const TextCaseTool = lazy(pageLoaders['/tools/text-case-converter']);
 const WordCounterTool = lazy(pageLoaders['/tools/word-counter']);
 const PdfConverter = lazy(pageLoaders['/tools/pdf-converter']);
+const FileCompressor = lazy(pageLoaders['/tools/file-compressor']);
 const ExcelPdfConverter = lazy(pageLoaders['/tools/excel-pdf']);
 const MarkdownToDocx = lazy(pageLoaders['/tools/markdown-to-docx']);
 const Register = lazy(pageLoaders['/register']);
@@ -72,6 +73,7 @@ function App() {
                 <Route path="/tools/text-case-converter" element={<TextCaseTool />} />
                 <Route path="/tools/word-counter" element={<WordCounterTool />} />
                 <Route path="/tools/pdf-converter" element={<PdfConverter />} />
+                <Route path="/tools/file-compressor" element={<FileCompressor />} />
                 <Route path="/tools/markdown-to-docx" element={<MarkdownToDocx />} />
                 <Route path="/tools/pdf" element={<Navigate replace to="/tools/pdf-converter" />} />
                 <Route path="/tools/pdf-editor" element={<Navigate replace to="/tools/pdf-converter" />} />

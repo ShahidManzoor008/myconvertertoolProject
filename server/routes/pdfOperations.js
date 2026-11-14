@@ -216,11 +216,17 @@ router.post('/protect', upload.single('file'), validatePdf, async (req, res) => 
 router.post('/compress', upload.single('file'), validatePdf, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
-    const compressedPdf = await pdfOperations.compressPDF(req.file);
+    const originalSize = req.file.size;
+    const compressedPdf = await pdfOperations.compressPDF(req.file, req.body.preset || 'balanced');
+    res.set({
+      'X-Original-Size': String(originalSize),
+      'X-Compressed-Size': String(compressedPdf.length),
+      'X-Compression-Reduced': String(compressedPdf.length < originalSize),
+    });
     await sendFileResponse(res, compressedPdf, 'compressed.pdf', 'pdf-compress', req.user?._id);
   } catch (error) {
     console.error('Compress PDF error:', error);
-    res.status(error.statusCode === 400 || error instanceof SyntaxError ? 400 : 500).json({ error: error.statusCode === 400 ? error.message : 'Failed to compress PDF' });
+    res.status(error.statusCode || (error instanceof SyntaxError ? 400 : 500)).json({ error: error.statusCode ? error.message : 'Failed to compress PDF' });
   } finally {
     if (req.file) cleanupFiles(req.file.path);
   }

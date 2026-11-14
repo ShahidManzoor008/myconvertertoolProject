@@ -1,6 +1,6 @@
-# Excel ↔ PDF development
+# Excel ↔ PDF converter
 
-This feature lives on `feature/excel-pdf-converter`. It has not been deployed.
+The Excel ↔ PDF converter is available on the production site at `/tools/excel-pdf`.
 
 ## Local setup
 
@@ -12,9 +12,9 @@ python3 -m venv .venv-spreadsheet
 ```
 
 Set `SPREADSHEET_PYTHON` to override the virtual environment's Python executable;
-`LIBREOFFICE_PATH` overrides `/usr/bin/soffice`. The Dockerfile includes both
-dependencies for a future approved release. No production dependency installation
-is needed during development.
+`LIBREOFFICE_PATH` overrides `/usr/bin/soffice`. Production hosts need LibreOffice
+installed for Excel-to-PDF conversion. No production dependency installation is
+needed during development.
 
 The new page is `/tools/excel-pdf`, registered in the tool directory and public
 route manifest. Clicking its card focuses the upload workspace.

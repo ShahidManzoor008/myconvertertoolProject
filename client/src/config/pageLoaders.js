@@ -16,6 +16,7 @@ export const pageLoaders = {
   '/tools/text-case-converter': () => import('../pages/tools/TextCaseTool'),
   '/tools/word-counter': () => import('../pages/tools/WordCounterTool'),
   '/tools/pdf-converter': () => import('../pages/tools/PdfConverter'),
+  '/tools/file-compressor': () => import('../pages/tools/FileCompressor'),
   '/tools/excel-pdf': () => import('../pages/tools/ExcelPdfConverter'),
   '/tools/markdown-to-docx': () => import('../pages/tools/MarkdownToDocx'),
   '/register': () => import('../pages/Register'),

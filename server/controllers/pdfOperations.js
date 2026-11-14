@@ -4,6 +4,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { createZipArchive } from '../utils/archiveUtils.js';
 import { logConversion } from '../utils/statsUtils.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 // Helper function to load PDF file
 async function loadPDF(filePath) {
@@ -152,20 +156,33 @@ async function protectPDF(file, password) {
   throw error;
 }
 
-// Compress PDF (basic implementation - for demonstration)
-// This function performs a basic re-saving of the PDF, which can offer some
-// file size reduction by optimizing the PDF structure. However, it does not
-// perform advanced compression techniques like image downsampling, re-compression,
-// or font subsetting. For more significant compression, external tools (e.g., Ghostscript)
-// or more complex programmatic image/font manipulation would be required.
-async function compressPDF(file) {
+// Use Ghostscript presets for structural optimization and embedded-image downsampling.
+async function compressPDF(file, preset = 'balanced') {
   if (!file) {
     throw Object.assign(new Error('Compress PDF requires a file.'), { statusCode: 400 });
   }
-  const pdf = await loadPDF(file.path);
-  const optimized = await pdf.save({ useObjectStreams: true, addDefaultPage: false });
+  const presetMap = { light: '/printer', balanced: '/ebook', strong: '/screen' };
+  if (!Object.hasOwn(presetMap, preset)) throw Object.assign(new Error('Choose a valid compression preset.'), { statusCode: 400 });
+  await loadPDF(file.path);
   const original = await fs.readFile(file.path);
-  return optimized.length < original.length ? optimized : original;
+  const outputPath = `${file.path}.compressed.pdf`;
+  try {
+    await execFileAsync('gs', [
+      '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.5', '-dNOPAUSE', '-dBATCH', '-dSAFER',
+      '-dDetectDuplicateImages=true', '-dCompressFonts=true', '-dSubsetFonts=true',
+      `-dPDFSETTINGS=${presetMap[preset]}`, `-sOutputFile=${outputPath}`, file.path,
+    ], { timeout: 120_000, maxBuffer: 2 * 1024 * 1024 });
+    const optimized = await fs.readFile(outputPath);
+    // Avoid returning a larger, needlessly re-rendered copy.
+    return optimized.length < original.length ? optimized : original;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      throw Object.assign(new Error('PDF compression is temporarily unavailable.'), { statusCode: 503 });
+    }
+    throw Object.assign(new Error('This PDF could not be compressed. It may be encrypted or unsupported.'), { statusCode: 400 });
+  } finally {
+    await fs.unlink(outputPath).catch(() => {});
+  }
 }
 
 export {

@@ -1,4 +1,4 @@
-import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaFileExcel, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt, FaRegFileAlt, FaSearch } from "react-icons/fa";
+import { FaCode, FaFilePdf, FaCog, FaQrcode, FaTextHeight, FaFileWord, FaFileExcel, FaSortAlphaDown, FaDatabase, FaExpandAlt, FaCompressAlt, FaRegFileAlt, FaSearch, FaFileImage } from "react-icons/fa";
 
 export const tools = [
   {
@@ -26,6 +26,19 @@ export const tools = [
       { label: "View a PDF", href: "/tools/pdf-converter?mode=view" },
     ],
     keywords: ["pdf converter", "word to pdf", "excel to pdf", "powerpoint to pdf", "markdown to pdf", "image to pdf", "online pdf viewer"]
+  },
+  {
+    name: "File Compressor",
+    path: "/tools/file-compressor",
+    icon: <FaFileImage />,
+    color: "teal",
+    category: "PDF Tools",
+    description: "Reduce PDF and image file sizes with adjustable compression levels, image resizing, and format options.",
+    actions: [
+      { label: "Compress PDF", href: "/tools/file-compressor?mode=pdf" },
+      { label: "Compress images", href: "/tools/file-compressor?mode=image" },
+    ],
+    keywords: ["compress pdf", "image compressor", "compress image", "reduce file size", "jpg compressor", "png compressor", "webp"]
   },
   {
     name: "Markdown to DOCX",
