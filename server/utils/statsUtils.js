@@ -47,7 +47,7 @@ export const classifyFailure = error => {
   const status = Number(error?.statusCode || error?.status || 0);
   const message = String(error?.message || '').toLowerCase();
   if (status === 408 || /timed?s*out|timeout|deadline/.test(message)) return 'timeout';
-  if (/invalid-input/.test(message)) return 'invalid-input';
+  if (/invalid[- ]input/.test(message)) return 'invalid-input';
   if ([400, 413, 415, 422].includes(status) || /invalid|unsupported|corrupt|password-protected/.test(message)) return 'invalid-file';
   if (/not installed|unavailable|spawn|enoent|service.*down/.test(message)) return 'service-unavailable';
   if (/memory|heap|resource/.test(message)) return 'resource-limit';
@@ -132,9 +132,9 @@ export const getUsageAnalytics = async ({ days = 30 } = {}) => {
   start.setUTCDate(start.getUTCDate() - Math.max(1, Math.min(90, days)) + 1);
   const base = [{ $match: { day: { $gte: start } } }];
   const [byTool, outcomes, pageViews, daily, anonymousVisitorHashes] = await Promise.all([
-    UsageMetric.aggregate([...base, { $match: { action: 'conversion' } }, { $group: { _id: '$toolName', successes: { $sum: { $cond: [{ $eq: ['$outcome', 'success'] }, '$count', 0] } }, failures: { $sum: { $cond: [{ $eq: ['$outcome', 'failure'] }, '$count', 0] } } } }, { $sort: { successes: -1, failures: -1 } }, { $limit: 20 }]),
+    UsageMetric.aggregate([...base, { $match: { action: 'conversion' } }, { $group: { _id: '$toolName', successes: { $sum: { $cond: [{ $eq: ['$outcome', 'success'] }, '$count', 0] } }, failures: { $sum: { $cond: [{ $eq: ['$outcome', 'failure'] }, '$count', 0] } } } }, { $sort: { successes: -1, failures: -1 } }]),
     UsageMetric.aggregate([...base, { $match: { action: 'conversion', outcome: 'failure' } }, { $group: { _id: '$reason', count: { $sum: '$count' } } }, { $sort: { count: -1 } }]),
-    UsageMetric.aggregate([...base, { $match: { action: 'page-view', outcome: 'success' } }, { $group: { _id: '$toolName', count: { $sum: '$count' } } }, { $sort: { count: -1 } }, { $limit: 20 }]),
+    UsageMetric.aggregate([...base, { $match: { action: 'page-view', outcome: 'success' } }, { $group: { _id: '$toolName', count: { $sum: '$count' } } }, { $sort: { count: -1 } }]),
     UsageMetric.aggregate([...base, { $group: { _id: { day: '$day', audience: '$audience', action: '$action', outcome: '$outcome' }, count: { $sum: '$count' } } }, { $sort: { '_id.day': 1 } }]),
     AnonymousVisitorDay.distinct('visitorHash', { day: { $gte: utcDay(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000)) } }),
   ]);

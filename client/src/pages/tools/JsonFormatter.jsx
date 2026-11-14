@@ -10,6 +10,7 @@ import { FaCopy, FaDownload, FaCheck, FaTimes } from "react-icons/fa";
 
 import { parse, stringify, isLosslessNumber } from 'lossless-json';
 import { jsonrepair } from 'jsonrepair';
+import { statsApi } from '../../utils/apiClient';
 
 const JsonFormatter = () => {
   const workspaceRef = useToolWorkspace();
@@ -45,10 +46,12 @@ const JsonFormatter = () => {
     try {
       const parsedJson = parse(jsonInput);
       setFormattedJson(stringify(parsedJson, null, indentSize));
+      statsApi.increment({ toolName: 'json-formatter' }).catch(() => {});
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
     } catch (error) {
+      statsApi.increment({ toolName: 'json-formatter', status: 'failure', reason: 'invalid-input' }).catch(() => {});
       setError(`Invalid JSON: ${error.message}`);
       setFormattedJson("");
       setJsonStats(null);
@@ -61,10 +64,12 @@ const JsonFormatter = () => {
     try {
       const parsedJson = parse(jsonInput);
       setFormattedJson(stringify(parsedJson));
+      statsApi.increment({ toolName: 'minify-json' }).catch(() => {});
       setError("");
       analyzeJson(parsedJson);
       validateJson(parsedJson);
     } catch (error) {
+      statsApi.increment({ toolName: 'minify-json', status: 'failure', reason: 'invalid-input' }).catch(() => {});
       setError(`Invalid JSON: ${error.message}`);
       setFormattedJson("");
       setJsonStats(null);

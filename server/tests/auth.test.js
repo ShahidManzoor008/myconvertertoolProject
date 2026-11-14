@@ -51,7 +51,8 @@ describe('Auth API', () => {
       });
 
     expect(res.status).toEqual(200);
-    expect(res.body).toHaveProperty('token');
+    expect(res.body.token).toBeUndefined();
+    expect(res.headers['set-cookie'].join(';')).toContain('mct_session=');
   });
 
   test('should not login with incorrect password', async () => {

@@ -2,10 +2,12 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import { OAuth2Client } from 'google-auth-library';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import authRouter from '../routes/auth.js';
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use('/api/auth', authRouter);
 import User from '../models/User.js';
 import Session from '../models/Session.js';
@@ -64,8 +66,10 @@ test('verified Google credentials create a valid session and inactive accounts r
   const res = await request(app).post('/api/auth/google').send({ token: 'valid-credential' });
   expect(res.status).toBe(200);
   expect(res.body.user.email).toBe(payload.email);
-  expect(await Session.findOne({ token: res.body.token, isValid: true })).not.toBeNull();
-  expect((await request(app).get('/api/auth/verify').set('Authorization', `Bearer ${res.body.token}`)).status).toBe(200);
+  const cookie = res.headers['set-cookie'][0].split(';')[0];
+  const sessionToken = decodeURIComponent(cookie.slice(cookie.indexOf('=') + 1));
+  expect(await Session.findOne({ token: sessionToken, isValid: true })).not.toBeNull();
+  expect((await request(app).get('/api/auth/verify').set('Cookie', cookie)).status).toBe(200);
   user.status = 'inactive';
   await user.save();
   expect((await request(app).post('/api/auth/google').send({ token: 'valid-credential' })).status).toBe(403);
@@ -84,5 +88,6 @@ test('password login remains available without Google configuration', async () =
   await User.create({ name: 'Password User', email: 'password-auth@example.com', password: 'test-password' });
   const res = await request(app).post('/api/auth/login').send({ email: 'password-auth@example.com', password: 'test-password' });
   expect(res.status).toBe(200);
-  expect(res.body.token).toBeTruthy();
+  expect(res.body.token).toBeUndefined();
+  expect(res.headers['set-cookie'].join(';')).toContain('mct_session=');
 });
