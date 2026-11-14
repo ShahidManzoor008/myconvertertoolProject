@@ -10,6 +10,7 @@ const EditBlogPost = lazy(() => import('../pages/admin/EditBlogPost'));
 const Settings = lazy(() => import('../pages/admin/Settings'));
 const Users = lazy(() => import('../pages/admin/Users'));
 const Analytics = lazy(() => import('../pages/admin/Analytics'));
+const AIWriter = lazy(() => import('../pages/admin/AIWriter'));
 
 const adminRoutes = (
   <Route path="admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -23,6 +24,7 @@ const adminRoutes = (
     <Route path="settings" element={<Settings />} />
     <Route path="users" element={<Users />} />
     <Route path="analytics" element={<Analytics />} />
+    <Route path="ai-writer" element={<AIWriter />} />
   </Route>
 );
 

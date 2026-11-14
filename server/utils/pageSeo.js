@@ -1,5 +1,6 @@
 import { presentPost } from './blogPresentation.js';
 import { renderBlogContent } from './blogContent.js';
+import { renderAIAttribution } from './blogAIAttribution.js';
 const SITE = 'https://myconvertertool.com';
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 export const safeImageUrl = value => {
@@ -40,7 +41,14 @@ export async function renderArticleHtml(template, post) {
       image: safeImageUrl(post.coverImage), datePublished: post.publishedAt || post.createdAt, dateModified: post.updatedAt || post.createdAt,
       author: { '@type': post.authorType || 'Person', name: post.author }, publisher: { '@type': 'Organization', name: 'MyConverterTool',
         logo: { '@type': 'ImageObject', url: SITE + '/assets/MyConverterTool.png' } }, mainEntityOfPage: SITE + pathname },
-    content: `<article class="mx-auto max-w-3xl py-12"><h1>${escapeHtml(post.title)}</h1><p class="my-6 text-lg">${escapeHtml(post.excerpt)}</p>${post.coverImage ? `<figure><img src="${escapeHtml(safeImageUrl(post.coverImage))}" alt="${escapeHtml(post.coverAlt || '')}" width="${post.coverWidth || 1280}" height="${post.coverHeight || 720}"></figure>` : ''}<div class="article-body">${content}</div></article>`,
+    content: `<article class="mx-auto max-w-3xl py-12"><h1>${escapeHtml(post.title)}</h1><p class="my-6 text-lg">${escapeHtml(post.excerpt)}</p>${post.coverImage ? `<figure><img src="${escapeHtml(safeImageUrl(post.coverImage))}" alt="${escapeHtml(post.coverAlt || '')}" width="${post.coverWidth || 1280}" height="${post.coverHeight || 720}"></figure>` : ''}<div class="article-body">${content}${renderAIAttribution(post.aiWriter)}</div></article>`,
+  });
+}
+export function renderBlogListingHtml(template, posts) {
+  return renderPageHtml(template, {
+    title: 'AI, Technology & Tool Guides | MyConverterTool Blog', pathname: '/blog',
+    description: 'Read AI and technology insights alongside practical guides to PDFs, developer tools and document workflows on the MyConverterTool blog.',
+    content: `<section class="mx-auto max-w-6xl py-12"><h1>Guides, AI and technology insights</h1><div>${posts.map(post => `<article><h2><a href="/blog/${escapeHtml(encodeURIComponent(post.slug))}">${escapeHtml(post.title)}</a></h2><p>${escapeHtml(post.excerpt)}</p></article>`).join('')}</div></section>`,
   });
 }
 export function makeSitemap(routes, posts = []) {

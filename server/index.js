@@ -1,6 +1,8 @@
 import { promises as fileSystem } from 'node:fs';
 import Blog from './models/Blog.js';
-import { renderArticleHtml, renderPageHtml, makeSitemap } from './utils/pageSeo.js';
+import { renderArticleHtml, renderPageHtml, renderBlogListingHtml, makeSitemap } from './utils/pageSeo.js';
+import aiWriterRouter from './routes/aiWriter.js';
+import { startWriterScheduler } from './utils/aiWriterService.js';
 // ============================
 // 📂 Server: index.js
 // ============================
@@ -81,6 +83,7 @@ if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined)
   app.get('/health', (req, res) => res.send('OK'));
 }
 app.use('/api/blog', blogRouter);
+app.use('/api/ai-writer', aiWriterRouter);
 app.use('/api/auth', authRouter);
 
 // Then mount the more generic routes with specific prefixes
@@ -96,6 +99,15 @@ app.use('/api/admin', adminRouter);
 // Serve static files from the React app with hashed asset caching
 const clientBuildPath = process.env.FRONTEND_BUILD_DIR || path.join(__dirname, '../client/dist');
 const readRoutes = async () => JSON.parse(await fileSystem.readFile(path.join(clientBuildPath, 'routes-manifest.json'), 'utf8'));
+app.get(['/blog', '/blog/'], async (_req, res, next) => {
+  try {
+    const [template, posts] = await Promise.all([
+      fileSystem.readFile(path.join(clientBuildPath, 'index.html'), 'utf8'),
+      Blog.find({ $or: [{ status: 'published' }, { status: { $exists: false } }] }).sort({ createdAt: -1 }).limit(9).select('title slug excerpt coverThumbnail coverImage coverAlt').maxTimeMS(3000).lean(),
+    ]);
+    res.type('html').set('Cache-Control', 'no-cache').send(renderBlogListingHtml(template, posts));
+  } catch (error) { next(error); }
+});
 app.get('/sitemap.xml', async (_req, res, next) => {
   try {
     const routes = await readRoutes();
@@ -175,6 +187,7 @@ let server;
 if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
   server = app.listen(port, process.env.HOST || '127.0.0.1', () => {
     logger.info(`API running on port:${port}`);
+    startWriterScheduler(logger);
   });
 
   // Handle uncaught errors

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import SEO from '../utils/SEO.jsx';
 import BlogCard from '../components/BlogCard';
+import AIArticleSources from '../components/AIArticleSources';
 import { blogApi } from '../utils/apiClient';
 
 export default function BlogPost() {
@@ -45,6 +46,7 @@ export default function BlogPost() {
       </aside>
       <div className="min-w-0 max-w-3xl">
         <div className="article-body" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.html ?? (post.contentFormat !== 'markdown' ? post.content : '')) }} />
+        <AIArticleSources ai={post.aiWriter} />
         {!!post.tags?.length && <div className="mt-8 flex flex-wrap gap-2" aria-label="Article tags">{post.tags.map(tag => <Link key={tag} to={`/blog?search=${encodeURIComponent(tag)}`} className="inline-flex min-h-11 items-center rounded-lg bg-slate-100 px-3 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{tag}</Link>)}</div>}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-700"><Link to="/blog" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 dark:text-blue-300">← All guides</Link><button type="button" onClick={share} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold dark:border-slate-600">Share article</button></div>{shareMessage && <p role="status" className="mt-3 break-all text-sm text-slate-600 dark:text-slate-400">{shareMessage}</p>}
       </div>

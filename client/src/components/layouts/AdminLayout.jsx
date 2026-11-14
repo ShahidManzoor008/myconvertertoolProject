@@ -53,6 +53,7 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: 'grid_view' },
     { path: '/admin/posts', label: 'Blog Posts', icon: 'article' },
+    { path: '/admin/ai-writer', label: 'AI Writer', icon: 'auto_awesome' },
     { path: '/admin/users', label: 'Users', icon: 'people' },
     { path: '/admin/analytics', label: 'Analytics', icon: 'analytics' },
     { path: '/admin/settings', label: 'Settings', icon: 'settings' },

@@ -11,12 +11,13 @@ export const isPublicAddress = (address) => {
 
 // Require an explicit hostname allowlist. Pin the connection to a validated DNS
 // result so redirects and DNS rebinding cannot reach private network services.
-export async function downloadPublicFile(input) {
-  const allowed = (process.env.ALLOWED_DOWNLOAD_DOMAINS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+export async function downloadPublicFile(input, options = {}) {
+  const allowed = options.allowedDomains || (process.env.ALLOWED_DOWNLOAD_DOMAINS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const maxBytes = options.maxBytes || MAX_DOWNLOAD_BYTES;
   let url = new URL(input);
-  const signal = AbortSignal.timeout(15000);
+  const signal = options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000);
   for (let hop = 0; hop < 4; hop++) {
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+    if (!(options.httpsOnly ? ['https:'] : ['http:', 'https:']).includes(url.protocol) || url.username || url.password ||
         !allowed.includes(url.hostname.toLowerCase()) || (url.port && !['80', '443'].includes(url.port))) {
       throw new Error('Remote URL is not allowed. Upload converted files directly instead.');
     }
@@ -30,7 +31,7 @@ export async function downloadPublicFile(input) {
       else callback(null, selected.address, selected.family);
     }});
     try {
-      const response = await fetch(url, { agent, signal, redirect: 'manual', size: MAX_DOWNLOAD_BYTES });
+      const response = await fetch(url, { agent, signal, redirect: 'manual', size: maxBytes });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const target = response.headers.get('location');
         response.body.destroy();
@@ -39,7 +40,7 @@ export async function downloadPublicFile(input) {
         continue;
       }
       if (!response.ok) { response.body.destroy(); throw new Error('Remote download failed'); }
-      if (Number(response.headers.get('content-length')) > MAX_DOWNLOAD_BYTES) {
+      if (Number(response.headers.get('content-length')) > maxBytes) {
         response.body.destroy(); throw new Error('Remote file exceeds download limit');
       }
       return await response.buffer();

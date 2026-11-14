@@ -47,6 +47,14 @@ const blogSchema = new mongoose.Schema({
   publishedAt: { type: Date, default: null },
   revision: { type: Number, default: 0 },
   editorialRevision: { type: String, default: '' },
+  aiWriter: {
+    generationId: String,
+    topicKey: String,
+    eventDate: String,
+    sources: [{ _id: false, url: String, title: String, publishedAt: Date }],
+    model: String,
+    generatedAt: Date,
+  },
   readingTime: {
     type: Number,
     default: 0
@@ -75,6 +83,8 @@ blogSchema.index({ imageFiles: 1 });
 blogSchema.index({ tags: 1 });
 blogSchema.index({ createdAt: -1 });
 blogSchema.index({ status: 1, createdAt: -1, _id: -1 });
+blogSchema.index({ 'aiWriter.generationId': 1 }, { unique: true, sparse: true });
+blogSchema.index({ 'aiWriter.topicKey': 1 }, { unique: true, sparse: true });
 
 // Add text index for search functionality
 blogSchema.index({

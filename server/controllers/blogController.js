@@ -32,7 +32,7 @@ export async function getAllPosts(req, res) {
       filters.push({ $or: [{ createdAt: { $lt: anchor.createdAt } }, { createdAt: anchor.createdAt, _id: { $lt: cursor } }] });
     }
     const query = { $and: filters };
-    const docs = await Blog.find(query).sort({ createdAt: -1, _id: -1 }).skip(cursor ? 0 : (page - 1) * limit).limit(limit + 1).select('-content').lean();
+    const docs = await Blog.find(query).sort({ createdAt: -1, _id: -1 }).skip(cursor ? 0 : (page - 1) * limit).limit(limit + 1).select('-content -aiWriter.sources').lean();
     const hasNextPage = docs.length > limit;
     const posts = docs.slice(0, limit).map(presentPost);
     const total = !cursor ? await Blog.countDocuments(query) : null;

@@ -13,7 +13,8 @@
     "manage:blogs": "node scripts/manageBlog.js",
     "test:markdown": "node --test --test-concurrency=1 tests/markdown*.node-test.mjs",
     "test:spreadsheet": "node --test --test-concurrency=1 tests/spreadsheet.node-test.mjs",
-    "test:blog": "node --test --test-concurrency=1 tests/blog.node-test.mjs tests/seo.node-test.mjs"
+    "test:blog": "node --test --test-concurrency=1 tests/blog.node-test.mjs tests/seo.node-test.mjs",
+    "test:ai-writer": "node --test --test-concurrency=1 tests/aiWriter.node-test.mjs"
   },
   "keywords": [],
   "author": "Shahid Manzoor",
