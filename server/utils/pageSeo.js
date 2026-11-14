@@ -1,8 +1,6 @@
-import sanitizeHtml from 'sanitize-html';
 import { presentPost } from './blogPresentation.js';
-import markdownIt from 'markdown-it';
+import { renderBlogContent } from './blogContent.js';
 const SITE = 'https://myconvertertool.com';
-const markdown = markdownIt({ html: false });
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 export const safeImageUrl = value => {
   try { const url = new URL(value || '/assets/og-default.png', SITE); return ['http:', 'https:'].includes(url.protocol) ? url.href : SITE + '/assets/og-default.png'; }
@@ -32,23 +30,17 @@ ${schema ? `<script data-initial-seo="true" type="application/ld+json">${JSON.st
   if (content) html = html.replace(/<!--route-content-->[\s\S]*?<!--\/route-content-->/, `<!--route-content-->${content}<!--/route-content-->`);
   return html;
 }
-export function renderArticleHtml(template, post) {
+export async function renderArticleHtml(template, post) {
   post = presentPost(post);
   const pathname = '/blog/' + encodeURIComponent(post.slug);
-  const source = /<[a-z][\s\S]*>/i.test(post.content) ? post.content : markdown.render(post.content);
-  const content = sanitizeHtml(source, {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
-    allowedAttributes: { a: ['href', 'title', 'rel'], img: ['src', 'alt', 'width', 'height', 'loading'] },
-    allowedSchemes: ['http', 'https', 'mailto'], allowProtocolRelative: false,
-    transformTags: { h1: 'h2' },
-  });
+  const { html: content } = await renderBlogContent(post.content, post.contentFormat);
   return renderPageHtml(template, {
     title: `${post.title} | MyConverterTool`, description: post.excerpt, pathname, image: post.coverImage, type: 'article',
     schema: { '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description: post.excerpt,
-      image: safeImageUrl(post.coverImage), datePublished: post.createdAt, dateModified: post.updatedAt || post.createdAt,
-      author: { '@type': 'Person', name: post.author }, publisher: { '@type': 'Organization', name: 'MyConverterTool',
+      image: safeImageUrl(post.coverImage), datePublished: post.publishedAt || post.createdAt, dateModified: post.updatedAt || post.createdAt,
+      author: { '@type': post.authorType || 'Person', name: post.author }, publisher: { '@type': 'Organization', name: 'MyConverterTool',
         logo: { '@type': 'ImageObject', url: SITE + '/assets/MyConverterTool.png' } }, mainEntityOfPage: SITE + pathname },
-    content: `<article class="mx-auto max-w-3xl py-12"><h1>${escapeHtml(post.title)}</h1><p class="my-6 text-lg">${escapeHtml(post.excerpt)}</p><div class="article-body">${content}</div></article>`,
+    content: `<article class="mx-auto max-w-3xl py-12"><h1>${escapeHtml(post.title)}</h1><p class="my-6 text-lg">${escapeHtml(post.excerpt)}</p>${post.coverImage ? `<figure><img src="${escapeHtml(safeImageUrl(post.coverImage))}" alt="${escapeHtml(post.coverAlt || '')}" width="${post.coverWidth || 1280}" height="${post.coverHeight || 720}"></figure>` : ''}<div class="article-body">${content}</div></article>`,
   });
 }
 export function makeSitemap(routes, posts = []) {

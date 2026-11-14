@@ -93,12 +93,6 @@ app.use('/api/notifications', auth, notificationsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/admin', adminRouter);
 
-// Serve uploaded blog images with long-term caching (immutable filenames)
-app.use('/api/blog/images', express.static(path.join(__dirname, 'uploads', 'blog-images'), {
-  maxAge: '30d',
-  immutable: true,
-}));
-
 // Serve static files from the React app with hashed asset caching
 const clientBuildPath = process.env.FRONTEND_BUILD_DIR || path.join(__dirname, '../client/dist');
 const readRoutes = async () => JSON.parse(await fileSystem.readFile(path.join(clientBuildPath, 'routes-manifest.json'), 'utf8'));
@@ -106,7 +100,7 @@ app.get('/sitemap.xml', async (_req, res, next) => {
   try {
     const routes = await readRoutes();
     let posts = [];
-    try { posts = await Blog.find({}).select('slug updatedAt').limit(5000).maxTimeMS(3000).lean(); } catch { /* Keep public page discovery available if the database is unavailable. */ }
+    try { posts = await Blog.find({ $or: [{ status: 'published' }, { status: { $exists: false } }] }).select('slug updatedAt').limit(5000).maxTimeMS(3000).lean(); } catch { /* Keep public page discovery available if the database is unavailable. */ }
     res.type('application/xml').set('Cache-Control', 'public, max-age=300').send(makeSitemap(routes, posts));
   } catch (error) { next(error); }
 });
@@ -148,8 +142,8 @@ app.get('/{*any}', async (req, res, next) => {
     if (pathname.startsWith('/blog/')) {
       const slug = decodeURIComponent(pathname.slice(6));
       if (slug.length <= 300 && !slug.includes('/')) {
-        const post = await Blog.findOne({ slug }).maxTimeMS(5000).lean();
-        if (post) return res.type('html').send(renderArticleHtml(template, post));
+        const post = await Blog.findOne({ slug, $or: [{ status: 'published' }, { status: { $exists: false } }] }).maxTimeMS(5000).lean();
+        if (post) return res.type('html').send(await renderArticleHtml(template, post));
       }
     }
     if (['/login', '/register', '/profile', '/admin'].includes(pathname) || pathname.startsWith('/admin/')) {

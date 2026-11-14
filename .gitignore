@@ -45,3 +45,6 @@ temp.md
 **/.turbo/
 .venv-spreadsheet/
 __pycache__/
+
+# Runtime blog media is backed up with the database; existing tracked seed images remain tracked.
+server/uploads/blog-images/

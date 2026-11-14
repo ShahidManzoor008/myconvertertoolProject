@@ -10,6 +10,22 @@ const BlogManagement = () => {
   const [error, setError] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [media, setMedia] = useState(null);
+  const [mediaBusy, setMediaBusy] = useState(false);
+  const [mediaMessage, setMediaMessage] = useState('');
+  const inspectMedia = async () => {
+    setMediaBusy(true); setMediaMessage('');
+    try { setMedia(await apiClient.get('/api/blog/media/unused')); }
+    catch { setMediaMessage('Image usage could not be checked. Try again later.'); }
+    finally { setMediaBusy(false); }
+  };
+  const cleanMedia = async () => {
+    if (!window.confirm('Remove unused generated image sizes older than seven days? Images used by drafts and published articles are kept.')) return;
+    setMediaBusy(true);
+    try { const result = await apiClient.post('/api/blog/media/cleanup', { confirm: true }); setMediaMessage(`${result.removed} unused image files removed.`); setMedia(null); }
+    catch { setMediaMessage('Image cleanup failed. No further action was taken.'); }
+    finally { setMediaBusy(false); }
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -25,7 +41,7 @@ const BlogManagement = () => {
       let cursor = undefined;
       let hasMore = true;
       while (hasMore) {
-        const data = await blogApi.getPosts({ cursor, limit: 50 });
+        const data = await blogApi.getPosts({ cursor, limit: 50, admin: true });
         allPosts.push(...(data.posts || []));
         cursor = data.nextCursor;
         hasMore = Boolean(data.hasNextPage);
@@ -214,7 +230,7 @@ const BlogManagement = () => {
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                      Published
+                      {post.status || 'published'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -240,6 +256,13 @@ const BlogManagement = () => {
           </tbody>
         </table>
       </div>
+      <section className="border-t border-slate-200 p-4 dark:border-slate-700" aria-label="Blog image maintenance">
+        <h2 className="text-base font-semibold">Image library maintenance</h2>
+        <p className="mt-1 text-sm text-slate-500">Inspect unused generated images older than seven days. Images referenced by any saved article or draft are kept; legacy source images are excluded.</p>
+        <button type="button" disabled={mediaBusy} onClick={inspectMedia} className="mt-2 min-h-11 text-sm font-semibold text-blue-700 underline disabled:opacity-50 dark:text-blue-300">{mediaBusy ? 'Checking…' : 'Check unused images'}</button>
+        {media && <p className="text-sm">{media.images.length} unused files · {(media.images.reduce((sum, image) => sum + image.bytes, 0) / 1024 / 1024).toFixed(1)} MB {media.images.length > 0 && <button type="button" disabled={mediaBusy} onClick={cleanMedia} className="min-h-11 px-3 font-semibold text-red-700 underline dark:text-red-300">Clean unused images</button>}</p>}
+        {mediaMessage && <p role="status" className="mt-2 text-sm">{mediaMessage}</p>}
+      </section>
     </div>
   );
 };

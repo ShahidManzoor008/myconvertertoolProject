@@ -218,3 +218,32 @@ main article table { display: block; max-width: 100%; overflow-x: auto; }
   .home-actions { flex-direction: column; align-items: stretch; }
   .home-actions a { justify-content: center; }
 }
+
+/* Shared reader and Markdown preview typography. */
+.article-body { width: 100%; overflow-wrap: anywhere; color: #334155; }
+.dark .article-body { color: #cbd5e1; }
+.article-body h2 { font-size: 1.5rem; line-height: 1.35; color: #0f172a; }
+.article-body h3 { font-size: 1.2rem; line-height: 1.4; color: #0f172a; }
+.article-body h4 { font-size: 1.05rem; line-height: 1.5; font-weight: 600; }
+.dark .article-body h2, .dark .article-body h3 { color: #f1f5f9; }
+.article-body ul { list-style: disc; padding-left: 1.5rem; }
+.article-body ol { list-style: decimal; padding-left: 1.5rem; }
+.article-body li + li { margin-top: .4rem; }
+.article-body blockquote { margin: 1.5rem 0; border-left: 3px solid #93c5fd; padding: .25rem 1rem; color: #64748b; }
+.dark .article-body blockquote { color: #94a3b8; }
+.article-body pre { overflow-x: auto; max-width: 100%; border-radius: .75rem; background: #0f172a; padding: 1rem; color: #e2e8f0; font-size: .85rem; line-height: 1.8; }
+.article-body :not(pre) > code { border-radius: .25rem; background: #f1f5f9; padding: .15rem .35rem; font-size: .85em; color: #1d4ed8; }
+.dark .article-body :not(pre) > code { background: #1e293b; color: #93c5fd; }
+.article-body table { display: block; width: 100%; max-width: 100%; overflow-x: auto; margin: 1.5rem 0; border-collapse: collapse; font-size: .9rem; }
+.article-body th, .article-body td { border: 1px solid #cbd5e1; padding: .6rem .85rem; text-align: left; min-width: 6rem; }
+.article-body th { background: #f8fafc; font-weight: 600; }
+.dark .article-body th { background: #1e293b; }
+.dark .article-body th, .dark .article-body td { border-color: #475569; }
+.article-body img { max-width: 100%; height: auto; }
+.article-body hr { margin: 2rem 0; border-color: #cbd5e1; }
+.article-body img.equation { display: inline-block; margin: .2em; border-radius: 0; vertical-align: middle; }
+.article-body img.equation-block { display: block; margin: 1.25rem auto; }
+.blog-reader h1 { font-size: clamp(1.75rem, 3vw, 2.75rem); line-height: 1.18; letter-spacing: -.03em; }
+label:has(input[type="file"]:focus-visible) { outline: 3px solid #2563eb; outline-offset: 3px; }
+.markdown-preview { max-height: 30rem; overflow-y: auto; padding-right: .5rem; scrollbar-gutter: stable; }
+@media (min-width: 1024px) { .markdown-preview { max-height: 36rem; } }

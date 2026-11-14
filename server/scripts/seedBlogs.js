@@ -1,55 +1,22 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Add missing guides only. Existing editorial changes are never overwritten.
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Blog from '../models/Blog.js';
-import fs from 'fs'; // Import fs module
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
-// Read blogposts.json
-const blogpostsJsonPath = path.join(__dirname, '..', '..', 'client', 'src', 'data', 'blogposts.json');
-const rawBlogposts = fs.readFileSync(blogpostsJsonPath, 'utf-8');
-const blogpostsData = JSON.parse(rawBlogposts);
-
-// Map blogposts.json data to Blog schema
-const mappedBlogs = blogpostsData.map(post => ({
-  title: post.title,
-  content: post.content, // Assuming content is already HTML
-  excerpt: post.excerpt,
-  author: "admin@myconvertertool.com", // Default author
-  tags: [], // No tags in blogposts.json
-  coverImage: post.image ? `/api/blog/images/${post.image}` : '', // Construct coverImage path
-  slug: post.id, // Map id to slug
-  // readingTime will be calculated by the pre('save') hook
-}));
-
-const seedBlogs = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-
-    let upsertedCount = 0;
-    for (const blogData of mappedBlogs) {
-      const result = await Blog.findOneAndUpdate(
-        { slug: blogData.slug }, // Find by slug
-        blogData, // Data to update or insert
-        { upsert: true, new: true, setDefaultsOnInsert: true } // Options: insert if not found, return new doc, apply defaults
-      );
-      if (result) {
-        upsertedCount++;
-        console.log(`Blog with slug "${blogData.slug}" was upserted.`);
-      }
-    }
-
-    console.log('Sample blogs upserted successfully from blogposts.json!');
-    console.log(`Upserted ${upsertedCount} blog posts`);
-  } catch (error) {
-    console.error('Error creating sample blogs:', error);
-  } finally {
-    await mongoose.disconnect();
+import { storeBlogImage, blogImageDirectory, imageReferences } from '../utils/blogMedia.js';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+dotenv.config({ path: path.join(root, 'server/.env'), quiet: true });
+const entries = JSON.parse(await readFile(path.join(root, 'content/blog/manifest.json'), 'utf8'));
+await mongoose.connect(process.env.MONGODB_URI);
+try {
+  for (const entry of entries) {
+    if (await Blog.exists({ slug: entry.slug })) { console.log(`Kept existing article: ${entry.slug}`); continue; }
+    const content = await readFile(path.join(root, `content/blog/${entry.slug}.md`), 'utf8');
+    const image = await storeBlogImage(await readFile(path.join(blogImageDirectory, entry.sourceImage)));
+    const post = { title: entry.title, slug: entry.slug, excerpt: entry.excerpt, content, contentFormat: 'markdown', status: 'published', publishedAt: new Date(), author: 'MyConverterTool Team', authorType: 'Organization', category: entry.category, tags: entry.tags, coverAlt: entry.coverAlt, coverImage: image.url, coverThumbnail: image.thumbnail, coverWidth: image.width, coverHeight: image.height, coverThumbnailWidth: image.thumbnailWidth, editorialRevision: '2026-11-markdown-v1', revision: 1 };
+    await Blog.create({ ...post, imageFiles: imageReferences(post) });
+    console.log(`Created article: ${entry.slug}`);
   }
-};
-
-// Run the script
-seedBlogs();
+} finally { await mongoose.disconnect(); }

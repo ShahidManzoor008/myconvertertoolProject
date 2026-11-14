@@ -73,7 +73,7 @@ export const setupMiddleware = (app, allowedOrigins) => {
 
   // Rate Limiting
   const globalLimiter = rateLimit({
-    skip: () => process.env.NODE_ENV === 'test',
+    skip: req => process.env.NODE_ENV === 'test' || (req.method === 'POST' && req.path === '/blog/preview'),
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 30, // Global limit
     message: { error: "Too many requests, please try again later." },

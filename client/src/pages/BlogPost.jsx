@@ -1,227 +1,54 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import SEO from '../utils/SEO.jsx';
-import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import BlogCard from '../components/BlogCard';
 import { blogApi } from '../utils/apiClient';
-import MarkdownIt from 'markdown-it'; // Import markdown-it
-import DOMPurify from 'dompurify'; // Import dompurify
 
-// Initialize markdown-it with custom renderers
-const md = new MarkdownIt({ breaks: false });
-
-// Custom renderer for headings
-const defaultRender = md.renderer.rules.heading_open || function(tokens, idx, options, env, self) {
-  return self.renderToken(tokens, idx, options);
-};
-
-md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
-  const tagName = tokens[idx].tag; // h1, h2, h3, etc.
-  let classes = '';
-
-  switch (tagName) {
-    case 'h1':
-      classes = 'text-4xl font-extrabold bg-blue-100 text-gray-900 dark:bg-gray-700 dark:text-white p-2 my-8 rounded-md';
-      break;
-    case 'h2':
-      classes = 'text-3xl font-bold bg-blue-50 text-primary dark:bg-gray-800 dark:text-blue-300 p-2 my-6 rounded-sm';
-      break;
-    case 'h3':
-      classes = 'text-2xl font-semibold bg-blue-25 text-primary dark:bg-gray-850 dark:text-blue-400 p-2 my-4 rounded-sm';
-      break;
-    default:
-      classes = ''; // Let prose handle other headings
-  }
-
-  // Add the classes to the token's attrs
-  if (classes) {
-    tokens[idx].attrJoin('class', classes);
-  }
-
-  return defaultRender(tokens, idx, options, env, self);
-};
-
-const BlogPost = () => {
+export default function BlogPost() {
   const { slug } = useParams();
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+  const [tocOpen, setTocOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        setLoading(true);
-        const data = await blogApi.getPost(slug);
-        setPost(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching blog post:', err);
-        setError(err.status === 404 ? 'not-found' : 'unavailable');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPost();
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const update = () => setTocOpen(desktop.matches); desktop.addEventListener('change', update);
+    return () => desktop.removeEventListener('change', update);
+  }, []);
+  const [post, setPost] = useState(null), [related, setRelated] = useState([]), [loading, setLoading] = useState(true), [error, setError] = useState(''), [shareMessage, setShareMessage] = useState('');
+  useEffect(() => {
+    let active = true; setLoading(true); setError(''); setShareMessage(''); setRelated([]);
+    blogApi.getPost(slug).then(async data => {
+      if (!active) return; setPost(data); setLoading(false);
+      try { const result = await blogApi.getPosts({ category: data.category, limit: 4 }); if (active) setRelated((result.posts || []).filter(item => item.slug !== data.slug).slice(0, 3)); } catch { /* Related reading is optional. */ }
+    }).catch(failure => { if (active) { setError(failure.status === 404 ? 'not-found' : 'unavailable'); setLoading(false); } });
+    return () => { active = false; };
   }, [slug]);
-
-  if (loading) {
-    return <LoadingSpinner message="Loading article..." />;
-  }
-
-  if (error || !post) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 px-4">
-        <SEO title={error === 'unavailable' ? 'Article unavailable | MyConverterTool' : 'Article not found | MyConverterTool'} robots="noindex, follow" />
-        <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500">
-          <span aria-hidden="true" className="material-icons text-4xl">error_outline</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{error === 'unavailable' ? 'Article temporarily unavailable' : 'Article not found'}</h1>
-        <p className="text-slate-600 dark:text-slate-400 text-center max-w-md">
-          The article you are looking for might have been moved or deleted.
-        </p>
-        <Link 
-          to="/blog"
-          className="px-8 py-3 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
-        >
-          Back to Blog
-        </Link>
+  const share = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: post.title, url: location.href });
+      else { await navigator.clipboard.writeText(location.href); setShareMessage('Article link copied.'); }
+    } catch (failure) { if (failure.name !== 'AbortError') setShareMessage(`Copy this link: ${location.href}`); }
+  };
+  if (loading) return <p role="status" className="py-16 text-center text-slate-500">Loading article…</p>;
+  if (error || !post) return <section className="mx-auto max-w-xl py-16 text-center"><SEO title="Article unavailable | MyConverterTool" robots="noindex, follow" /><h1>{error === 'not-found' ? 'Article not found' : 'Article temporarily unavailable'}</h1><p className="mt-4 text-slate-500">{error === 'not-found' ? 'This article may have been removed or is not published.' : 'We could not load the article. Please try again shortly.'}</p><Link to="/blog" className="mt-5 inline-flex min-h-11 items-center font-semibold text-blue-700 dark:text-blue-300">Browse all guides</Link></section>;
+  const date = post.publishedAt || post.createdAt;
+  const updated = post.updatedAt && new Date(post.updatedAt).toDateString() !== new Date(date).toDateString();
+  const displayedDate = updated ? post.updatedAt : date;
+  return <article className="blog-reader mx-auto max-w-6xl pb-16 pt-6 sm:pt-10">
+    <SEO title={`${post.title} | MyConverterTool`} description={post.excerpt} canonicalUrl={`/blog/${post.slug}`} ogImage={post.coverImage || '/assets/og-default.png'} ogType="article" jsonLd={{ '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description: post.excerpt, image: new URL(post.coverImage || '/assets/og-default.png', 'https://myconvertertool.com').href, datePublished: date, dateModified: post.updatedAt || date, author: { '@type': post.authorType || 'Person', name: post.author || 'MyConverterTool Team' }, publisher: { '@type': 'Organization', name: 'MyConverterTool' }, mainEntityOfPage: `https://myconvertertool.com/blog/${post.slug}` }} />
+    <nav aria-label="Article breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500"><Link to="/" className="inline-flex min-h-11 items-center hover:text-blue-700">Home</Link><span aria-hidden="true">/</span><Link to="/blog" className="inline-flex min-h-11 items-center hover:text-blue-700">Guides</Link><span aria-hidden="true">/</span><Link to={`/blog?category=${encodeURIComponent(post.category || 'Guides')}`} className="inline-flex min-h-11 items-center font-medium text-blue-700 dark:text-blue-300">{post.category || 'Guides'}</Link></nav>
+    <header className="max-w-4xl"><p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{post.category || 'Guides'}</p><h1 className="mt-3 font-bold tracking-tight">{post.title}</h1><p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-400">{post.excerpt}</p><div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400"><span>{post.author || 'MyConverterTool Team'}</span>{date && <time dateTime={displayedDate}>{updated ? 'Updated ' : ''}{new Date(displayedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</time>}<span>{post.readingTime || 1} min read</span></div></header>
+    {post.coverImage && <figure className="my-7 aspect-[16/9] max-h-[24rem] overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"><img src={post.coverImage} srcSet={post.coverThumbnail ? `${post.coverThumbnail} ${post.coverThumbnailWidth || 480}w, ${post.coverImage} ${post.coverWidth || 1280}w` : undefined} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px" width="1280" height="720" fetchPriority="high" decoding="async" alt={post.coverAlt || ''} className="h-full w-full object-cover" /></figure>}
+    <div className="mt-8 grid min-w-0 items-start gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
+      <aside className="min-w-0 lg:sticky lg:top-24" aria-label="Article navigation">
+        {!!post.headings?.length && <details open={tocOpen} onToggle={event => setTocOpen(event.currentTarget.open)} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="text-sm font-semibold">On this page</summary><nav aria-label="Table of contents" className="mt-3 max-h-80 overflow-y-auto"><ul className="space-y-1">{post.headings.map(heading => <li key={heading.id}><a href={`#${heading.id}`} className={`block py-2 text-sm leading-5 text-slate-600 hover:text-blue-700 dark:text-slate-400 dark:hover:text-blue-300 ${heading.level > 2 ? 'pl-3' : ''}`}>{heading.text}</a></li>)}</ul></nav></details>}
+        <Link to="/tools" className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 dark:text-blue-300">Explore free tools <span aria-hidden="true" className="ml-2">→</span></Link>
+      </aside>
+      <div className="min-w-0 max-w-3xl">
+        <div className="article-body" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.html ?? (post.contentFormat !== 'markdown' ? post.content : '')) }} />
+        {!!post.tags?.length && <div className="mt-8 flex flex-wrap gap-2" aria-label="Article tags">{post.tags.map(tag => <Link key={tag} to={`/blog?search=${encodeURIComponent(tag)}`} className="inline-flex min-h-11 items-center rounded-lg bg-slate-100 px-3 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{tag}</Link>)}</div>}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-700"><Link to="/blog" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 dark:text-blue-300">← All guides</Link><button type="button" onClick={share} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold dark:border-slate-600">Share article</button></div>{shareMessage && <p role="status" className="mt-3 break-all text-sm text-slate-600 dark:text-slate-400">{shareMessage}</p>}
       </div>
-    );
-  }
-
-  return (
-    <article className="pb-24">
-      <SEO
-        title={`${post.title} - MyConverterTool`}
-        description={post.excerpt}
-        keywords={`${post.title.toLowerCase()}, blog, tutorial, myconvertertool`}
-        canonicalUrl={`/blog/${post.slug}`}
-        ogImage={post.coverImage || '/assets/MyConverterTool.png'}
-        ogType="article"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'Article',
-          headline: post.title,
-          description: post.excerpt,
-          image: post.coverImage ? new URL(post.coverImage, 'https://myconvertertool.com').href : 'https://myconvertertool.com/assets/og-default.png',
-          datePublished: post.createdAt,
-          dateModified: post.updatedAt || post.createdAt,
-          author: {
-            '@type': 'Person',
-            name: post.author,
-          },
-          publisher: {
-            '@type': 'Organization',
-            name: 'MyConverterTool',
-            logo: {
-              '@type': 'ImageObject',
-              url: 'https://myconvertertool.com/assets/MyConverterTool.png',
-            },
-          },
-          mainEntityOfPage: {
-            '@type': 'WebPage',
-            '@id': `https://myconvertertool.com/blog/${post.slug}`,
-          },
-        }}
-      />
-
-      {/* Header */}
-      <header className="pt-16 pb-20 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-30">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px]" />
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest">
-              {post.category || 'Article'}
-            </span>
-            <span className="text-slate-400">•</span>
-            <time className="text-slate-500 font-bold text-xs uppercase tracking-wider">
-              {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </time>
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-10 leading-[1.1] text-slate-900 dark:text-white">
-            {post.title}
-          </h1>
-
-          <div className="flex items-center justify-center gap-6 pt-6 border-t border-slate-200/50 dark:border-slate-800/50 max-w-xs mx-auto">
-            <div className="flex items-center gap-2">
-              <span aria-hidden="true" className="material-icons text-blue-600 text-sm">schedule</span>
-              <span className="text-sm font-black text-slate-600 dark:text-slate-400">{Math.max(1, post.readingTime || 1)}m Read</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span aria-hidden="true" className="material-icons text-blue-600 text-sm">visibility</span>
-              <span className="text-sm font-black text-slate-600 dark:text-slate-400">Pro Content</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Featured Image */}
-      {post.coverImage && (
-        <div className="max-w-6xl mx-auto px-4 mb-20">
-          <div className="aspect-[21/9] rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white dark:border-slate-800">
-            <img 
-              src={post.coverImage} 
-              alt={post.title}
-              width="1400"
-              height="600"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4">
-        <div className="prose prose-slate dark:prose-invert prose-lg md:prose-xl prose-headings:font-black prose-headings:tracking-tighter prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-img:rounded-3xl prose-img:shadow-xl prose-pre:bg-slate-900 prose-pre:rounded-2xl">
-          <div
-            className="article-content leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(/<[a-z][\s\S]*>/i.test(post.content) ? post.content : md.render(post.content)).replace(/<(\/?)h1\b/g, '<$1h2') }}
-          />
-        </div>
-
-        {/* Footer Actions */}
-        <div className="mt-24 pt-12 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/25">
-              {post.author.charAt(0)}
-            </div>
-            <div>
-              <p className="text-sm font-black uppercase tracking-widest text-blue-600 mb-1">Written By</p>
-              <h4 className="text-xl font-bold text-slate-900 dark:text-white">{post.author}</h4>
-            </div>
-          </div>
-          
-          <div className="flex gap-4">
-            <button 
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="p-4 rounded-2xl glass hover:bg-blue-600 hover:text-white transition-all group"
-            >
-              <span aria-hidden="true" className="material-icons group-hover:-translate-y-1 transition-transform">arrow_upward</span>
-            </button>
-            <button 
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: post.title, url: window.location.href });
-                }
-              }}
-              className="px-8 py-4 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
-            >
-              <span aria-hidden="true" className="material-icons text-sm">share</span>
-              Share Article
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-export default BlogPost;
+    </div>
+    {!!related.length && <section className="mt-12 border-t border-slate-200 pt-8 dark:border-slate-700" aria-labelledby="related-heading"><h2 id="related-heading" className="mb-5 text-xl font-semibold">Keep learning</h2><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{related.map(item => <BlogCard key={item.slug} post={item} />)}</div></section>}
+  </article>;
+}

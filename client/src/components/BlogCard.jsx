@@ -2,83 +2,22 @@ import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { memo } from 'react';
 
-// ✅ Reusable Blog Card Component with Image, Excerpt & Read More Button
 const BlogCard = ({ post }) => {
-  return (
-    <div className="transition-transform duration-200 hover:-translate-y-2">
-      <Link
-        to={post.slug ? `/blog/${post.slug}` : '/blog'}
-        className="block glass-card h-full flex flex-col group overflow-hidden border-none"
-      >
-        {post.coverImage && (
-          <div className="relative h-56 overflow-hidden">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-              width="640"
-              height="360"
-              decoding="async"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
-            <div className="absolute bottom-4 left-4">
-              <span className="px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-bold uppercase tracking-wider">
-                Article
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="p-5 sm:p-6 flex-1 flex flex-col">
-          <div className="flex items-center gap-3 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <time dateTime={new Date(post.createdAt).toISOString()}>
-              {new Date(post.createdAt).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric'
-              })}
-            </time>
-            <span>•</span>
-            <span>{Math.max(1, Math.ceil(post.readingTime || 1))} min read</span>
-          </div>
-
-          <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            {post.title}
-          </h3>
-          
-          <p className="text-slate-600 dark:text-slate-400 mb-8 line-clamp-3 leading-relaxed">
-            {post.excerpt}
-          </p>
-
-          <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-200/50 dark:border-slate-800/50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                {post.author.charAt(0)}
-              </div>
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                {post.author}
-              </span>
-            </div>
-            <span className="text-blue-600 dark:text-blue-400 p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-              <span aria-hidden="true" className="material-icons text-sm">arrow_forward</span>
-            </span>
-          </div>
+  const date = post.updatedAt || post.publishedAt || post.createdAt;
+  return <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+    <Link to={`/blog/${post.slug}`} className="group flex h-full flex-col">
+      {post.coverImage ? <div className="aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-800"><img src={post.coverThumbnail || post.coverImage} alt={post.coverAlt || ''} width="480" height="270" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /></div> : <div className="flex aspect-[16/9] items-center justify-center bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><span aria-hidden="true" className="material-icons text-4xl">article</span></div>}
+      <div className="flex flex-1 flex-col p-5">
+        <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{post.category || 'Guides'}</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-slate-900 group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300">{post.title}</h3>
+        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{post.excerpt}</p>
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-5 text-xs text-slate-500 dark:text-slate-400">
+          {date && !Number.isNaN(new Date(date).getTime()) && <time dateTime={new Date(date).toISOString()}>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</time>}
+          <span>{Math.max(1, post.readingTime || 1)} min read</span><span className="ml-auto font-semibold text-blue-700 dark:text-blue-300">Read guide <span aria-hidden="true">→</span></span>
         </div>
-      </Link>
-    </div>
-  );
+      </div>
+    </Link>
+  </article>;
 };
-
-BlogCard.propTypes = {
-  post: PropTypes.shape({
-    title: PropTypes.string.isRequired,
-    slug: PropTypes.string.isRequired,
-    excerpt: PropTypes.string.isRequired,
-    coverImage: PropTypes.string,
-    author: PropTypes.string.isRequired,
-    createdAt: PropTypes.string.isRequired,
-    readingTime: PropTypes.number.isRequired,
-  }).isRequired,
-};
-
+BlogCard.propTypes = { post: PropTypes.shape({ title: PropTypes.string.isRequired, slug: PropTypes.string.isRequired, excerpt: PropTypes.string, coverImage: PropTypes.string, coverThumbnail: PropTypes.string, coverAlt: PropTypes.string, category: PropTypes.string, createdAt: PropTypes.string, publishedAt: PropTypes.string, updatedAt: PropTypes.string, readingTime: PropTypes.number }).isRequired };
 export default memo(BlogCard);

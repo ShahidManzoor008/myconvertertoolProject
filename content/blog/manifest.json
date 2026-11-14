@@ -1,0 +1,100 @@
+[
+  {
+    "slug": "understanding-json-formatting",
+    "title": "How to Format and Validate JSON Without Changing Your Data",
+    "excerpt": "Format JSON, understand validation errors, and review repaired or minified output before using it in your application.",
+    "category": "Developer",
+    "tags": [
+      "JSON",
+      "formatting",
+      "validation"
+    ],
+    "coverAlt": "Green abbreviations and symbols displayed on a dark screen",
+    "sourceImage": "blog1.webp",
+    "expectedSourceHash": "89ebcb59c5712606e28b85cb32936faa9a1b51545ee1f8939cabe169d40bbf6c"
+  },
+  {
+    "slug": "seo-basics-for-developers",
+    "title": "Practical SEO Checks for Developers: Content, Metadata, and Mobile UX",
+    "excerpt": "Improve page clarity with useful headings, accurate metadata, stable URLs, and a mobile layout that helps visitors complete their task.",
+    "category": "SEO",
+    "tags": [
+      "SEO",
+      "metadata",
+      "mobile"
+    ],
+    "coverAlt": "A website analytics dashboard open in a browser",
+    "sourceImage": "blog2.webp",
+    "expectedSourceHash": "79fdd3d8295d75831743950e1d5890ec98bcd536b4bae147ebdb60cd7f8f4577"
+  },
+  {
+    "slug": "getting-started-with-react-vite",
+    "title": "Start a React and Vite Project with a Clear Tool Workflow",
+    "excerpt": "Create a React starter with Vite, inspect sample data, and design empty, loading, success, and failure states for a useful tool page.",
+    "category": "Developer",
+    "tags": [
+      "React",
+      "Vite",
+      "workflow"
+    ],
+    "coverAlt": "Source code beside the React logo on a computer screen",
+    "sourceImage": "blog3.webp",
+    "expectedSourceHash": "ddb231134e075e794a4de9bbce47b43b023c8041e30eee0eba253891762921a0"
+  },
+  {
+    "slug": "how-to-use-tailwind-css",
+    "title": "Build Readable, Responsive Tool Pages with Tailwind CSS",
+    "excerpt": "Use consistent spacing, useful action labels, responsive grids, and accessible interaction states to build clearer interfaces with Tailwind CSS.",
+    "category": "Developer",
+    "tags": [
+      "Tailwind CSS",
+      "responsive design",
+      "accessibility"
+    ],
+    "coverAlt": "A code editor displaying a component with utility classes",
+    "sourceImage": "blog4.webp",
+    "expectedSourceHash": "9998dad075c3ef6206813b710d307b0395faa94311e7742ac3a8d39790f982cd"
+  },
+  {
+    "slug": "exploring-our-development-tools",
+    "title": "Which Developer Tool Should You Use? A Practical Workflow Guide",
+    "excerpt": "Choose the right utility for JSON, Base64, URL encoding, code formatting, and metadata previews, with checks before copying the result.",
+    "category": "Developer",
+    "tags": [
+      "developer tools",
+      "JSON",
+      "encoding"
+    ],
+    "coverAlt": "A close-up of syntax-highlighted code in a dark editor",
+    "sourceImage": "dev-tools-image.jpg",
+    "expectedSourceHash": "ba243d6cf186521d046f461f2ae54a3d512fb7edf6241206a35eb224b9fcd8aa"
+  },
+  {
+    "slug": "essential-pdf-tools-for-your-needs",
+    "title": "Convert, View, Extract, or Compress: Choose the Right PDF Tool",
+    "excerpt": "Find the right workflow for creating PDFs, viewing documents, extracting spreadsheet tables, or reducing file size, and learn what to check.",
+    "category": "PDF & documents",
+    "tags": [
+      "PDF",
+      "Excel",
+      "compression"
+    ],
+    "coverAlt": "A desk with a laptop, tablet, notebook, photographs, and a cup of coffee",
+    "sourceImage": "pdf-tools-image.jpg",
+    "expectedSourceHash": "6af6ae2e0aa1dd5fd3c94e08886e82c3b88095fb0b40688c421f6639e6ceacc3"
+  },
+  {
+    "slug": "text-case-conversion-made-easy",
+    "title": "Text Case Conversion: Choose the Right Format and Avoid Common Mistakes",
+    "excerpt": "Change capitalization for headings and notes, compare case options, and review abbreviations, names, and case-sensitive text before sharing.",
+    "category": "Text & writing",
+    "tags": [
+      "text case",
+      "writing",
+      "productivity"
+    ],
+    "coverAlt": "A laptop displaying text and source code in an editor",
+    "sourceImage": "text-case-image.jpg",
+    "expectedSourceHash": "208240653ff447b73dfc8b72b35be0a23ad659ce1edf645dccf284e517993727"
+  }
+]

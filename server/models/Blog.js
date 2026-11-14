@@ -11,18 +11,19 @@ const blogSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Content is required'],
-    minlength: [50, 'Content must be at least 50 characters long']
+    default: '',
+    maxlength: 200000
   },
   excerpt: {
     type: String,
-    required: [true, 'Excerpt is required'],
+    default: '',
     trim: true,
-    minlength: [50, 'Excerpt must be at least 50 characters long'],
     maxlength: [200, 'Excerpt cannot be more than 200 characters']
   },
   author: {
     type: String,
+    trim: true,
+    maxlength: 100,
     required: true
   },
   tags: [{
@@ -33,6 +34,19 @@ const blogSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  authorType: { type: String, enum: ['Person', 'Organization'], default: 'Person' },
+  contentFormat: { type: String, enum: ['html', 'markdown'], default: 'markdown' },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  category: { type: String, trim: true, maxlength: 60, default: 'Guides' },
+  imageFiles: [{ type: String }],
+  coverAlt: { type: String, trim: true, maxlength: 250, default: '' },
+  coverWidth: Number,
+  coverHeight: Number,
+  coverThumbnailWidth: Number,
+  coverThumbnail: { type: String, default: '' },
+  publishedAt: { type: Date, default: null },
+  revision: { type: Number, default: 0 },
+  editorialRevision: { type: String, default: '' },
   readingTime: {
     type: Number,
     default: 0
@@ -57,8 +71,10 @@ blogSchema.pre('save', function() {
 // from Mongoose (defined both via field option and schema.index()).
 // We rely on the field-level `unique: true` so remove the separate index() call.
 blogSchema.index({ author: 1 });
+blogSchema.index({ imageFiles: 1 });
 blogSchema.index({ tags: 1 });
 blogSchema.index({ createdAt: -1 });
+blogSchema.index({ status: 1, createdAt: -1, _id: -1 });
 
 // Add text index for search functionality
 blogSchema.index({

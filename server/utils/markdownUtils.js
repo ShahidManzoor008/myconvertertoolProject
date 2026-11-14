@@ -29,7 +29,7 @@ const getMathJax = () => mathJaxPromise ||= init({
   tex: { maxBuffer: 20 * 1024, maxMacros: 1000 },
 }).catch(error => { mathJaxPromise = undefined; throw error; });
 
-const latexToImage = async (latex, display) => {
+export const latexToImage = async (latex, display) => {
   const key = `${display}:${latex}`;
   if (latexCache.has(key)) return latexCache.get(key);
   const mathJax = await getMathJax();

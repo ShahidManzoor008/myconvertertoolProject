@@ -276,7 +276,7 @@ export const blogApi = {
    * @param {number} [options.limit=9] - items per page (max 50)
    * @returns {Promise<{posts: Array, nextCursor: string|null, hasNextPage: boolean, currentPage?: number, totalPages?: number, total?: number}>}
    */
-  getPosts: ({ cursor, page, limit = 9 } = {}) => {
+  getPosts: ({ cursor, page, limit = 9, search, category, admin = false } = {}, options = {}) => {
     const params = new URLSearchParams();
     if (cursor) {
       params.set('cursor', cursor);
@@ -284,7 +284,9 @@ export const blogApi = {
       params.set('page', page);
     }
     params.set('limit', String(Math.min(limit, 50)));
-    return apiClient.get(`${API_ENDPOINTS.blog.posts}?${params.toString()}`);
+    if (search) params.set('search', search);
+    if (category) params.set('category', category);
+    return apiClient.get(`${admin ? '/api/blog/manage/posts' : API_ENDPOINTS.blog.posts}?${params.toString()}`, options);
   },
   getPost: (slug) => apiClient.get(API_ENDPOINTS.blog.post(slug)),
   uploadImage: (formData) => apiClient.upload(API_ENDPOINTS.blog.images, formData),
