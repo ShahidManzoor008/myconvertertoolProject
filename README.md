@@ -74,8 +74,8 @@ myconvertertool.com/
 
 ### 1. Clone the Repository
 ```sh
-git clone https://github.com/ShahidManzoor008/myconvertertool.com.git
-cd myconvertertool.com
+git clone https://github.com/ShahidManzoor008/myconvertertoolProject.git
+cd myconvertertoolProject
 ```
 
 ### 2. Install Dependencies
