@@ -186,6 +186,9 @@ export async function createDeployer(root, hooks = {}) {
     if (hash.digest('hex') !== digest) throw new Error('Artifact checksum mismatch');
     await fs.mkdir(directory, { mode: 0o755 });
     await execute('tar', ['--no-same-owner', '--no-same-permissions', '-xzf', archive, '-C', directory]);
+    // Tar can overwrite the destination mode with an older archive's private root.
+    // Only expose directory traversal; private runtime files retain their modes.
+    await fs.chmod(directory, 0o755);
     // Install only backend runtime packages, with native binaries for THIS host.
     await execute('npm', ['ci', '--omit=dev', '--workspace', 'server', '--include-workspace-root', '--no-audit', '--no-fund'], {
       cwd: directory,

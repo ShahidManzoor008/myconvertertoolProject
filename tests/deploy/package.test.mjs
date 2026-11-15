@@ -31,6 +31,7 @@ test('release contains exact committed source and tested output, excluding priva
   await exec('bash', [packager, sha, '123', '1', output], { cwd: repo });
   const id = `${sha}-123-1`;
   await exec('tar', ['-xzf', path.join(output, id + '.tar.gz'), '-C', extracted]);
+  assert.equal((await fs.stat(extracted)).mode & 0o777, 0o755, 'Nginx must be able to traverse the archived release root');
   assert.equal(await fs.readFile(path.join(extracted, 'server/index.js'), 'utf8'), 'committed server');
   assert.equal(await fs.readFile(path.join(extracted, 'client/dist/index.html'), 'utf8'), 'tested build');
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(extracted, 'release.json'))), { id, commit: sha });

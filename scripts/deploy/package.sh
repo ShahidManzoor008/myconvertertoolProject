@@ -12,6 +12,8 @@ test -s client/dist/404.html
 release_id="$commit-$run_id-$attempt"
 staging="$(mktemp -d)"
 trap 'rm -rf "$staging"' EXIT
+# mktemp creates mode 700; the archived root must be traversable by Nginx.
+chmod 755 "$staging"
 # Only tracked source and the tested build enter the archive: no .git, .env,
 # runtime uploads, logs, dependencies, encryption keys or rollback backups.
 git archive "$commit" | tar -x -C "$staging"
