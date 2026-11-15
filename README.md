@@ -1,157 +1,210 @@
-# MyConverterTool.com
+# MyConverterTool
 
-A full-stack web application offering a suite of free online tools for file conversion, code formatting, PDF operations, QR code generation, and more. Built with React (Vite) on the frontend and Node.js/Express on the backend. Deployed with Docker and Render.
+MyConverterTool is a monorepo web app for browser-based conversion and productivity tools. The project combines a Vite + React frontend with an Express + MongoDB backend to provide PDF workflows, text utilities, SEO tools, developer utilities, and content management features in one platform.
 
----
+## Overview
 
-## Features
+The application is designed as a free online utility website for creators, developers, marketers, and admin users. It includes document conversion tools, file compression, metadata previewing, formatting utilities, blog content workflows, and an authenticated admin experience.
 
-### 🛠️ Conversion & Utility Tools
-- **File Converters:** PDF, DOCX, images, and more
-- **Code Formatters:** JSON, Markdown, Minify/Beautify, etc.
-- **Text Tools:** Case conversion, URL encoding/decoding, base64, etc.
-- **QR Code Generator**
-- **SEO Tools**
-- **Batch Processing**
-- **Blog & Documentation**
+## Current feature set
 
-### 📄 PDF Tools
-- Merge, split, compress, and convert PDFs
-- PDF annotation and editing
-- Batch PDF downloads
+### PDF and document tools
+- Excel to PDF conversion and PDF to Excel extraction
+- Multi-format document conversion to PDF
+- PDF viewing and browser-based processing
+- PDF compression and image optimization
+- Markdown to DOCX generation for documentation and notes
 
-### 👤 User & Admin
-- User authentication (login/signup)
-- Admin dashboard: analytics, posts, users, settings
+### Text and developer utilities
+- JSON formatting, validation, and minification
+- Base64 encoding and decoding
+- URL encoding and decoding
+- HTML, CSS, JS, and JSON beautify/minify workflows
+- Text case conversion
+- Word, character, sentence, and paragraph counting
 
----
+### SEO and marketing tools
+- QR code generation for URLs, Wi-Fi, contacts, and events
+- Meta title/description and Open Graph preview
+- SEO-friendly page and content tooling
 
-## Tech Stack
+### Content and account features
+- Blog listing and article pages
+- User registration/login flows
+- Profile management
+- Admin dashboard and blog management workflows
+- AI-assisted blog writing support behind server-side config
 
-- **Frontend:** React, Vite, Tailwind CSS, Framer Motion, Lucide React
-- **Backend:** Node.js, Express
-- **Database:** MongoDB with Mongoose; users, sessions, blog posts, and conversion metadata.
-- **Deployment:** Docker, Render
-- **Linting:** ESLint, PropTypes
+## Tech stack
 
----
+### Frontend
+- React 19
+- Vite
+- Tailwind CSS
+- React Router
+- Framer Motion
+- Lucide and React Icons
 
-## Project Structure
+### Backend
+- Node.js
+- Express 5
+- MongoDB with Mongoose
+- JWT-based authentication
+- Multer for uploads
+- Structured API routes and middleware
 
+### Processing libraries
+- pdf-lib
+- sharp
+- puppeteer
+- js-beautify
+- markdown-it
+- @turbodocx/html-to-docx
+- qrcode.react
+
+### Testing and tooling
+- Vitest for frontend tests
+- Jest for server-side tests
+- Turbo for monorepo orchestration
+- ESLint
+
+## Repository structure
+
+```text
+myconvertertoolProject/
+├── client/                   # React frontend
+│   ├── src/                  # App pages, components, hooks, routes, data
+│   ├── public/              # Static assets
+│   ├── .env.example         # Client env template
+│   ├── package.json         # Frontend scripts and dependencies
+│   └── vite.config.js
+├── server/                   # Express backend
+│   ├── controllers/         # Route handlers
+│   ├── middleware/          # Auth, validation, request handling
+│   ├── models/              # MongoDB schemas
+│   ├── routes/              # API endpoints
+│   ├── scripts/             # Seed/reset/admin utilities
+│   ├── tests/               # Jest and Node test suites
+│   ├── .env.example         # Backend env template
+│   └── package.json
+├── scripts/                  # Shared build and helper scripts
+├── docs/                     # Deployment and operational notes
+├── tests/                    # Additional project-level tests
+├── package.json              # Root workspace scripts
+├── turbo.json                # Turbo task configuration
+├── render.yaml               # Render deployment config
+├── README.md                 # Project documentation
+├── TESTING.md                # Local testing and environment guidance
+├── DEPLOYMENT_REPORT.md      # Deployment notes
+└── package-lock.json
 ```
-myconvertertool.com/
-├── client/           # Frontend (React)
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # App pages (tools, blog, admin, etc.)
-│   │   ├── context/      # React context (auth, etc.)
-│   │   ├── data/         # Static data (blogposts, navigation)
-│   │   ├── utils/        # Utilities (SEO, helpers)
-│   │   └── ...
-│   ├── public/       # Static assets
-│   ├── index.html
-│   ├── package.json
-│   └── ...
-├── server/           # Backend (Node.js/Express)
-│   ├── controllers/  # Route controllers
-│   ├── middleware/   # Auth, validation
-│   ├── models/       # Data models
-│   ├── routes/       # API routes
-│   ├── uploads/      # File uploads
-│   ├── package.json
-│   └── ...
-└── README.md         # Project documentation
-```
 
----
+## Requirements
 
-## Getting Started
-
-### Prerequisites
-- Node.js 24.9+ (24.x)
+Before running the app locally, make sure you have:
+- Node.js 24.x
 - npm
-- Ghostscript and LibreOffice for PDF compression and document conversion features
+- MongoDB running locally or a MongoDB Atlas connection string
+- Optional PDF tooling dependencies for conversion/compression workflows:
+  - Ghostscript
+  - LibreOffice
 
-### 1. Clone the Repository
-```sh
+## Local setup
+
+### 1. Clone the repository
+
+```bash
 git clone https://github.com/ShahidManzoor008/myconvertertoolProject.git
 cd myconvertertoolProject
 ```
 
-### 2. Install Dependencies
-Use the root workspace lockfile (do not install client/server independently):
-```sh
-PUPPETEER_SKIP_DOWNLOAD=true CYPRESS_INSTALL_BINARY=0 npm ci
-```
-See [TESTING.md](TESTING.md) for local test database isolation and required browser/LibreOffice dependencies.
+### 2. Install dependencies
 
-### 3. Development
-#### Start Client (React)
-```sh
-cd client
+Use the workspace install from the repo root:
+
+```bash
+npm install
+```
+
+### 3. Configure environment variables
+
+Copy the provided templates and update values for your environment:
+
+```bash
+cp client/.env.example client/.env.local
+cp server/.env.example server/.env
+```
+
+Key values to configure:
+- `server/.env`: MongoDB URL, JWT secret, frontend URL, Google OAuth client ID, SMTP settings, and optional Gemini AI blog settings
+- `client/.env.local`: API base URL and optional ad config
+
+### 4. Start the application
+
+From the project root:
+
+```bash
 npm run dev
 ```
-#### Start Server (Node.js)
-```sh
-cd ../server
-npm start
+
+This runs the frontend and backend together in development mode.
+
+## Useful scripts
+
+Run from the project root:
+
+```bash
+npm run dev         # start client + server together
+npm run build       # production build for the monorepo
+npm run lint       # lint all workspaces
+npm test           # run workspace test scripts
 ```
 
-### 4. Linting & Code Quality
-#### Run ESLint (client)
-```sh
-cd client
-npm run lint
+Run frontend or backend tasks directly if needed:
+
+```bash
+npm --prefix client run dev
+npm --prefix client run build
+npm --prefix client run test
+
+npm --prefix server run dev
+npm --prefix server run test
+npm --prefix server run test:blog
+npm --prefix server run test:markdown
+npm --prefix server run test:spreadsheet
 ```
 
----
+## Deployment notes
 
-## Deployment
+The project includes deployment-related config for hosting and release workflows, including Render configuration and deployment docs. Recommended production hosting includes:
+- a Node.js service for the API
+- a static frontend build for the React app
+- MongoDB for application data
+- system-level PDF utilities such as Ghostscript and LibreOffice
+- environment variables managed securely in the host platform
 
-### Production host
-The production setup uses Nginx to serve `client/dist` and proxy API requests to
-the Node.js service managed by PM2. MongoDB runs as a host service. Install
-Ghostscript and LibreOffice on the host for PDF compression and document
-conversion features.
+See the docs directory for operational guidance and deployment reports.
 
-GitHub Actions can test, build and deploy pushes to `main` using versioned
-releases, candidate readiness checks and rollback. See the
-[setup and recovery guide](docs/github-actions-deployment.md). Automatic deployment
-stays disabled until the host is bootstrapped and `DEPLOY_ENABLED=true` is set.
+## Security and configuration notes
 
----
-
-## Configuration
-- **API endpoints:** See `server/routes/`
-- **Auth config:** See `client/src/config/auth.config.js`
-- **Environment variables:** Create a `.env` file in both the `client` and `server` directories based on the `.env.example` files (if they exist) or the required environment variables for each part of the application.
-
----
+- Keep `JWT_SECRET` and other sensitive values in environment variables, not in source control.
+- The server includes Google Identity Services authentication configuration and optional AI blog generation settings.
+- Admin and AI features should remain disabled until explicitly configured and authorized.
 
 ## Contributing
-1. Fork the repo
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes
-4. Push to your branch
-5. Open a Pull Request
 
----
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes and keep them focused.
+4. Validate relevant tests or build checks.
+5. Open a pull request with a clear summary.
 
 ## License
-[MIT](LICENSE)
 
----
-
-## Credits
-- [Vite](https://vitejs.dev/)
-- [React](https://react.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [Lucide React](https://lucide.dev/)
-
----
+This project currently uses the ISC license package metadata. If the repository policy changes, update the license file and this section accordingly.
 
 ## Contact
-- **Project:** https://myconvertertool.com
-- **Author:** [Shahid Manzoor](https://github.com/ShahidManzoor008)
-- **Email:** ShahidManzoor6293@gmail.com
+
+- Project site: https://myconvertertool.com
+- GitHub: https://github.com/ShahidManzoor008
+- Author: Shahid Manzoor
