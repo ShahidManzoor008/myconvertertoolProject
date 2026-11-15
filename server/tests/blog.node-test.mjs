@@ -103,3 +103,24 @@ test('publishing rejects oversized fields, unsafe cover URLs, and new raw HTML d
     await request(app).post('/api/blog/posts').set('Cookie', admin).send(fields).expect(400);
   }
 });
+
+test('AI test drafts can be edited, saved privately and explicitly published with provenance retained', async () => {
+  const generated = await Blog.create({ title: 'AI test guide', slug: 'ai-test-guide', content: markdown, status: 'draft', contentFormat: 'markdown', revision: 1,
+    author: 'MyConverterTool Team', authorType: 'Organization', coverImage: image.url, coverThumbnail: image.thumbnail, coverAlt: 'A blue cover',
+    coverWidth: image.width, coverHeight: image.height, coverThumbnailWidth: image.thumbnailWidth,
+    aiWriter: { generationId: 'test-generation', topicKey: 'test-topic', sources: [{ title: 'Source', url: 'https://example.com/news' }] } });
+  const endpoint = '/api/blog/posts/' + generated.slug;
+  await request(app).get(endpoint).expect(404);
+  const loaded = (await request(app).get('/api/blog/manage/posts/' + generated.slug).set('Cookie', admin).expect(200)).body;
+  const fields = ['title', 'content', 'excerpt', 'author', 'authorType', 'category', 'tags', 'coverImage', 'coverThumbnail', 'coverWidth', 'coverHeight', 'coverThumbnailWidth', 'coverAlt', 'status', 'contentFormat', 'revision'];
+  const payload = Object.fromEntries(fields.map(key => [key, loaded[key]]));
+  payload.content += '\n\nAn administrator verified and improved this explanation.';
+  const edited = (await request(app).put(endpoint).set('Cookie', admin).send(payload).expect(200)).body;
+  assert.equal(edited.revision, 2); await request(app).get(endpoint).expect(404);
+  await request(app).put(endpoint).set('Cookie', member).send({ ...payload, status: 'published', revision: 2 }).expect(403);
+  await request(app).put(endpoint).set('Cookie', admin).send({ ...payload, status: 'published' }).expect(409);
+  const released = (await request(app).put(endpoint).set('Cookie', admin).send({ ...payload, status: 'published', revision: edited.revision }).expect(200)).body;
+  assert.ok(released.publishedAt); assert.equal(released.aiWriter.generationId, 'test-generation'); assert.equal(released.aiWriter.sources[0].url, 'https://example.com/news');
+  assert.match((await request(app).get(endpoint).expect(200)).body.content, /administrator verified/);
+  await request(app).delete(endpoint).set('Cookie', admin).expect(200);
+});

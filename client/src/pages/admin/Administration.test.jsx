@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { beforeEach, afterEach, expect, test, vi } from 'vitest';
 import AdminLayout from '../../components/layouts/AdminLayout';
@@ -95,7 +95,7 @@ test('blog selection clears on search and select-all only includes matching post
   apiClient.delete.mockResolvedValue({});
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   renderPage(<BlogManagement />);
-  await screen.findByText('First post');
+  await waitFor(() => expect(within(screen.getByRole('table')).getByText('First post')).toBeInTheDocument());
   fireEvent.click(screen.getByRole('checkbox', { name: 'Select all matching posts' }));
   expect(screen.getByRole('button', { name: 'Delete Selected' })).toBeInTheDocument();
   fireEvent.change(screen.getByRole('textbox', { name: 'Search posts' }), { target: { value: 'Second' } });
@@ -104,4 +104,14 @@ test('blog selection clears on search and select-all only includes matching post
   fireEvent.click(screen.getByRole('button', { name: 'Delete Selected' }));
   await waitFor(() => expect(apiClient.delete).toHaveBeenCalledTimes(1));
   expect(apiClient.delete).toHaveBeenCalledWith('/api/blog/posts/two');
+});
+
+
+test('mobile drafts expose a direct review and publish action', async () => {
+  blogApi.getPosts.mockResolvedValue({ posts: [{ _id: 'ai', slug: 'ai-test-draft', title: 'AI test draft', excerpt: 'Review this draft.', author: 'Team', status: 'draft', createdAt: new Date().toISOString() }], hasNextPage: false });
+  renderPage(<BlogManagement />);
+  const cards = screen.getByLabelText('Articles');
+  const action = await within(cards).findByRole('link', { name: 'Review & publish' });
+  expect(action).toHaveAttribute('href', '/admin/posts/ai-test-draft/edit');
+  expect(within(cards).getByRole('link', { name: 'AI test draft' })).toHaveAttribute('href', action.getAttribute('href'));
 });

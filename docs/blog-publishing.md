@@ -157,3 +157,5 @@ With a dedicated local test MongoDB running on port 27019, the backend suite is:
 MONGO_URI_TEST=mongodb://127.0.0.1:27019/blog_feature_test \
 BLOG_MEDIA_DIR="$HOME/.cache/mct-blog-test-media" npm run test:blog --workspace=server
 ```
+
+AI test drafts use the same article editor as other drafts. In Admin → Blog Posts, mobile cards show **Review & publish**; desktop titles and action links open the editor. Save draft and Publish article are available above the content editor. Publishing is an explicit admin action and keeps the AI sources and provenance. Failed article loads show a retry action without exposing an empty editable replacement. Generating a test blog never publishes it automatically.

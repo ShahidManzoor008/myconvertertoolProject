@@ -17,11 +17,12 @@ export default function EditBlogPost() {
   const [preview, setPreview] = useState({ html: '', readingTime: 1 }), [previewing, setPreviewing] = useState(false), [tab, setTab] = useState('write');
   const [recovery, setRecovery] = useState(null);
   const editor = useRef(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const key = `mct-blog-draft:${user?._id || user?.id || 'admin'}:${slug || 'new'}`;
   const dirty = !!saved && JSON.stringify(form) !== saved;
   useEffect(() => {
     let active = true;
-    setLoading(!!slug); setError('');
+    setLoading(!!slug); setError(''); setSaved(''); setRecovery(null);
     const load = async () => {
       try {
         const data = slug ? await apiClient.get(`/api/blog/manage/posts/${encodeURIComponent(slug)}`) : { ...empty, author: user?.name || 'MyConverterTool Team' };
@@ -36,7 +37,7 @@ export default function EditBlogPost() {
       finally { if (active) setLoading(false); }
     };
     load(); return () => { active = false; };
-  }, [slug, key, user?.name]);
+  }, [slug, key, user?.name, loadAttempt]);
   useEffect(() => {
     if (loading) return;
     const controller = new AbortController();
@@ -100,8 +101,15 @@ export default function EditBlogPost() {
     finally { setSaving(false); }
   };
   if (loading) return <p role="status">Loading article…</p>;
+  if (!saved && error) return <div className="space-y-3"><p role="alert">{error}</p><button type="button" onClick={() => setLoadAttempt(value => value + 1)} className="min-h-11 px-3 font-semibold text-blue-700 underline dark:text-blue-300">Try loading again</button><Link to="/admin/posts" className="inline-flex min-h-11 items-center px-3 underline">Back to articles</Link></div>;
   return <div className="space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-semibold">{slug ? 'Edit article' : 'New article'}</h1><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Write Markdown or paste an AI draft, review the preview, then publish.</p></div><Link to="/admin/posts" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 dark:text-blue-300">Back to articles</Link></div>
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800" aria-label="Article actions">
+      <span className="mr-auto text-sm capitalize">{form.status} · {dirty ? 'Unsaved changes' : 'Saved'}</span>
+      <button type="button" disabled={saving || uploading || !saved} onClick={() => save('draft')} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold disabled:opacity-50 dark:border-slate-600">Save draft</button>
+      <button type="button" disabled={saving || uploading || !saved} onClick={() => save('published')} className="min-h-11 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : form.status === 'published' ? 'Update published article' : 'Publish article'}</button>
+      {slug && form.status === 'published' && !dirty && <a href={`/blog/${encodeURIComponent(slug)}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-blue-700 underline dark:text-blue-300">View published article</a>}
+    </div>
     {error && <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">{error}</p>}
     {notice && <p role="status" className="rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950/30 dark:text-green-200">{notice}</p>}
     {recovery && <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">An unsaved copy is available in this tab. <button type="button" onClick={() => { setForm({ ...form, ...recovery }); setRecovery(null); }} className="min-h-11 px-3 font-semibold underline">Restore copy</button><button type="button" onClick={() => { setRecovery(null); try { sessionStorage.removeItem(key); } catch { /* Optional storage. */ } }} className="min-h-11 px-3 underline">Discard copy</button></div>}
@@ -133,8 +141,6 @@ export default function EditBlogPost() {
           <p className="text-xs text-slate-500">JPEG, PNG, or WebP · up to 8 MB. Responsive WebP sizes are created automatically.</p>
           <label className="block text-sm font-medium">Image description<input name="coverAlt" value={form.coverAlt} onChange={change} maxLength={250} className={inputClass} placeholder="Describe what the picture shows" /></label>
           {form.coverImage && <button type="button" onClick={() => setForm(current => ({ ...current, coverImage: '', coverThumbnail: '', coverWidth: 0, coverHeight: 0, coverThumbnailWidth: 0, coverAlt: '' }))} className="min-h-11 text-sm font-semibold text-red-700 dark:text-red-300">Remove featured image</button>}
-          <button type="button" disabled={saving || uploading || loading || !saved} onClick={() => save('draft')} className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-slate-600">{saving ? 'Saving…' : 'Save draft'}</button>
-          <button type="button" disabled={saving || uploading || loading || !saved} onClick={() => save('published')} className="min-h-11 w-full rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{form.status === 'published' ? 'Update published article' : 'Publish article'}</button>
           {slug && form.status !== 'archived' && <button type="button" disabled={saving || uploading} onClick={() => { if (window.confirm('Archive this article? It will be removed from the public blog.')) save('archived'); }} className="min-h-11 w-full text-sm text-slate-600 dark:text-slate-300">Archive article</button>}
           {slug && <p className="break-all text-xs text-slate-500">URL: /blog/{slug}. Changing the title keeps this address.</p>}
           <p className="text-xs leading-5 text-slate-500">Save draft stores the article on the server and removes it from the public blog. An unsaved recovery copy stays in this browser tab.</p>

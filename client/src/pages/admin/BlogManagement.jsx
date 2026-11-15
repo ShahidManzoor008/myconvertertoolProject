@@ -89,6 +89,12 @@ const BlogManagement = () => {
     (post.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const editPath = post => `/admin/posts/${encodeURIComponent(post.slug)}/edit`;
+  const statusClass = status => status === 'draft'
+    ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200'
+    : status === 'archived' ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+
   if (error) {
     return (
       <div className="text-center text-red-600 dark:text-red-400 p-4">
@@ -140,8 +146,22 @@ const BlogManagement = () => {
         </div>
       </div>
 
+      <p className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">Drafts are private. Open an article to edit its content, preview it, and publish when ready.</p>
+      <div className="space-y-3 p-4 lg:hidden" aria-label="Articles">
+        {loading ? <p role="status">Loading posts...</p> : filteredPosts.length === 0 ? <p>No posts found</p> : filteredPosts.map(post => <article key={post._id} className="min-w-0 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+          <div className="flex items-start gap-3">
+            <input type="checkbox" aria-label={`Select ${post.title}`} checked={selectedPosts.includes(post._id)} onChange={event => setSelectedPosts(current => event.target.checked ? [...current, post._id] : current.filter(id => id !== post._id))} className="mt-1 h-5 w-5 shrink-0 rounded border-gray-300" />
+            <div className="min-w-0 flex-1"><span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${statusClass(post.status)}`}>{post.status || 'published'}</span>
+              <h2 className="mt-2 break-words text-base font-semibold"><Link to={editPath(post)} className="hover:underline">{post.title}</Link></h2>
+              <p className="mt-2 break-words text-sm text-slate-500 dark:text-slate-400">{post.excerpt}</p>
+              <p className="mt-2 text-xs text-slate-500">{post.author} · {new Date(post.createdAt).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2"><Link to={editPath(post)} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white">{post.status === 'draft' ? 'Review & publish' : 'Edit article'}</Link><button type="button" aria-label={`Delete ${post.title}`} onClick={() => handleDelete(post)} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-red-700 dark:border-slate-600 dark:text-red-300">Delete</button></div>
+        </article>)}
+      </div>
       {/* Posts Table */}
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto lg:block">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -214,7 +234,7 @@ const BlogManagement = () => {
                       )}
                       <div>
                         <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {post.title}
+                          <Link to={editPath(post)} className="hover:underline">{post.title}</Link>
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">
                           {post.excerpt}
@@ -229,18 +249,18 @@ const BlogManagement = () => {
                     {new Date(post.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                    <span className={`px-2 py-1 text-xs rounded-full ${statusClass(post.status)}`}>
                       {post.status || 'published'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <Link
-                        to={`/admin/posts/${post.slug}/edit`}
+                        to={editPath(post)}
                         aria-label={`Edit ${post.title}`}
                         className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:bg-blue-900/30"
                       >
-                        <span aria-hidden="true" className="material-icons">edit</span>
+                        <span className="text-sm font-semibold whitespace-nowrap">{post.status === 'draft' ? 'Review & publish' : 'Edit'}</span>
                       </Link>
                       <button aria-label={`Delete ${post.title}`}
                         onClick={() => handleDelete(post)}

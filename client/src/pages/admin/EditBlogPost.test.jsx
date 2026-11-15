@@ -38,3 +38,22 @@ test('preview comes from the server renderer and does not replace the Markdown s
   expect(apiClient.post).toHaveBeenCalledWith('/api/blog/preview', { content: article.content, contentFormat: 'markdown' }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
   expect(screen.getByLabelText('Markdown')).toHaveValue(article.content);
 });
+
+test('AI draft can be edited, saved privately, then published with the latest revision', async () => {
+  apiClient.get.mockResolvedValue({ ...article, authorType: 'Organization', revision: 1 });
+  apiClient.put.mockImplementation(async (_path, payload) => ({ ...article, ...payload, revision: payload.revision + 1 }));
+  setup('/admin/posts/saved-article/edit'); await screen.findByDisplayValue(article.title);
+  fireEvent.change(screen.getByLabelText('Markdown'), { target: { value: '## Reviewed AI draft\n\nAn administrator checked and improved this article before publication.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' })); await screen.findByText('Draft saved. It is not public.');
+  expect(apiClient.put).toHaveBeenLastCalledWith('/api/blog/posts/saved-article', expect.objectContaining({ revision: 1, status: 'draft', authorType: 'Organization' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Publish article' })); await screen.findByText('Article published.');
+  expect(apiClient.put).toHaveBeenLastCalledWith('/api/blog/posts/saved-article', expect.objectContaining({ revision: 2, status: 'published', content: expect.stringContaining('Reviewed AI draft') }));
+  expect(screen.getByRole('link', { name: 'View published article' })).toHaveAttribute('href', '/blog/saved-article');
+});
+test('failed draft loading offers retry and prevents saving a blank replacement', async () => {
+  apiClient.get.mockRejectedValueOnce(new Error('Article could not be loaded.')).mockResolvedValue(article);
+  setup('/admin/posts/saved-article/edit'); expect(await screen.findByRole('alert')).toHaveTextContent('could not be loaded');
+  expect(screen.queryByRole('button', { name: 'Publish article' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Try loading again' })); await screen.findByDisplayValue(article.title);
+  expect(screen.getByRole('button', { name: 'Publish article' })).toBeEnabled();
+});
