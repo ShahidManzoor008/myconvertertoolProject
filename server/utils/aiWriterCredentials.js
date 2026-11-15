@@ -10,8 +10,9 @@ const modelPattern = /^gemini-[a-z0-9.-]+$/;
 const fingerprint = key => key ? createHash('sha256').update(key).digest('hex').slice(0, 8) : '';
 const problem = (message, status = 400) => Object.assign(new Error(message), { status });
 const aad = Buffer.from('myconvertertool:gemini:v1');
+export const apiKeyInput = z.string().trim().max(200).refine(value => value === '' || /^[A-Za-z0-9_.-]{20,200}$/.test(value), 'Enter a Gemini API key using letters, numbers, dots, underscores or dashes.');
 export const providerInput = z.object({
-  apiKey: z.string().trim().max(200).refine(value => value === '' || /^[A-Za-z0-9_-]{20,200}$/.test(value), 'Enter a valid Gemini API key.').optional(),
+  apiKey: apiKeyInput.optional(),
   model: z.string().trim().max(100).regex(modelPattern, 'Enter a Gemini model ID, for example gemini-2.5-flash.'),
   billingMode: z.enum(['free', 'paid']), requestsEnabled: z.boolean(), revision: z.number().int().nonnegative(),
 }).strict();
@@ -58,7 +59,7 @@ function environmentProvider() {
 export async function getWriterCredentials() {
   const stored = await AIWriterProvider.findById('gemini').select('+encryptedKey').lean();
   const provider = stored ? { ...stored, apiKey: stored.encryptedKey ? await decrypt(stored.encryptedKey) : '', source: 'admin' } : environmentProvider();
-  if (provider.apiKey && !/^[A-Za-z0-9_-]+$/.test(provider.apiKey)) throw problem('The configured Gemini API key has an invalid format. Replace it in the admin panel.');
+  if (provider.apiKey && !/^[A-Za-z0-9_.-]+$/.test(provider.apiKey)) throw problem('The configured Gemini API key has an invalid format. Replace it in the admin panel.');
   return provider;
 }
 export async function getWriterProviderStatus() {

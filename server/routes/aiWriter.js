@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { getWriterProviderStatus } from '../utils/aiWriterCredentials.js';
 import { cancelWriterJob, enqueueWriter, getWriterSettings, pauseWriter, updateWriterSettings, saveWriterProvider, removeWriterProvider, testWriterConnection, writerTick } from '../utils/aiWriterService.js';
 import logger from '../utils/logger.js';
+import { discoverWriterModels } from '../utils/aiWriterModels.js';
 
 const router = express.Router();
 router.use(adminAuth, (_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
@@ -25,9 +26,13 @@ router.get('/', handle(async (_req, res) => {
     AIWriterJob.find().sort({ createdAt: -1 }).limit(30).select('-settings -owner -leaseUntil -brief').populate('article', 'slug title status').lean(),
     AIWriterMeter.findById(`month:${new Date().toISOString().slice(0, 7)}`).lean(),
   ]);
-  res.json({ settings, jobs, usage: usage || { requests: 0, tokens: 0 }, provider: await getWriterProviderStatus(), serverMonthlyRequestLimit: Number(process.env.GEMINI_WRITER_MAX_MONTHLY_REQUESTS || 90) });
+  const provider = await getWriterProviderStatus();
+  const period = new Date().toISOString().slice(0, 7);
+  const byModel = provider.keyFingerprint ? await AIWriterMeter.find({ kind: 'generation', period, keyFingerprint: provider.keyFingerprint }).select('-_id model requests tokens promptTokens outputTokens thinkingTokens cachedTokens detailedRequests failures rateLimited lastHttpStatus lastRequestAt').sort({ lastRequestAt: -1 }).limit(100).lean() : [];
+  res.json({ settings, jobs, usage: usage || { requests: 0, tokens: 0 }, provider, serverMonthlyRequestLimit: Number(process.env.GEMINI_WRITER_MAX_MONTHLY_REQUESTS || 90), usageReport: { period, scope: 'portal', googleProjectQuotaAvailable: false, byModel } });
 }));
 router.put('/provider', handle(async (req, res) => { res.json(await saveWriterProvider(req.body)); }));
+router.post('/provider/models', handle(async (req, res) => { res.json(await discoverWriterModels(req.body)); }));
 router.post('/provider/disconnect', handle(async (req, res) => {
   const input = z.object({ revision: z.number().int().nonnegative() }).strict().parse(req.body);
   res.json(await removeWriterProvider(input.revision));

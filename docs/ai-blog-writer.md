@@ -32,7 +32,8 @@ processes sequentially after the start hour, and does not backfill missed days.
 ## Connect Gemini in admin
 
 1. Open **Admin → AI Writer → Gemini connection**.
-2. Paste the Google AI Studio API key, choose a JSON-capable Gemini model ID,
+2. Paste the Google AI Studio API key. The portal automatically loads models from
+   Google, including paginated results. Choose a compatible model from the selector,
    and record whether the Google project uses free quota or has billing enabled.
 3. Enable **Allow Gemini API writing** and save. Saving never enables the daily
    schedule; it switches scheduling off and cancels unfinished work.
@@ -228,3 +229,54 @@ requests were created by the release.
 Admins can now configure Gemini in **Admin → AI Writer**, test model access and
 write a private test draft. Real Google-key verification remains an admin setup
 step; automatic writing stays disabled until deliberately enabled.
+
+## Authorization keys, model discovery and usage
+
+Both standard keys and the newer `AQ.` authorization-key format are accepted.
+The earlier validator rejected dots before a Google request was attempted; that
+local validation bug is corrected. No prefix is assumed when authenticating.
+Key characters remain bounded to a safe ASCII token alphabet, including dots.
+
+Entering a key automatically loads the Google model catalog after a short pause,
+without saving the key. Saved connections load their catalog automatically on page
+open. The selector shows every returned model and enables general Gemini text
+models for blogs; embeddings, image/audio and other specialized models are listed
+with an explanation. Listing a model does not confirm free-tier or generation
+quota access. Use Write test blog to verify the selected model's full workflow.
+
+**Refresh models** bypasses the ten-minute cache. The cache is bounded to eight
+key digests, stores only model metadata, and never contains a raw API key. Concurrent
+lookups for the same key share a request. Two distinct lookups may run at once.
+There are at most 20 uncached lookups per UTC day; each Google page request also
+counts toward the existing monthly API ceiling. No generation tokens are consumed
+by catalog lookup. Client cancellation discards stale responses after key changes;
+server requests remain bounded by timeout and size/pagination limits.
+
+Usage displays scope explicitly: the current UTC month's requests and tokens
+observed by this portal. New generation responses record Google's actual input,
+output, thinking, cached and total token counts. Cached input overlaps prompt
+tokens. Earlier totals may have no breakdown. Metadata calls are counted separately
+within the API request total. Per-model counters for the connected key include
+requests, tokens, failures and the latest quota/rate-limit response. Returned usage
+is retained even when Google truncates a generation. Interrupted calls may still
+be billed without returning usage, so local tracking is not an invoice.
+
+The Models API returns capabilities/context limits, not a remaining balance. Google
+project quotas apply across keys and applications, so the portal does not invent
+project-wide remaining tokens or credits. Admin links open the AI Studio usage and
+rate-limit dashboards. Cloud Monitoring project metrics require additional OAuth
+permissions/project configuration beyond this Gemini-key integration.
+
+References: [Google key types](https://ai.google.dev/gemini-api/docs/api-key),
+[model pagination](https://ai.google.dev/api/models#method:-models.list),
+[project quotas](https://ai.google.dev/gemini-api/docs/rate-limits).
+
+Validation for the model-discovery update: 41 backend and 11 frontend tests passed.
+The production-mode frontend build and desktop/mobile browser flows at 1440, 390
+and 320 pixels passed automatic discovery, manual refresh, model switching and
+portal-usage display. A read-only live Google catalog check returned 64 models. A
+minimal generation using `gemini-3.1-flash-lite` succeeded with eight total tokens.
+The diagnostic credential was kept in memory and was not saved to the portal or
+source code. Google may list models that subsequently reject a generation request;
+HTTP 404 now identifies an unavailable model and directs admins to refresh/select
+another model, rather than implying the API key is invalid.

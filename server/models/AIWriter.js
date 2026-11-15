@@ -32,7 +32,11 @@ const jobSchema = new mongoose.Schema({
   topicKey: String,
   article: { type: mongoose.Schema.Types.ObjectId, ref: 'Blog' },
   reasons: [String],
-  usage: { requests: { type: Number, default: 0 }, tokens: { type: Number, default: 0 } },
+  usage: {
+    requests: { type: Number, default: 0 }, tokens: { type: Number, default: 0 },
+    promptTokens: { type: Number, default: 0 }, outputTokens: { type: Number, default: 0 },
+    thinkingTokens: { type: Number, default: 0 }, cachedTokens: { type: Number, default: 0 }, detailedRequests: { type: Number, default: 0 },
+  },
   model: String,
   completedAt: Date,
   expiresAt: Date,
@@ -44,9 +48,15 @@ const meterSchema = new mongoose.Schema({
   _id: String,
   requests: { type: Number, default: 0 },
   tokens: { type: Number, default: 0 },
+  metadataRequests: { type: Number, default: 0 },
+  promptTokens: { type: Number, default: 0 }, outputTokens: { type: Number, default: 0 },
+  thinkingTokens: { type: Number, default: 0 }, cachedTokens: { type: Number, default: 0 }, detailedRequests: { type: Number, default: 0 },
+  kind: String, model: String, period: String, keyFingerprint: String,
+  failures: { type: Number, default: 0 }, rateLimited: { type: Number, default: 0 }, lastHttpStatus: Number, lastRequestAt: Date,
   expiresAt: Date,
 });
 meterSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+meterSchema.index({ kind: 1, period: 1, keyFingerprint: 1 });
 
 // One database-backed lock fences publications and prevents overlapping workers.
 const lockSchema = new mongoose.Schema({ _id: String, owner: String, until: Date });

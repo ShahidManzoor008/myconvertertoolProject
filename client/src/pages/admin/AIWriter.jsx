@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../utils/apiClient';
 import GeminiConnection from '../../components/admin/GeminiConnection';
+import AIWriterUsage from '../../components/admin/AIWriterUsage';
 
 const endpoint = '/api/ai-writer';
 const inputClass = 'mt-1 block min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900';
@@ -108,6 +109,7 @@ export default function AIWriter() {
         <p className="mt-2 text-sm">This month (UTC): <strong>{data.usage.requests}</strong> API requests · {data.usage.tokens.toLocaleString()} tokens</p>
         <p className="mt-2 text-xs text-slate-500">Request ceiling: {Math.min(data.settings.monthlyRequestLimit, data.serverMonthlyRequestLimit)} per month. Failed requests count. This is a usage limit, not a dollar budget; set billing and quotas in your Google project. Current billing mode: {data.provider.billingMode}.</p>
       </section>
+      <AIWriterUsage usage={data.usage} report={data.usageReport} limit={Math.min(data.settings.monthlyRequestLimit, data.serverMonthlyRequestLimit)} />
       <form onSubmit={save} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-800"><fieldset disabled={busy || providerBusy} className="min-w-0 space-y-5">
         <div><h2 className="text-lg font-semibold">Your editorial instructions</h2><p className="mt-1 text-sm text-slate-500">These apply to every run. Saving any change cancels queued and unfinished work. Review any unsaved one-time brief before leaving this page.</p></div>
         <label className="block text-sm font-medium">Topics to cover<textarea className={inputClass} rows={2} maxLength={2000} required value={form.topics} onChange={event => change('topics', event.target.value)} placeholder="AI launches, useful developer tools, document automation…" /></label>

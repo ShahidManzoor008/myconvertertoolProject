@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import slugify from 'slugify';
 import sharp from 'sharp';
 import { AIWriterSettings, AIWriterJob, AIWriterMeter, AIWriterLock } from '../models/AIWriter.js';
@@ -138,7 +138,7 @@ export async function reserveWriterRequest(settings, jobId) {
   try { await AIWriterMeter.updateOne({ _id: id }, { $setOnInsert: { requests: 0, expiresAt: new Date(Date.now() + 100 * 86400000) } }, { upsert: true }); } catch (error) { if (error.code !== 11000) throw error; }
   const configuredLimit = Number(process.env.GEMINI_WRITER_MAX_MONTHLY_REQUESTS || 90);
   const limit = Math.min(settings.monthlyRequestLimit, Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 90);
-  if (!await AIWriterMeter.findOneAndUpdate({ _id: id, requests: { $lt: limit } }, { $inc: { requests: 1 } })) throw fail('Monthly API request limit reached. Raise the limit deliberately or wait until next month.');
+  if (!await AIWriterMeter.findOneAndUpdate({ _id: id, requests: { $lt: limit } }, { $inc: { requests: 1, ...(!jobId ? { metadataRequests: 1 } : {}) } })) throw fail('Monthly API request limit reached. Raise the limit deliberately or wait until next month.');
   if (jobId) await AIWriterJob.updateOne({ _id: jobId }, { $inc: { 'usage.requests': 1 } });
   return id;
 }
@@ -158,10 +158,24 @@ export async function processWriterJob(job, owner, { request = geminiRequest, ge
   const call = async (prompt, writing = false) => {
     await assertCurrent(job, owner);
     const meterId = await reserveWriterRequest(job.settings, job._id);
-    const result = await request({ prompt, writing, signal: controller.signal, model, apiKey: credentials.apiKey });
-    const usage = { tokens: Math.max(0, Number(result.usage?.tokens) || 0) };
-    await AIWriterMeter.updateOne({ _id: meterId }, { $inc: usage });
-    await AIWriterJob.updateOne({ _id: job._id, owner }, { $inc: { 'usage.tokens': usage.tokens } });
+    const period = new Date().toISOString().slice(0, 7), digest = createHash('sha256').update(credentials.apiKey).digest('hex');
+    const modelMeterId = `generation:${period}:${digest}:${model}`;
+    await AIWriterMeter.updateOne({ _id: modelMeterId }, { $setOnInsert: { expiresAt: new Date(Date.now() + 100 * 86400000) }, $set: { kind: 'generation', model, period, keyFingerprint: digest.slice(0, 8), lastRequestAt: new Date() }, $inc: { requests: 1 } }, { upsert: true });
+    const recordUsage = async details => {
+      const usage = Object.fromEntries(['tokens', 'promptTokens', 'outputTokens', 'thinkingTokens', 'cachedTokens', 'detailedRequests'].map(field => [field, Number.isFinite(Number(details?.[field])) ? Math.max(0, Number(details[field])) : 0]));
+      await AIWriterMeter.updateOne({ _id: meterId }, { $inc: usage });
+      await AIWriterMeter.updateOne({ _id: modelMeterId }, { $inc: usage });
+      await AIWriterJob.updateOne({ _id: job._id, owner }, { $inc: Object.fromEntries(Object.entries(usage).map(([field, count]) => ['usage.' + field, count])) });
+    };
+    let result;
+    try { result = await request({ prompt, writing, signal: controller.signal, model, apiKey: credentials.apiKey }); }
+    catch (error) {
+      if (error.usage) await recordUsage(error.usage);
+      await AIWriterMeter.updateOne({ _id: modelMeterId }, { $inc: { failures: 1, rateLimited: error.httpStatus === 429 ? 1 : 0 }, $set: { lastHttpStatus: error.httpStatus || 0 } });
+      throw error;
+    }
+    await recordUsage(result.usage);
+    await AIWriterMeter.updateOne({ _id: modelMeterId }, { $set: { lastHttpStatus: 200 } });
     return result;
   };
   try {

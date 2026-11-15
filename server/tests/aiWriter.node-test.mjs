@@ -8,7 +8,7 @@ import request from 'supertest';
 import { mkdir, rm, readFile, stat } from 'node:fs/promises';
 import sharp from 'sharp';
 import { articleInput, assessArticle, localClock, safeSourceUrl, writerSettingsInput } from '../utils/aiWriterPolicy.js';
-import { geminiRequest, generationPrompt, checkGeminiConnection } from '../utils/geminiWriter.js';
+import { geminiRequest, generationPrompt, checkGeminiConnection, listGeminiModels, GeminiAPIError } from '../utils/geminiWriter.js';
 import { parsePublisherFeed, getPublisherSources } from '../utils/aiWriterSources.js';
 import { renderBlogListingHtml, renderArticleHtml } from '../utils/pageSeo.js';
 
@@ -26,6 +26,7 @@ const { default: Session } = await import('../models/Session.js');
 const { default: routes } = await import('../routes/aiWriter.js');
 const { getWriterSettings, updateWriterSettings, pauseWriter, enqueueWriter, cancelWriterJob, processWriterJob, writerTick, saveWriterProvider, removeWriterProvider, testWriterConnection } = await import('../utils/aiWriterService.js');
 const { getWriterCredentials, getWriterProviderStatus } = await import('../utils/aiWriterCredentials.js');
+const { discoverWriterModels, clearWriterModelCache } = await import('../utils/aiWriterModels.js');
 const app = express(); app.use(express.json()); app.use(cookieParser()); app.use('/api/ai-writer', routes);
 let admin, member;
 const models = [AIWriterSettings, AIWriterJob, AIWriterMeter, AIWriterLock, AIWriterProvider, Blog];
@@ -39,7 +40,7 @@ before(async () => {
   };
   admin = await cookie('admin'); member = await cookie('user');
 });
-beforeEach(async () => { for (const model of models) await model.deleteMany({}); });
+beforeEach(async () => { clearWriterModelCache(); for (const model of models) await model.deleteMany({}); });
 after(async () => { await mongoose.connection.dropDatabase(); await mongoose.disconnect(); await rm(process.env.BLOG_MEDIA_DIR, { recursive: true, force: true }); });
 const fields = ['enabled', 'paused', 'mode', 'articlesPerDay', 'timezone', 'hour', 'topics', 'instructions', 'excludedTopics', 'primaryDomains', 'monthlyRequestLimit', 'revision'];
 const editable = settings => Object.fromEntries(fields.map(key => [key, settings[key]]));
@@ -60,7 +61,7 @@ const mockProvider = (draft = article(), onReview) => async ({ writing }) => {
 };
 
 test('all writer controls require admin and do not expose credentials', async () => {
-  for (const [method, path] of [['get', ''], ['put', '/settings'], ['post', '/generate'], ['post', '/pause'], ['post', '/history/cleanup'], ['post', '/jobs/abc/cancel'], ['put', '/provider'], ['post', '/provider/test'], ['post', '/provider/disconnect'], ['post', '/generate-test'], ['get', '/jobs/abc']]) {
+  for (const [method, path] of [['get', ''], ['put', '/settings'], ['post', '/generate'], ['post', '/pause'], ['post', '/history/cleanup'], ['post', '/jobs/abc/cancel'], ['put', '/provider'], ['post', '/provider/test'], ['post', '/provider/models'], ['post', '/provider/disconnect'], ['post', '/generate-test'], ['get', '/jobs/abc']]) {
     await request(app)[method]('/api/ai-writer' + path).send({}).expect(401);
     await request(app)[method]('/api/ai-writer' + path).set('Cookie', member).send({}).expect(403);
   }
@@ -338,4 +339,92 @@ test('the writer uses the admin-managed key and never copies it into a job or ar
   assert.equal(calls, 2); assert.equal(await Blog.countDocuments(), 1);
   assert.ok(!JSON.stringify(await AIWriterJob.findById(job._id).lean()).includes(fakeKey));
   assert.ok(!JSON.stringify(await Blog.findOne().lean()).includes(fakeKey));
+});
+
+const aqKey = 'AQ.unit_test_authorization-key_1234567890';
+const rawModels = [
+  { name: 'models/gemini-2.5-flash', displayName: 'Gemini Flash', supportedGenerationMethods: ['generateContent'], inputTokenLimit: 1000000, outputTokenLimit: 65000 },
+  { name: 'models/gemini-2.5-pro', displayName: 'Gemini Pro', supportedGenerationMethods: ['generateContent'] },
+  { name: 'models/gemini-image-preview', displayName: 'Image model', supportedGenerationMethods: ['generateContent'] },
+  { name: 'models/embedding-001', displayName: 'Embedding', supportedGenerationMethods: ['embedContent'] },
+];
+const listed = rawModels.map(raw => ({ id: raw.name.slice(7), displayName: raw.displayName, compatible: !/image|embedding/.test(raw.name), methods: raw.supportedGenerationMethods, reason: /image|embedding/.test(raw.name) ? 'Specialized model' : '', inputTokenLimit: 1000000, outputTokenLimit: 65000 }));
+
+test('AQ authorization keys with dots are accepted, encrypted and usable by metadata requests', async () => {
+  await request(app).put('/api/ai-writer/provider').set('Cookie', admin).send(providerConfig({ apiKey: aqKey })).expect(200);
+  assert.equal((await getWriterCredentials()).apiKey, aqKey);
+  const response = await listGeminiModels({ apiKey: aqKey }, async (_url, options) => { assert.equal(options.headers['x-goog-api-key'], aqKey); return new Response(JSON.stringify({ models: rawModels })); });
+  assert.equal(response.length, 4); assert.equal(response.filter(model => model.compatible).length, 2);
+  assert.ok(!JSON.stringify(await AIWriterProvider.collection.findOne()).includes(aqKey));
+});
+test('model discovery follows all pages and separates blog models from specialized models', async () => {
+  let requests = 0, reservations = 0;
+  const result = await listGeminiModels({ apiKey: aqKey, beforeRequest: async () => { reservations++; } }, async (url, options) => {
+    const target = new URL(url); assert.equal(target.origin, 'https://generativelanguage.googleapis.com'); assert.ok(!url.includes(aqKey));
+    assert.equal(options.headers['x-goog-api-key'], aqKey); requests++;
+    return new Response(JSON.stringify(requests === 1 ? { models: rawModels.slice(0, 2), nextPageToken: 'next+/=' } : { models: rawModels.slice(2) }));
+  });
+  assert.equal(requests, 2); assert.equal(reservations, 2); assert.equal(result.length, 4);
+  assert.equal(result.find(model => model.id.includes('image')).compatible, false);
+  assert.equal(result.find(model => model.id === 'gemini-2.5-flash').inputTokenLimit, 1000000);
+});
+test('model discovery bounds pagination and never exposes provider error bodies', async () => {
+  await assert.rejects(listGeminiModels({ apiKey: aqKey }, async () => new Response(aqKey, { status: 403 })), error => /Google rejected/.test(error.message) && !error.message.includes(aqKey));
+  await assert.rejects(listGeminiModels({ apiKey: aqKey }, async () => new Response(JSON.stringify({ models: rawModels, nextPageToken: 'repeated' }))), /pagination token/);
+  await assert.rejects(listGeminiModels({ apiKey: aqKey }, async () => new Response('x'.repeat(1024 * 1024 + 1))), /oversized/);
+  await assert.rejects(geminiRequest({ apiKey: aqKey, model: 'gemini-2.5-flash', prompt: 'test' }, async () => new Response(aqKey, { status: 404 })), error => error.httpStatus === 404 && /Refresh models/.test(error.message) && !error.message.includes(aqKey));
+});
+test('model cache is key-specific, refreshable and never saves a discovered secret', async () => {
+  let calls = 0;
+  const list = async ({ beforeRequest }) => { calls++; await beforeRequest(); return listed; };
+  const first = await discoverWriterModels({ apiKey: aqKey }, { list });
+  assert.equal(first.fromCache, false); assert.equal((await discoverWriterModels({ apiKey: aqKey }, { list })).fromCache, true);
+  await discoverWriterModels({ apiKey: aqKey, refresh: true }, { list });
+  await discoverWriterModels({ apiKey: aqKey + 'different' }, { list });
+  assert.equal(calls, 3); assert.equal(await AIWriterProvider.countDocuments(), 0);
+  assert.ok(!JSON.stringify(first).includes(aqKey));
+  const meter = await AIWriterMeter.findById(`month:${new Date().toISOString().slice(0, 7)}`);
+  assert.equal(meter.requests, 3); assert.equal(meter.metadataRequests, 3);
+});
+test('saved AQ key model discovery works without requiring a selected model or writing permission', async () => {
+  await saveWriterProvider(providerConfig({ apiKey: aqKey, requestsEnabled: false }));
+  const result = await discoverWriterModels({}, { list: async ({ apiKey, beforeRequest }) => { assert.equal(apiKey, aqKey); await beforeRequest(); return listed; } });
+  assert.equal(result.compatibleCount, 2); assert.equal((await getWriterProviderStatus()).requestsEnabled, false);
+  await assert.rejects(discoverWriterModels({ apiKey: 'bad key', refresh: true }), /Gemini API key/);
+});
+test('concurrent discovery requests share one lookup and respect the monthly limit before a request', async () => {
+  let calls = 0;
+  const list = async ({ beforeRequest }) => { calls++; await beforeRequest(); return listed; };
+  await Promise.all([discoverWriterModels({ apiKey: aqKey }, { list }), discoverWriterModels({ apiKey: aqKey }, { list })]);
+  assert.equal(calls, 1);
+  await AIWriterMeter.updateOne({ _id: `month:${new Date().toISOString().slice(0, 7)}` }, { $set: { requests: 90 } });
+  await assert.rejects(discoverWriterModels({ apiKey: aqKey, refresh: true }, { list }), /Monthly API request limit/);
+});
+test('Google token metadata records input, output, reasoning and cache details accurately', async () => {
+  const response = await geminiRequest({ model: 'gemini-2.5-flash', prompt: 'test', apiKey: aqKey }, async () => new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"ok":true}' }] } }], usageMetadata: { totalTokenCount: 42, promptTokenCount: 30, candidatesTokenCount: 10, thoughtsTokenCount: 2, cachedContentTokenCount: 5 } })));
+  assert.deepEqual(response.usage, { tokens: 42, promptTokens: 30, outputTokens: 10, thinkingTokens: 2, cachedTokens: 5, detailedRequests: 1 });
+});
+test('admin usage shows portal-scoped per-model counts without inventing Google quota balances', async () => {
+  await saveWriterProvider(providerConfig({ apiKey: aqKey }));
+  const job = await running();
+  await processWriterJob(job, 'test-worker', { request: async options => ({ ...await mockProvider()(options), usage: { tokens: 42, promptTokens: 30, outputTokens: 10, thinkingTokens: 2, cachedTokens: 5, detailedRequests: 1 } }), getSources: async () => sources, makeCover: cover });
+  const response = await request(app).get('/api/ai-writer').set('Cookie', admin).expect(200);
+  assert.equal(response.body.usage.tokens, 84); assert.equal(response.body.usage.promptTokens, 60); assert.equal(response.body.usage.outputTokens, 20);
+  assert.equal(response.body.usageReport.scope, 'portal'); assert.equal(response.body.usageReport.googleProjectQuotaAvailable, false);
+  assert.equal(response.body.usageReport.byModel[0].requests, 2); assert.equal(response.body.usageReport.byModel[0].model, 'gemini-2.5-flash');
+  assert.equal(response.body.usageReport.byModel[0]._id, undefined); assert.ok(!JSON.stringify(response.body).includes(aqKey));
+});
+test('Google quota failures are recorded against the selected model without retrying', async () => {
+  await saveWriterProvider(providerConfig({ apiKey: aqKey }));
+  const job = await running(); let calls = 0;
+  await processWriterJob(job, 'test-worker', { request: async () => { calls++; throw new GeminiAPIError('Google quota reached.', 429); }, getSources: async () => sources });
+  const meter = await AIWriterMeter.findOne({ kind: 'generation' }).lean();
+  assert.equal(calls, 1); assert.equal(meter.failures, 1); assert.equal(meter.rateLimited, 1); assert.equal(meter.lastHttpStatus, 429);
+});
+test('token usage is retained when Google returns a truncated generation', async () => {
+  const job = await running();
+  await processWriterJob(job, 'test-worker', { request: options => geminiRequest(options, async () => new Response(JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS' }], usageMetadata: { totalTokenCount: 100, promptTokenCount: 50, candidatesTokenCount: 20, thoughtsTokenCount: 30 } }))), getSources: async () => sources });
+  const meter = await AIWriterMeter.findOne({ kind: 'generation' }).lean();
+  assert.equal(meter.tokens, 100); assert.equal(meter.failures, 1); assert.equal(meter.thinkingTokens, 30);
+  assert.equal((await AIWriterJob.findById(job._id)).usage.tokens, 100); assert.equal(await Blog.countDocuments(), 0);
 });
