@@ -114,6 +114,11 @@ the Node.js service managed by PM2. MongoDB runs as a host service. Install
 Ghostscript and LibreOffice on the host for PDF compression and document
 conversion features.
 
+GitHub Actions can test, build and deploy pushes to `main` using versioned
+releases, candidate readiness checks and rollback. See the
+[setup and recovery guide](docs/github-actions-deployment.md). Automatic deployment
+stays disabled until the host is bootstrapped and `DEPLOY_ENABLED=true` is set.
+
 ---
 
 ## Configuration

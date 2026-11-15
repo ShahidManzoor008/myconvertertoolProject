@@ -1,0 +1,39 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const exec = promisify(execFile);
+const packager = fileURLToPath(new URL('../../scripts/deploy/package.sh', import.meta.url));
+
+test('release contains exact committed source and tested output, excluding private runtime files', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mct-package-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const repo = path.join(root, 'repo'), output = path.join(root, 'output'), extracted = path.join(root, 'extracted');
+  await fs.mkdir(path.join(repo, 'client/dist'), { recursive: true });
+  await fs.mkdir(path.join(repo, 'server/uploads'), { recursive: true });
+  await fs.mkdir(extracted);
+  const git = (...args) => exec('git', args, { cwd: repo });
+  await git('init', '-q');
+  await fs.writeFile(path.join(repo, '.gitignore'), '.env\nclient/dist/\nserver/uploads/\n');
+  await fs.writeFile(path.join(repo, 'server/index.js'), 'committed server');
+  await git('add', '.');
+  await git('-c', 'user.name=Deployment test', '-c', 'user.email=deployment-test@example.invalid', 'commit', '-qm', 'Fixture');
+  const sha = (await git('rev-parse', 'HEAD')).stdout.trim();
+  await fs.writeFile(path.join(repo, '.env'), 'SECRET=private');
+  await fs.writeFile(path.join(repo, 'server/uploads/runtime.txt'), 'private upload');
+  await fs.writeFile(path.join(repo, 'server/index.js'), 'uncommitted source must not enter release');
+  for (const name of ['index.html', '404.html', 'routes-manifest.json']) await fs.writeFile(path.join(repo, 'client/dist', name), 'tested build');
+  await exec('bash', [packager, sha, '123', '1', output], { cwd: repo });
+  const id = `${sha}-123-1`;
+  await exec('tar', ['-xzf', path.join(output, id + '.tar.gz'), '-C', extracted]);
+  assert.equal(await fs.readFile(path.join(extracted, 'server/index.js'), 'utf8'), 'committed server');
+  assert.equal(await fs.readFile(path.join(extracted, 'client/dist/index.html'), 'utf8'), 'tested build');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(extracted, 'release.json'))), { id, commit: sha });
+  for (const name of ['.env', '.git', 'server/uploads/runtime.txt']) await assert.rejects(fs.access(path.join(extracted, name)));
+  await assert.rejects(exec('bash', [packager, '0'.repeat(40), '123', '1', output], { cwd: repo }));
+});
