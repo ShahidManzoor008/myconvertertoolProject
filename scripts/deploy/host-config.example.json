@@ -1,0 +1,8 @@
+{
+  "origin": "https://myconvertertool.com",
+  "envFile": "/home/ubuntu/myconvertertoolProject/server/.env",
+  "uploadsDirectory": "/home/ubuntu/myconvertertoolProject/server/uploads",
+  "spreadsheetPython": "/home/ubuntu/myconvertertoolProject/.venv-spreadsheet/bin/python",
+  "ports": [5100, 5101],
+  "drainSeconds": 190
+}

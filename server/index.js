@@ -3,6 +3,7 @@ import Blog from './models/Blog.js';
 import { renderArticleHtml, renderPageHtml, renderBlogListingHtml, makeSitemap } from './utils/pageSeo.js';
 import aiWriterRouter from './routes/aiWriter.js';
 import { startWriterScheduler } from './utils/aiWriterService.js';
+import { isActiveRelease, readinessHandler } from './utils/deployment.js';
 // ============================
 // 📂 Server: index.js
 // ============================
@@ -44,6 +45,13 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: './.env' });
 
 const app = express();
+let stopping = false;
+app.get('/api/health', readinessHandler({
+  connection: mongoose.connection,
+  isStopping: () => stopping,
+  checkBuild: () => Promise.all(['index.html', 'routes-manifest.json'].map(name =>
+    fileSystem.access(path.join(process.env.FRONTEND_BUILD_DIR || path.join(__dirname, '../client/dist'), name)))),
+}));
 const port = process.env.PORT || 5000;
 // const allowedOrigins =["http://localhost:3000"];
 const allowedOrigins = process.env.CORS_ORIGIN
@@ -184,11 +192,28 @@ app.use(errorHandler);
 // 🚀 Start Backend Server (only when not running tests)
 // ============================
 let server;
+let stopScheduler;
 if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
   server = app.listen(port, process.env.HOST || '127.0.0.1', () => {
     logger.info(`API running on port:${port}`);
-    startWriterScheduler(logger);
+    stopScheduler = startWriterScheduler(logger, { isActive: isActiveRelease });
   });
+
+  const shutdown = () => {
+    if (stopping) return;
+    stopping = true;
+    stopScheduler?.();
+    // Match the proxy's conversion timeout and leave PM2 time to reap workers.
+    const deadline = setTimeout(() => process.exit(1), 185000);
+    deadline.unref();
+    server.close(async () => {
+      await mongoose.disconnect();
+      clearTimeout(deadline);
+      process.exit(0);
+    });
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 
   // Handle uncaught errors
   handleUncaughtErrors(server);

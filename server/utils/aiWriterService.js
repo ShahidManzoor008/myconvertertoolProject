@@ -253,8 +253,11 @@ export async function writerTick({ processJob = processWriterJob } = {}) {
     ticking = false;
   }
 }
-export function startWriterScheduler(logger) {
-  const tick = () => writerTick().catch(() => logger.warn('AI Writer scheduler could not finish its check. Check database connectivity and writer history.'));
+export function startWriterScheduler(logger, { isActive = () => true } = {}) {
+  const tick = () => {
+    if (!isActive()) return;
+    return writerTick().catch(() => logger.warn('AI Writer scheduler could not finish its check. Check database connectivity and writer history.'));
+  };
   const timer = setInterval(tick, 60000); timer.unref();
   tick();
   return () => { clearInterval(timer); for (const controller of active.values()) controller.abort(); };
