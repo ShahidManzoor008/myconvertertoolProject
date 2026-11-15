@@ -28,6 +28,13 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Install conversion test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ghostscript libreoffice-writer fonts-dejavu-core
+          gs --version
+          soffice --version
+      - run: npx puppeteer browsers install chrome
       - name: Check deployment safeguards
         run: |
           for script in scripts/deploy/*.sh; do bash -n "$script"; done
@@ -36,7 +43,6 @@ jobs:
       - run: npm test --workspace server
       - run: npm test --workspace client
       - run: npm run lint --workspace client
-      - run: npx puppeteer browsers install chrome
       - run: npm run test:markdown --workspace server
       - run: npm run build --workspace client
       - run: node scripts/check-prerender.mjs

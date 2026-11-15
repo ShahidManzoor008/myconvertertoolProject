@@ -15,9 +15,14 @@ describe('Security regressions', () => {
     await User.create({ name: 'Security Test', email: 'security@example.com', password: 'original-password' });
     const login = await request(app).post('/api/auth/login').send({ email: 'security@example.com', password: 'original-password' });
     expect(login.status).toBe(200);
+    expect(login.body.token).toBeUndefined();
+    const sessionCookie = login.headers['set-cookie'].find(value => value.startsWith('mct_session='));
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie).toContain('HttpOnly');
+    const cookie = sessionCookie.split(';')[0];
     const user = await User.findOne({ email: 'security@example.com' });
     await Session.create({ user: user._id, token: 'other-session' });
-    const response = await request(app).put('/api/auth/profile').set('Authorization', `Bearer ${login.body.token}`).send({ password: 'replacement-password' });
+    const response = await request(app).put('/api/auth/profile').set('Cookie', cookie).set('Origin', 'http://localhost:3000').send({ password: 'replacement-password' });
     expect(response.status).toBe(200);
     expect(response.body.password).toBeUndefined();
     const updated = await User.findById(user._id);
@@ -26,7 +31,7 @@ describe('Security regressions', () => {
     expect(await updated.comparePassword('original-password')).toBe(false);
     expect((await Session.findOne({ token: 'other-session' })).isValid).toBe(false);
     await User.updateOne({ _id: user._id }, { status: 'inactive' });
-    expect((await request(app).get('/api/auth/profile').set('Authorization', `Bearer ${login.body.token}`)).status).toBe(401);
+    expect((await request(app).get('/api/auth/profile').set('Cookie', cookie)).status).toBe(401);
   });
   test.each(['../outside.pdf', '..\\outside.pdf', '.hidden', 'bad\u0000.pdf', '/absolute.pdf'])('rejects unsafe archive filename %s', name => {
     expect(safeArchiveName(name)).toBe(false);
