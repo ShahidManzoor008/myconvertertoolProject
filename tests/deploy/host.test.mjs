@@ -32,6 +32,8 @@ async function fixture(t, options = {}) {
   await fs.writeFile(path.join(staging, 'server/index.js'), '// tested server source');
   await fs.writeFile(path.join(staging, 'release.json'), JSON.stringify({ id: nextID, commit: 'b'.repeat(40) }));
   const archive = path.join(root, 'incoming', nextID + '.tar.gz');
+  // Reproduce releases packaged from a private mktemp directory.
+  await fs.chmod(staging, 0o700);
   await run('tar', ['-czf', archive, '-C', staging, '.'], { stdio: 'pipe' });
   const digest = createHash('sha256').update(await fs.readFile(archive)).digest('hex');
   const events = [];
@@ -136,6 +138,7 @@ test('bootstrap stages a healthy release without reloading Nginx or enabling its
   const f = await fixture(t, { bootstrap: true });
   await f.deployer.bootstrap(nextID, f.digest);
   assert.equal((await f.deployer.current()).id, nextID);
+  assert.equal((await fs.stat(path.join(f.root, 'releases', nextID))).mode & 0o777, 0o755);
   await assert.rejects(fs.access(path.join(f.root, 'scheduler-current')));
   assert.equal(f.events.some(event => event[0] === 'sudo'), false);
   assert.equal(f.events.some(event => event[0] === 'pm2' && event[1] === 'delete'), false);
