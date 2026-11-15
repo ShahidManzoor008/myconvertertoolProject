@@ -6,8 +6,19 @@ Implementation prepared on `ci/github-auto-deploy`, based on `09412a4`.
 The original working tree was clean and matched the cached `origin/main`.
 A fresh fetch/push could not run in the preparation session: GitHub DNS/network
 access was unavailable, the system SSH client configuration had a permissions
-error, and `gh` had no authenticated account. No changes were published and no
-production process, Nginx configuration, database or GitHub setting was changed.
+error, and `gh` had no authenticated account. The user subsequently authenticated
+and published commit `12dd0d0` from their terminal. This task still cannot reach
+GitHub directly. No production process, Nginx configuration or database was changed.
+
+The first CI run exposed a missing Ghostscript dependency and stale test fixtures:
+public blog pagination must use published posts, and authenticated profile updates
+must use the HttpOnly login cookie with an approved Origin. The branch corrects
+those fixtures and installs conversion dependencies before backend checks. A fresh
+GitHub CI run is required to verify these fixes; the sandbox cannot run HTTP or
+MongoDB integration tests. The saved `ci-failure.log` is ignored by Git.
+
+Do not delete either project checkout until deployment, rollback and restart
+recovery are verified and the user explicitly approves that deletion.
 
 Deployment is gated by a **repository** Actions variable `DEPLOY_ENABLED=true`.
 Leave it unset until bootstrap, a real rollback rehearsal, and public verification

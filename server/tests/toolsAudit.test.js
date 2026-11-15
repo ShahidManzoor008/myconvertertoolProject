@@ -50,10 +50,18 @@ test('seeded article correction does not overwrite an edited article', () => {
 });
 test('blog pagination advances and invalid cursor is a client error', async () => {
   await Blog.deleteMany({});
-  for (let index = 0; index < 3; index++) await Blog.create({ title: `Fixture ${index}`, slug: `fixture-${index}`, author: 'Test', excerpt: 'A sufficiently long excerpt for this isolated test fixture.', content: '<p>This is a sufficiently long article for an isolated pagination test.</p>' });
+  for (let index = 0; index < 3; index++) await Blog.create({ title: `Fixture ${index}`, slug: `fixture-${index}`, author: 'Test', status: 'published', contentFormat: 'html', excerpt: 'A sufficiently long excerpt for this isolated test fixture.', content: '<p>This is a sufficiently long article for an isolated pagination test.</p>' });
+  await Blog.create({ title: 'Unpublished fixture', slug: 'unpublished-fixture', author: 'Test', content: 'A draft must not appear in public pagination.' });
   const first = await request(app).get('/api/blog/posts?limit=1');
   const second = await request(app).get('/api/blog/posts?limit=1&page=2');
+  expect(first.status).toBe(200);
+  expect(second.status).toBe(200);
+  expect(first.body.total).toBe(3);
+  expect(first.body.posts).toHaveLength(1);
+  expect(second.body.posts).toHaveLength(1);
   const cursor = await request(app).get('/api/blog/posts?limit=1&cursor=' + first.body.nextCursor);
+  expect(cursor.status).toBe(200);
+  expect(cursor.body.posts).toHaveLength(1);
   expect(first.body.posts[0]._id).not.toBe(second.body.posts[0]._id);
   expect(cursor.body.posts[0]._id).toBe(second.body.posts[0]._id);
   expect(first.body.posts[0].readingTime).toBeGreaterThan(0);
